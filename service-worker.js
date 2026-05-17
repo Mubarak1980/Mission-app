@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mission-cache-v195';
+const CACHE_NAME = 'mission-cache-v196';
 
 // ============================
 // CORE APP SHELL
