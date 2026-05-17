@@ -10,33 +10,26 @@
 
     <link rel="stylesheet" href="./styles.css" />
 
-    <!-- =========================
-         PWA MANIFEST (FIXED SAFE)
-    ========================== -->
+    <!-- MANIFEST -->
     <link rel="manifest" href="./manifest.json">
 
-    <!-- Theme (Chrome UI color) -->
     <meta name="theme-color" content="#0b0f14" />
-
     <meta name="application-name" content="Mission App" />
 
-    <!-- PWA Mobile support -->
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Mission App" />
 
-    <!-- ICON (ONLY ONE - CORRECT FOR CHROME) -->
     <link rel="icon" href="./icon-192.png">
     <link rel="apple-touch-icon" href="./icon-192.png">
 
-    <!-- OPTIONAL: Helps Chrome detect installability faster -->
-    <meta name="format-detection" content="telephone=no" />
+    <!-- IMPORTANT FIX: helps Chrome detect scope properly -->
+    <meta name="scope" content="./">
 </head>
 
 <body>
 
-<!-- INSTALL BUTTON (UNCHANGED UI) -->
 <button id="installBtn" style="
 position: fixed;
 bottom: 20px;
@@ -52,7 +45,6 @@ z-index: 9999;">
 Install App
 </button>
 
-<!-- SPLASH -->
 <div id="splash-screen">
     <div class="splash-content">
         <h1>📘 Mission App</h1>
@@ -61,7 +53,6 @@ Install App
     </div>
 </div>
 
-<!-- APP -->
 <div id="app" style="display:none;">
     <h1>TIME</h1>
 
@@ -82,9 +73,6 @@ Install App
     </div>
 </div>
 
-<!-- =========================
-     JS FILES (UNCHANGED)
-========================= -->
 <script src="./Sunnah-tracker.js"></script>
 <script src="./Study-tracker.js"></script>
 <script src="./weekly-timetable.js"></script>
@@ -92,30 +80,30 @@ Install App
 <script src="./top-student-mode.js"></script>
 <script src="./main.js"></script>
 
-<!-- =========================
-     PWA CORE SYSTEM (FIXED ONLY)
-========================= -->
 <script>
 (() => {
   let deferredPrompt = null;
   const installBtn = document.getElementById("installBtn");
 
-  // Prevent crashes if DOM not ready
   if (!installBtn) return;
 
-  // =========================
-  // Install prompt trigger
-  // =========================
+  // IMPORTANT FIX: debug visibility (helps detect Chrome blocking)
+  window.addEventListener('appinstalled', () => {
+      deferredPrompt = null;
+      installBtn.style.display = "none";
+      console.log("PWA INSTALLED");
+  });
+
+  // Install prompt
   window.addEventListener('beforeinstallprompt', (e) => {
+      console.log("beforeinstallprompt FIRED"); // DEBUG
+
       e.preventDefault();
       deferredPrompt = e;
 
       installBtn.style.display = "block";
   });
 
-  // =========================
-  // Install click
-  // =========================
   installBtn.addEventListener("click", async () => {
       if (!deferredPrompt) return;
 
@@ -123,43 +111,33 @@ Install App
 
       const choice = await deferredPrompt.userChoice;
 
-      if (choice && choice.outcome === "accepted") {
-          installBtn.style.display = "none";
-      }
+      console.log("Install result:", choice.outcome);
 
       deferredPrompt = null;
   });
 
-  // =========================
-  // Installed event
-  // =========================
-  window.addEventListener('appinstalled', () => {
-      deferredPrompt = null;
-      installBtn.style.display = "none";
-  });
-
-  // =========================
-  // Service Worker (FIXED CHROME SAFE)
-  // =========================
+  // Service Worker
   if ('serviceWorker' in navigator) {
       window.addEventListener('load', async () => {
           try {
               const reg = await navigator.serviceWorker.register('./service-worker.js', {
+                  scope: './',
                   updateViaCache: "none"
               });
 
-              // force update check (important for GitHub Pages)
+              await navigator.serviceWorker.ready;
+
               reg.update();
 
+              console.log("SW READY:", reg.scope);
+
           } catch (err) {
-              console.error("SW registration failed:", err);
+              console.error("SW ERROR:", err);
           }
       });
   }
 
-  // =========================
-  // SPLASH SCREEN (UNCHANGED BEHAVIOR)
-  // =========================
+  // Splash
   window.addEventListener('DOMContentLoaded', () => {
       const splash = document.getElementById('splash-screen');
       const app = document.getElementById('app');
@@ -183,4 +161,4 @@ Install App
 </script>
 
 </body>
-    </html>
+</html>
