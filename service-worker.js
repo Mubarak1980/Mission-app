@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mission-cache-v194';
+const CACHE_NAME = 'mission-cache-v195';
 
 // ============================
 // CORE APP SHELL
@@ -17,14 +17,14 @@ const APP_SHELL = [
 ];
 
 // ============================
-// INSTALL (CHROME STABLE)
+// INSTALL (CHROME SAFE)
 // ============================
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
     try {
       const cache = await caches.open(CACHE_NAME);
 
-      const results = await Promise.allSettled(
+      await Promise.allSettled(
         APP_SHELL.map(async (file) => {
           try {
             const res = await fetch(file, {
@@ -32,32 +32,27 @@ self.addEventListener('install', (event) => {
               credentials: "same-origin"
             });
 
-            if (!res || !res.ok) {
-              console.warn("Skipping:", file);
-              return;
-            }
+            // IMPORTANT FIX: ensure valid response before caching
+            if (!res || !res.ok) return;
 
             await cache.put(file, res.clone());
 
           } catch (err) {
-            console.warn("Fetch failed:", file);
+            // silent fail is OK for install phase
           }
         })
       );
-
-      console.log("Cache install complete:", results.length);
 
     } catch (e) {
       console.error("Install failed:", e);
     }
 
-    // IMPORTANT: immediate activation
     self.skipWaiting();
   })());
 });
 
 // ============================
-// ACTIVATE (CLEAN + FAST)
+// ACTIVATE
 // ============================
 self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
@@ -74,7 +69,6 @@ self.addEventListener('activate', (event) => {
 
       await self.clients.claim();
 
-      // Notify clients (helps debugging install issues)
       const clients = await self.clients.matchAll();
       clients.forEach(client =>
         client.postMessage({ type: "SW_READY" })
@@ -87,7 +81,7 @@ self.addEventListener('activate', (event) => {
 });
 
 // ============================
-// FETCH (CHROME OPTIMIZED)
+// FETCH (CHROME SAFE + STABLE)
 // ============================
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
@@ -95,30 +89,19 @@ self.addEventListener('fetch', (event) => {
   const request = event.request;
 
   // ============================
-  // NAVIGATION (CRITICAL PWA FIX)
+  // NAVIGATION (PWA FIX CRITICAL)
   // ============================
   if (request.mode === 'navigate') {
     event.respondWith((async () => {
       try {
         const network = await fetch(request);
-
-        if (network && network.ok) {
-          const cache = await caches.open(CACHE_NAME);
-          cache.put('./index.html', network.clone());
-          return network;
-        }
-
-        throw new Error("Network failed");
-
+        return network;
       } catch (err) {
         const cache = await caches.open(CACHE_NAME);
-
-        return (
-          (await cache.match('./index.html')) ||
+        return await cache.match('./index.html') ||
           new Response("<h1>Offline</h1>", {
             headers: { "Content-Type": "text/html" }
-          })
-        );
+          });
       }
     })());
 
@@ -133,18 +116,22 @@ self.addEventListener('fetch', (event) => {
       const cache = await caches.open(CACHE_NAME);
       const cached = await cache.match(request);
 
-      const network = await fetch(request);
+      try {
+        const network = await fetch(request);
 
-      if (network && network.ok) {
-        cache.put(request, network.clone());
-        return network;
+        if (network && network.ok) {
+          cache.put(request, network.clone());
+          return network;
+        }
+
+        return cached || network;
+
+      } catch {
+        return cached;
       }
 
-      return cached || network;
-
-    } catch (err) {
-      const cache = await caches.open(CACHE_NAME);
-      return await cache.match(request);
+    } catch {
+      return fetch(request);
     }
   })());
 });
