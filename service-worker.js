@@ -1,6 +1,10 @@
-const CACHE_NAME = 'mission-cache-v201';
+const CACHE_NAME = 'mission-cache-v153';
 
+// ============================
+// APP SHELL (FIXED FOR GITHUB PAGES)
+// ============================
 const APP_SHELL = [
+  './',
   './index.html',
   './styles.css',
   './main.js',
@@ -17,42 +21,33 @@ const APP_SHELL = [
 // INSTALL
 // ============================
 self.addEventListener('install', (event) => {
-  event.waitUntil((async () => {
-    try {
+  self.skipWaiting();
+
+  event.waitUntil(
+    (async () => {
       const cache = await caches.open(CACHE_NAME);
 
-      await Promise.allSettled(
-        APP_SHELL.map(async (file) => {
-          try {
-            const res = await fetch(file, {
-              cache: "reload",
-              credentials: "same-origin"
-            });
+      for (const file of APP_SHELL) {
+        try {
+          const res = await fetch(file, { cache: "reload" });
 
-            // FIX: strict validation for Chrome cache safety
-            if (!res || res.status !== 200) return;
-
+          if (res && res.status === 200) {
             await cache.put(file, res.clone());
-
-          } catch {}
-        })
-      );
-
-    } catch (err) {
-      console.error("SW install error:", err);
-    }
-
-    // IMPORTANT: immediate activation
-    self.skipWaiting();
-  })());
+          }
+        } catch (e) {
+          console.warn("Install skipped:", file);
+        }
+      }
+    })()
+  );
 });
 
 // ============================
 // ACTIVATE
 // ============================
 self.addEventListener('activate', (event) => {
-  event.waitUntil((async () => {
-    try {
+  event.waitUntil(
+    (async () => {
       const keys = await caches.keys();
 
       await Promise.all(
@@ -64,16 +59,8 @@ self.addEventListener('activate', (event) => {
       );
 
       await self.clients.claim();
-
-      const clients = await self.clients.matchAll();
-      clients.forEach(client => {
-        client.postMessage({ type: "SW_READY" });
-      });
-
-    } catch (err) {
-      console.error("SW activate error:", err);
-    }
-  })());
+    })()
+  );
 });
 
 // ============================
@@ -84,49 +71,62 @@ self.addEventListener('fetch', (event) => {
 
   const request = event.request;
 
-  // ============================
-  // NAVIGATION (CRITICAL FIX)
-  // ============================
+  // ---------------------------
+  // NAVIGATION (CRITICAL FIX FOR GITHUB PAGES)
+  // ---------------------------
   if (request.mode === 'navigate') {
-    event.respondWith((async () => {
-      try {
-        const network = await fetch(request);
-        return network;
-      } catch {
-        const cache = await caches.open(CACHE_NAME);
+    event.respondWith(
+      (async () => {
+        try {
+          const network = await fetch(request);
 
-        return await cache.match('./index.html') ||
-          new Response("<h1>Offline</h1>", {
-            headers: { "Content-Type": "text/html" }
-          });
-      }
-    })());
+          if (network && network.ok) {
+            const cache = await caches.open(CACHE_NAME);
+
+            // FIX: MUST be relative path (NOT /index.html)
+            cache.put('./index.html', network.clone());
+
+            return network;
+          }
+
+          throw new Error("Bad response");
+        } catch (err) {
+          return (
+            (await caches.match('./index.html')) ||
+            (await caches.match('index.html')) ||
+            new Response("<h1>Offline</h1>", {
+              headers: { "Content-Type": "text/html" }
+            })
+          );
+        }
+      })()
+    );
 
     return;
   }
 
-  // ============================
-  // CACHE FIRST STRATEGY
-  // ============================
-  event.respondWith((async () => {
-    try {
-      const cache = await caches.open(CACHE_NAME);
-      const cached = await cache.match(request);
+  // ---------------------------
+  // STATIC FILES (CACHE STRATEGY)
+  // ---------------------------
+  event.respondWith(
+    (async () => {
+      const cached = await caches.match(request);
 
-      const network = await fetch(request);
+      try {
+        const network = await fetch(request);
 
-      if (network && network.status === 200) {
-        cache.put(request, network.clone());
-        return network;
+        if (network && network.status === 200) {
+          const cache = await caches.open(CACHE_NAME);
+          cache.put(request, network.clone());
+          return network;
+        }
+
+        return cached || network;
+      } catch (err) {
+        return cached;
       }
-
-      return cached;
-
-    } catch {
-      const cache = await caches.open(CACHE_NAME);
-      return await cache.match(request) || fetch(request);
-    }
-  })());
+    })()
+  );
 });
 
 // ============================
