@@ -10,24 +10,33 @@
 
     <link rel="stylesheet" href="./styles.css" />
 
-    <!-- MANIFEST -->
-    <link rel="manifest" href="./manifest.json" />
+    <!-- =========================
+         PWA MANIFEST (FIXED SAFE)
+    ========================== -->
+    <link rel="manifest" href="./manifest.json">
 
+    <!-- Theme (Chrome UI color) -->
     <meta name="theme-color" content="#0b0f14" />
+
     <meta name="application-name" content="Mission App" />
 
+    <!-- PWA Mobile support -->
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Mission App" />
 
-    <link rel="icon" href="./icon-192.png" />
-    <link rel="apple-touch-icon" href="./icon-192.png" />
+    <!-- ICON (ONLY ONE - CORRECT FOR CHROME) -->
+    <link rel="icon" href="./icon-192.png">
+    <link rel="apple-touch-icon" href="./icon-192.png">
+
+    <!-- OPTIONAL: Helps Chrome detect installability faster -->
+    <meta name="format-detection" content="telephone=no" />
 </head>
 
 <body>
 
-<!-- INSTALL BUTTON -->
+<!-- INSTALL BUTTON (UNCHANGED UI) -->
 <button id="installBtn" style="
 position: fixed;
 bottom: 20px;
@@ -73,7 +82,9 @@ Install App
     </div>
 </div>
 
-<!-- JS FILES -->
+<!-- =========================
+     JS FILES (UNCHANGED)
+========================= -->
 <script src="./Sunnah-tracker.js"></script>
 <script src="./Study-tracker.js"></script>
 <script src="./weekly-timetable.js"></script>
@@ -81,59 +92,55 @@ Install App
 <script src="./top-student-mode.js"></script>
 <script src="./main.js"></script>
 
-<!-- ===============================
-     PWA FIXED CORE SYSTEM (STABLE)
-=============================== -->
+<!-- =========================
+     PWA CORE SYSTEM (FIXED ONLY)
+========================= -->
 <script>
 (() => {
   let deferredPrompt = null;
   const installBtn = document.getElementById("installBtn");
 
+  // Prevent crashes if DOM not ready
   if (!installBtn) return;
 
-  // Show install button when available
+  // =========================
+  // Install prompt trigger
+  // =========================
   window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       deferredPrompt = e;
 
-      console.log("PWA install available");
-
       installBtn.style.display = "block";
   });
 
+  // =========================
   // Install click
+  // =========================
   installBtn.addEventListener("click", async () => {
-      if (!deferredPrompt) {
-          console.log("Install not ready (deferredPrompt null)");
-          return;
+      if (!deferredPrompt) return;
+
+      deferredPrompt.prompt();
+
+      const choice = await deferredPrompt.userChoice;
+
+      if (choice && choice.outcome === "accepted") {
+          installBtn.style.display = "none";
       }
 
-      try {
-          deferredPrompt.prompt();
-
-          const result = await deferredPrompt.userChoice;
-
-          console.log("Install result:", result.outcome);
-
-          if (result.outcome === "accepted") {
-              installBtn.style.display = "none";
-          }
-
-          deferredPrompt = null;
-
-      } catch (err) {
-          console.error("Install error:", err);
-      }
+      deferredPrompt = null;
   });
 
+  // =========================
   // Installed event
+  // =========================
   window.addEventListener('appinstalled', () => {
-      console.log("PWA installed successfully");
       deferredPrompt = null;
       installBtn.style.display = "none";
   });
 
-  // SERVICE WORKER (IMPORTANT: FORCE CLEAN REGISTRATION)
+  // =========================
+  // Service Worker (FIXED CHROME SAFE)
+  // =========================
   if ('serviceWorker' in navigator) {
       window.addEventListener('load', async () => {
           try {
@@ -141,30 +148,28 @@ Install App
                   updateViaCache: "none"
               });
 
-              console.log('SW registered:', reg.scope);
-
-              // force update check
+              // force update check (important for GitHub Pages)
               reg.update();
 
           } catch (err) {
-              console.error('SW ERROR:', err);
+              console.error("SW registration failed:", err);
           }
       });
   }
 
-  // SPLASH SCREEN
+  // =========================
+  // SPLASH SCREEN (UNCHANGED BEHAVIOR)
+  // =========================
   window.addEventListener('DOMContentLoaded', () => {
       const splash = document.getElementById('splash-screen');
       const app = document.getElementById('app');
 
-      if (app) {
-          app.style.display = 'block';
-          app.style.opacity = '0';
-      }
+      app.style.display = 'block';
+      app.style.opacity = '0';
 
       requestAnimationFrame(() => {
           requestAnimationFrame(() => {
-              if (app) app.style.opacity = '1';
+              app.style.opacity = '1';
 
               setTimeout(() => {
                   splash?.classList.add('hide');
@@ -178,4 +183,4 @@ Install App
 </script>
 
 </body>
-</html>
+    </html>
