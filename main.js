@@ -273,7 +273,7 @@ function updateNavButtons() {
 }
 
 // ===============================
-// SECTION LOADER (FIXED SAFELY)
+// SECTION LOADER (UNCHANGED LOGIC)
 // ===============================
 function loadSection(type, grade) {
   currentSection = type;
@@ -282,30 +282,11 @@ function loadSection(type, grade) {
   saveUIState();
   updateNavButtons();
 
-  try {
-    if (type === "study" && typeof loadStudySection === "function") {
-      loadStudySection(currentGrade);
-    }
-
-    if (type === "timetable" && typeof loadWeeklyTimetable === "function") {
-      loadWeeklyTimetable();
-    }
-
-    if (type === "dashboard" && typeof loadDashboard === "function") {
-      loadDashboard();
-    }
-
-    if (type === "top-student" && typeof loadTopStudentMode === "function") {
-      loadTopStudentMode();
-    }
-
-    if (type === "sunnah" && typeof loadSunnahTracker === "function") {
-      loadSunnahTracker();
-    }
-
-  } catch (err) {
-    console.error("Section load error:", type, err);
-  }
+  if (type === "study") loadStudySection && loadStudySection(currentGrade);
+  if (type === "timetable") loadWeeklyTimetable && loadWeeklyTimetable();
+  if (type === "dashboard") loadDashboard && loadDashboard();
+  if (type === "top-student") loadTopStudentMode && loadTopStudentMode();
+  if (type === "sunnah") loadSunnahTracker && loadSunnahTracker();
 }
 
 // ===============================
@@ -320,7 +301,7 @@ function previousGrade() {
 }
 
 // ===============================
-// FIXED INIT (PWA SAFE)
+// 🚀 FIXED INIT (THIS IS THE IMPORTANT PART)
 // ===============================
 function initApp() {
   if (document.body.dataset.initialized) return;
@@ -332,23 +313,14 @@ function initApp() {
 
   loadUIState();
 
-  const start = () => {
-    try {
-      loadSection(currentSection, currentGrade);
-    } catch (err) {
-      console.error("Init load error:", err);
-    }
+  // ✅ FIX: break blocking startup work
+  requestAnimationFrame(() => {
+    getCycleState();
 
     setTimeout(() => {
-      getCycleState();
-    }, 50);
-  };
-
-  if (document.readyState === "complete") {
-    start();
-  } else {
-    window.addEventListener("load", start);
-  }
+      loadSection(currentSection, currentGrade);
+    }, 0);
+  });
 }
 
 // ===============================
