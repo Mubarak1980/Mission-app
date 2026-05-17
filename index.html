@@ -11,9 +11,9 @@
     <link rel="stylesheet" href="./styles.css" />
 
     <!-- MANIFEST -->
-    <link rel="manifest" href="./manifest.json">
+    <link rel="manifest" href="./manifest.json" />
 
-    <meta name="theme-color" content="#0b0f14" />
+    <meta name="theme-color" content="#00d4ff" />
     <meta name="application-name" content="Mission App" />
 
     <meta name="mobile-web-app-capable" content="yes" />
@@ -21,15 +21,14 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Mission App" />
 
-    <link rel="icon" href="./icon-192.png">
-    <link rel="apple-touch-icon" href="./icon-192.png">
-
-    <!-- IMPORTANT FIX: helps Chrome detect scope properly -->
-    <meta name="scope" content="./">
+    <!-- ICON (ONLY ONE SOURCE) -->
+    <link rel="icon" href="./icon-192.png" />
+    <link rel="apple-touch-icon" href="./icon-192.png" />
 </head>
 
 <body>
 
+<!-- INSTALL BUTTON -->
 <button id="installBtn" style="
 position: fixed;
 bottom: 20px;
@@ -45,6 +44,7 @@ z-index: 9999;">
 Install App
 </button>
 
+<!-- SPLASH -->
 <div id="splash-screen">
     <div class="splash-content">
         <h1>📘 Mission App</h1>
@@ -53,6 +53,7 @@ Install App
     </div>
 </div>
 
+<!-- APP -->
 <div id="app" style="display:none;">
     <h1>TIME</h1>
 
@@ -73,6 +74,7 @@ Install App
     </div>
 </div>
 
+<!-- JS -->
 <script src="./Sunnah-tracker.js"></script>
 <script src="./Study-tracker.js"></script>
 <script src="./weekly-timetable.js"></script>
@@ -81,83 +83,72 @@ Install App
 <script src="./main.js"></script>
 
 <script>
-(() => {
-  let deferredPrompt = null;
-  const installBtn = document.getElementById("installBtn");
+let deferredPrompt = null;
+const installBtn = document.getElementById("installBtn");
 
-  if (!installBtn) return;
+// INSTALL PROMPT
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
 
-  // IMPORTANT FIX: debug visibility (helps detect Chrome blocking)
-  window.addEventListener('appinstalled', () => {
-      deferredPrompt = null;
-      installBtn.style.display = "none";
-      console.log("PWA INSTALLED");
-  });
+    console.log("Install available");
+    installBtn.style.display = "block";
+});
 
-  // Install prompt
-  window.addEventListener('beforeinstallprompt', (e) => {
-      console.log("beforeinstallprompt FIRED"); // DEBUG
+// INSTALL CLICK
+installBtn?.addEventListener("click", async () => {
+    if (!deferredPrompt) return;
 
-      e.preventDefault();
-      deferredPrompt = e;
+    deferredPrompt.prompt();
+    const choice = await deferredPrompt.userChoice;
 
-      installBtn.style.display = "block";
-  });
+    if (choice.outcome === "accepted") {
+        console.log("Installed");
+    }
 
-  installBtn.addEventListener("click", async () => {
-      if (!deferredPrompt) return;
+    deferredPrompt = null;
+    installBtn.style.display = "none";
+});
 
-      deferredPrompt.prompt();
+// SERVICE WORKER (FIXED - NO RELOAD LOOP)
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', async () => {
+        try {
+            const reg = await navigator.serviceWorker.register('./service-worker.js');
 
-      const choice = await deferredPrompt.userChoice;
+            console.log('SW registered:', reg.scope);
 
-      console.log("Install result:", choice.outcome);
+            reg.addEventListener('updatefound', () => {
+                const newWorker = reg.installing;
 
-      deferredPrompt = null;
-  });
+                newWorker?.addEventListener('statechange', () => {
+                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                        console.log('Update available');
+                    }
+                });
+            });
 
-  // Service Worker
-  if ('serviceWorker' in navigator) {
-      window.addEventListener('load', async () => {
-          try {
-              const reg = await navigator.serviceWorker.register('./service-worker.js', {
-                  scope: './',
-                  updateViaCache: "none"
-              });
+        } catch (err) {
+            console.error('SW ERROR:', err);
+        }
+    });
+}
 
-              await navigator.serviceWorker.ready;
+// SPLASH
+window.addEventListener('load', () => {
+    const splash = document.getElementById('splash-screen');
+    const app = document.getElementById('app');
 
-              reg.update();
+    setTimeout(() => {
+        splash?.classList.add('hide');
 
-              console.log("SW READY:", reg.scope);
+        setTimeout(() => {
+            splash?.remove();
+            if (app) app.style.display = 'block';
+        }, 500);
 
-          } catch (err) {
-              console.error("SW ERROR:", err);
-          }
-      });
-  }
-
-  // Splash
-  window.addEventListener('DOMContentLoaded', () => {
-      const splash = document.getElementById('splash-screen');
-      const app = document.getElementById('app');
-
-      app.style.display = 'block';
-      app.style.opacity = '0';
-
-      requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-              app.style.opacity = '1';
-
-              setTimeout(() => {
-                  splash?.classList.add('hide');
-                  setTimeout(() => splash?.remove(), 300);
-              }, 150);
-          });
-      });
-  });
-
-})();
+    }, 1200);
+});
 </script>
 
 </body>
