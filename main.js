@@ -71,7 +71,7 @@ function getTodayPlan() {
 function getTodayLog() {
   const logs = safeJSON("dailyStudyLog", {});
   const today = logs[getTodayKey()];
-  return today && typeof today === "object" ? today : {};
+  return (today && typeof today === "object") ? today : {};
 }
 
 // ===============================
@@ -79,12 +79,11 @@ function getTodayLog() {
 // ===============================
 function getExpectedProgress() {
   const cycle = getCycleState();
-  const expectedPages = (cycle.cycleDay / TOTAL_DAYS) * TOTAL_PAGES;
 
   return {
     cycleDay: cycle.cycleDay,
     remainingDays: cycle.remainingDays,
-    expectedPages: Math.round(expectedPages)
+    expectedPages: Math.round((cycle.cycleDay / TOTAL_DAYS) * TOTAL_PAGES)
   };
 }
 
@@ -142,6 +141,7 @@ function getPlannedVsActual() {
     if (!p?.grade || !p?.subjects) continue;
 
     const actual = log[p.grade] || {};
+
     for (const subject in p.subjects) {
       const planned = Number(p.subjects[subject]) || 0;
       const done = Number(actual[subject]) || 0;
@@ -212,9 +212,7 @@ function getSmartCycle() {
   let catchUp = gap < 0 ? Math.ceil(Math.abs(gap) / remainingDays) : 0;
   catchUp = Math.min(catchUp, 60);
 
-  const base = TOTAL_PAGES / TOTAL_DAYS;
-
-  let target = base + catchUp;
+  let target = (TOTAL_PAGES / TOTAL_DAYS) + catchUp;
   target = Math.min(Math.max(target, 25), 85);
 
   return {
@@ -273,7 +271,7 @@ function updateNavButtons() {
 }
 
 // ===============================
-// SECTION LOADER (UNCHANGED LOGIC)
+// SECTION LOADER
 // ===============================
 function loadSection(type, grade) {
   currentSection = type;
@@ -282,11 +280,24 @@ function loadSection(type, grade) {
   saveUIState();
   updateNavButtons();
 
-  if (type === "study") loadStudySection && loadStudySection(currentGrade);
-  if (type === "timetable") loadWeeklyTimetable && loadWeeklyTimetable();
-  if (type === "dashboard") loadDashboard && loadDashboard();
-  if (type === "top-student") loadTopStudentMode && loadTopStudentMode();
-  if (type === "sunnah") loadSunnahTracker && loadSunnahTracker();
+  try {
+    if (type === "study" && typeof loadStudySection === "function")
+      loadStudySection(currentGrade);
+
+    if (type === "timetable" && typeof loadWeeklyTimetable === "function")
+      loadWeeklyTimetable();
+
+    if (type === "dashboard" && typeof loadDashboard === "function")
+      loadDashboard();
+
+    if (type === "top-student" && typeof loadTopStudentMode === "function")
+      loadTopStudentMode();
+
+    if (type === "sunnah" && typeof loadSunnahTracker === "function")
+      loadSunnahTracker();
+  } catch (e) {
+    console.error("Section load error:", e);
+  }
 }
 
 // ===============================
@@ -301,7 +312,7 @@ function previousGrade() {
 }
 
 // ===============================
-// 🚀 FIXED INIT (THIS IS THE IMPORTANT PART)
+// INIT (FIXED)
 // ===============================
 function initApp() {
   if (document.body.dataset.initialized) return;
@@ -313,24 +324,17 @@ function initApp() {
 
   loadUIState();
 
-  // ✅ FIX: break blocking startup work
   requestAnimationFrame(() => {
     getCycleState();
-
-    setTimeout(() => {
-      loadSection(currentSection, currentGrade);
-    }, 0);
+    setTimeout(() => loadSection(currentSection, currentGrade), 0);
   });
 }
 
-// ===============================
-// BOOT
 // ===============================
 document.readyState === "loading"
   ? document.addEventListener("DOMContentLoaded", initApp)
   : initApp();
 
-// ===============================
 window.nextGrade = nextGrade;
 window.previousGrade = previousGrade;
 window.loadSection = loadSection;
