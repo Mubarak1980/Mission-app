@@ -1,8 +1,5 @@
-const CACHE_NAME = 'mission-cache-v198';
+const CACHE_NAME = 'mission-cache-v199';
 
-// ============================
-// CORE APP SHELL
-// ============================
 const APP_SHELL = [
   './index.html',
   './styles.css',
@@ -17,7 +14,7 @@ const APP_SHELL = [
 ];
 
 // ============================
-// INSTALL (CHROME SAFE)
+// INSTALL
 // ============================
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
@@ -32,21 +29,20 @@ self.addEventListener('install', (event) => {
               credentials: "same-origin"
             });
 
-            // IMPORTANT FIX: ensure valid response before caching
-            if (!res || !res.ok) return;
+            // FIX: strict validation for Chrome cache safety
+            if (!res || res.status !== 200) return;
 
             await cache.put(file, res.clone());
 
-          } catch (err) {
-            // silent fail is OK for install phase
-          }
+          } catch {}
         })
       );
 
-    } catch (e) {
-      console.error("Install failed:", e);
+    } catch (err) {
+      console.error("SW install error:", err);
     }
 
+    // IMPORTANT: immediate activation
     self.skipWaiting();
   })());
 });
@@ -70,18 +66,18 @@ self.addEventListener('activate', (event) => {
       await self.clients.claim();
 
       const clients = await self.clients.matchAll();
-      clients.forEach(client =>
-        client.postMessage({ type: "SW_READY" })
-      );
+      clients.forEach(client => {
+        client.postMessage({ type: "SW_READY" });
+      });
 
     } catch (err) {
-      console.error("Activate error:", err);
+      console.error("SW activate error:", err);
     }
   })());
 });
 
 // ============================
-// FETCH (CHROME SAFE + STABLE)
+// FETCH
 // ============================
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
@@ -89,15 +85,16 @@ self.addEventListener('fetch', (event) => {
   const request = event.request;
 
   // ============================
-  // NAVIGATION (PWA FIX CRITICAL)
+  // NAVIGATION (CRITICAL FIX)
   // ============================
   if (request.mode === 'navigate') {
     event.respondWith((async () => {
       try {
         const network = await fetch(request);
         return network;
-      } catch (err) {
+      } catch {
         const cache = await caches.open(CACHE_NAME);
+
         return await cache.match('./index.html') ||
           new Response("<h1>Offline</h1>", {
             headers: { "Content-Type": "text/html" }
@@ -109,29 +106,25 @@ self.addEventListener('fetch', (event) => {
   }
 
   // ============================
-  // CACHE FIRST (SAFE FALLBACK)
+  // CACHE FIRST STRATEGY
   // ============================
   event.respondWith((async () => {
     try {
       const cache = await caches.open(CACHE_NAME);
       const cached = await cache.match(request);
 
-      try {
-        const network = await fetch(request);
+      const network = await fetch(request);
 
-        if (network && network.ok) {
-          cache.put(request, network.clone());
-          return network;
-        }
-
-        return cached || network;
-
-      } catch {
-        return cached;
+      if (network && network.status === 200) {
+        cache.put(request, network.clone());
+        return network;
       }
 
+      return cached;
+
     } catch {
-      return fetch(request);
+      const cache = await caches.open(CACHE_NAME);
+      return await cache.match(request) || fetch(request);
     }
   })());
 });
