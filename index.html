@@ -8,10 +8,23 @@
 
     <title>Mission App</title>
 
+    <!-- ✅ FIX: prevent white flash before PWA loads -->
+    <style>
+        html, body {
+            margin: 0;
+            background: #0b0f14;
+        }
+
+        #app {
+            opacity: 1;
+            transition: opacity 0.15s ease;
+        }
+    </style>
+
     <link rel="stylesheet" href="./styles.css" />
 
     <!-- MANIFEST -->
-    <link rel="manifest" href="./manifest.json" />
+    <link rel="manifest" href="./manifest.json">
 
     <meta name="theme-color" content="#00d4ff" />
     <meta name="application-name" content="Mission App" />
@@ -21,28 +34,11 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Mission App" />
 
-    <!-- ICON (ONLY ONE SOURCE) -->
     <link rel="icon" href="./icon-192.png" />
     <link rel="apple-touch-icon" href="./icon-192.png" />
 </head>
 
 <body>
-
-<!-- INSTALL BUTTON -->
-<button id="installBtn" style="
-position: fixed;
-bottom: 20px;
-right: 20px;
-padding: 12px 16px;
-border: none;
-background: #00d4ff;
-color: black;
-font-weight: bold;
-border-radius: 10px;
-display: none;
-z-index: 9999;">
-Install App
-</button>
 
 <!-- SPLASH -->
 <div id="splash-screen">
@@ -74,7 +70,7 @@ Install App
     </div>
 </div>
 
-<!-- JS -->
+<!-- JS FILES -->
 <script src="./Sunnah-tracker.js"></script>
 <script src="./Study-tracker.js"></script>
 <script src="./weekly-timetable.js"></script>
@@ -82,20 +78,22 @@ Install App
 <script src="./top-student-mode.js"></script>
 <script src="./main.js"></script>
 
+<!-- PWA SCRIPT -->
 <script>
 let deferredPrompt = null;
 const installBtn = document.getElementById("installBtn");
 
-// INSTALL PROMPT
+/* INSTALL PROMPT */
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
 
     console.log("Install available");
-    installBtn.style.display = "block";
+
+    if (installBtn) installBtn.style.display = "block";
 });
 
-// INSTALL CLICK
+/* INSTALL CLICK */
 installBtn?.addEventListener("click", async () => {
     if (!deferredPrompt) return;
 
@@ -110,7 +108,7 @@ installBtn?.addEventListener("click", async () => {
     installBtn.style.display = "none";
 });
 
-// SERVICE WORKER (FIXED - NO RELOAD LOOP)
+/* SERVICE WORKER */
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', async () => {
         try {
@@ -134,20 +132,31 @@ if ('serviceWorker' in navigator) {
     });
 }
 
-// SPLASH
-window.addEventListener('load', () => {
+/* SPLASH (FIXED FAST BOOT - NO ICON DELAY FEELING) */
+window.addEventListener('DOMContentLoaded', () => {
     const splash = document.getElementById('splash-screen');
     const app = document.getElementById('app');
 
-    setTimeout(() => {
-        splash?.classList.add('hide');
+    // Show app immediately behind splash
+    if (app) {
+        app.style.display = 'block';
+        app.style.opacity = '0';
+    }
+
+    requestAnimationFrame(() => {
+        if (app) app.style.opacity = '1';
 
         setTimeout(() => {
-            splash?.remove();
-            if (app) app.style.display = 'block';
-        }, 500);
+            if (splash) {
+                splash.style.transition = "opacity 0.15s ease";
+                splash.style.opacity = "0";
+            }
 
-    }, 1200);
+            setTimeout(() => {
+                splash?.remove();
+            }, 150);
+        }, 120);
+    });
 });
 </script>
 
