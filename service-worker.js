@@ -1,10 +1,9 @@
-const CACHE_NAME = 'mission-cache-v165';
+const CACHE_NAME = 'mission-cache-v166';
 
 // ============================
-// APP SHELL (FIXED FOR GITHUB PAGES)
+// APP SHELL (FIXED ONLY)
 // ============================
 const APP_SHELL = [
-  './',
   './index.html',
   './styles.css',
   './main.js',
@@ -14,7 +13,8 @@ const APP_SHELL = [
   './weekly-timetable.js',
   './top-student-mode.js',
   './manifest.json',
-  './icon-192.png'
+  './icon-192.png',
+  './icon-512.png'
 ];
 
 // ============================
@@ -27,17 +27,19 @@ self.addEventListener('install', (event) => {
     (async () => {
       const cache = await caches.open(CACHE_NAME);
 
-      for (const file of APP_SHELL) {
-        try {
-          const res = await fetch(file, { cache: "reload" });
+      await Promise.allSettled(
+        APP_SHELL.map(async (file) => {
+          try {
+            const res = await fetch(file, { cache: "reload" });
 
-          if (res && res.status === 200) {
-            await cache.put(file, res.clone());
+            if (res && res.ok) {
+              await cache.put(file, res.clone());
+            }
+          } catch (e) {
+            console.warn("Install skipped:", file);
           }
-        } catch (e) {
-          console.warn("Install skipped:", file);
-        }
-      }
+        })
+      );
     })()
   );
 });
@@ -71,29 +73,16 @@ self.addEventListener('fetch', (event) => {
 
   const request = event.request;
 
-  // ---------------------------
-  // NAVIGATION (CRITICAL FIX FOR GITHUB PAGES)
-  // ---------------------------
+  // NAVIGATION (IMPORTANT FIX)
   if (request.mode === 'navigate') {
     event.respondWith(
       (async () => {
         try {
           const network = await fetch(request);
-
-          if (network && network.ok) {
-            const cache = await caches.open(CACHE_NAME);
-
-            // FIX: MUST be relative path (NOT /index.html)
-            cache.put('./index.html', network.clone());
-
-            return network;
-          }
-
-          throw new Error("Bad response");
+          return network;
         } catch (err) {
           return (
             (await caches.match('./index.html')) ||
-            (await caches.match('index.html')) ||
             new Response("<h1>Offline</h1>", {
               headers: { "Content-Type": "text/html" }
             })
@@ -101,13 +90,10 @@ self.addEventListener('fetch', (event) => {
         }
       })()
     );
-
     return;
   }
 
-  // ---------------------------
-  // STATIC FILES (CACHE STRATEGY)
-  // ---------------------------
+  // STATIC CACHE STRATEGY
   event.respondWith(
     (async () => {
       const cached = await caches.match(request);
@@ -115,14 +101,14 @@ self.addEventListener('fetch', (event) => {
       try {
         const network = await fetch(request);
 
-        if (network && network.status === 200) {
+        if (network && network.ok) {
           const cache = await caches.open(CACHE_NAME);
           cache.put(request, network.clone());
           return network;
         }
 
         return cached || network;
-      } catch (err) {
+      } catch {
         return cached;
       }
     })()
