@@ -1,17 +1,20 @@
-const CACHE_NAME = 'mission-cache-v162';
+const CACHE_NAME = 'mission-cache-v163';
 
+// ============================
+// APP SHELL (FIXED FOR GITHUB PAGES)
+// ============================
 const APP_SHELL = [
-  '/',
-  '/index.html',
-  '/styles.css',
-  '/main.js',
-  '/Study-tracker.js',
-  '/Sunnah-tracker.js',
-  '/dashboard.js',
-  '/weekly-timetable.js',
-  '/top-student-mode.js',
-  '/manifest.json',
-  '/icon-192.png'
+  './',
+  './index.html',
+  './styles.css',
+  './main.js',
+  './Study-tracker.js',
+  './Sunnah-tracker.js',
+  './dashboard.js',
+  './weekly-timetable.js',
+  './top-student-mode.js',
+  './manifest.json',
+  './icon-192.png'
 ];
 
 // ============================
@@ -69,7 +72,7 @@ self.addEventListener('fetch', (event) => {
   const request = event.request;
 
   // ---------------------------
-  // NAVIGATION (CRITICAL)
+  // NAVIGATION (CRITICAL FIX FOR GITHUB PAGES)
   // ---------------------------
   if (request.mode === 'navigate') {
     event.respondWith(
@@ -77,16 +80,20 @@ self.addEventListener('fetch', (event) => {
         try {
           const network = await fetch(request);
 
-          if (network && network.status === 200) {
+          if (network && network.ok) {
             const cache = await caches.open(CACHE_NAME);
-            cache.put('/index.html', network.clone()); // ✅ FIXED
+
+            // FIX: MUST be relative path (NOT /index.html)
+            cache.put('./index.html', network.clone());
+
             return network;
           }
 
           throw new Error("Bad response");
         } catch (err) {
           return (
-            (await caches.match('/index.html')) ||
+            (await caches.match('./index.html')) ||
+            (await caches.match('index.html')) ||
             new Response("<h1>Offline</h1>", {
               headers: { "Content-Type": "text/html" }
             })
@@ -94,11 +101,12 @@ self.addEventListener('fetch', (event) => {
         }
       })()
     );
+
     return;
   }
 
   // ---------------------------
-  // STATIC FILES
+  // STATIC FILES (CACHE STRATEGY)
   // ---------------------------
   event.respondWith(
     (async () => {
