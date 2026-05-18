@@ -277,6 +277,7 @@ function updateNavButtons() {
 // ===============================
 function loadSection(type, grade) {
   currentSection = type;
+
   if (grade !== undefined && grade !== null) {
     currentGrade = Number(grade);
   }
@@ -299,6 +300,7 @@ function loadSection(type, grade) {
 
     if (type === "sunnah" && typeof loadSunnahTracker === "function")
       loadSunnahTracker();
+
   } catch (e) {
     console.error("Section load error:", e);
   }
@@ -316,10 +318,10 @@ function previousGrade() {
 }
 
 // ===============================
-// INIT (PWA SAFE GUARDED)
+// INIT (FIXED FOR PWA + SW + CHROME)
 // ===============================
 function initApp() {
-  if (_initialized || document.body.dataset.initialized) return;
+  if (_initialized || document.body.dataset.initialized === "1") return;
 
   _initialized = true;
   document.body.dataset.initialized = "1";
@@ -339,7 +341,7 @@ function initApp() {
 }
 
 // ===============================
-// BOOTSTRAP SAFE FOR PWA + SW RELOAD
+// BOOTSTRAP SAFE
 // ===============================
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", initApp);
