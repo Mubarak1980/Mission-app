@@ -1,7 +1,8 @@
-const CACHE_NAME = "mission-cache-v180";
+const CACHE_NAME = "mission-cache-v181";
 const BASE = "/Mission-app/";
 
 const APP_SHELL = [
+  BASE,
   BASE + "index.html",
   BASE + "styles.css",
   BASE + "main.js",
@@ -16,7 +17,7 @@ const APP_SHELL = [
 ];
 
 // =========================
-// INSTALL (FIXED)
+// INSTALL
 // =========================
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -30,20 +31,17 @@ self.addEventListener("install", (event) => {
             if (res && res.ok) {
               await cache.put(file, res.clone());
             }
-          } catch (err) {
-            console.warn("Cache skip:", file);
-          }
+          } catch {}
         })
       );
 
-      // ✅ FIX: proper lifecycle control
       await self.skipWaiting();
     })()
   );
 });
 
 // =========================
-// ACTIVATE (FIXED)
+// ACTIVATE (IMPORTANT FIX)
 // =========================
 self.addEventListener("activate", (event) => {
   event.waitUntil(
@@ -55,12 +53,16 @@ self.addEventListener("activate", (event) => {
       );
 
       await self.clients.claim();
+
+      // 🔥 CRITICAL: force all tabs to reload so SW controls them
+      const clients = await self.clients.matchAll({ type: "window" });
+      clients.forEach(client => client.navigate(client.url));
     })()
   );
 });
 
 // =========================
-// FETCH (ROBUST PWA STRATEGY)
+// FETCH
 // =========================
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
@@ -69,27 +71,22 @@ self.addEventListener("fetch", (event) => {
 
   if (url.origin !== location.origin) return;
 
-  // =========================
-  // NAVIGATION (CRITICAL FIX)
-  // =========================
+  // NAVIGATION (PWA requirement)
   if (event.request.mode === "navigate") {
     event.respondWith(
       (async () => {
         try {
           const network = await fetch(event.request);
           if (network && network.ok) return network;
-        } catch (e) {}
+        } catch {}
 
-        const cached = await caches.match(BASE + "index.html");
-        return cached || new Response("Offline", { status: 200 });
+        return caches.match(BASE + "index.html");
       })()
     );
     return;
   }
 
-  // =========================
   // CACHE FIRST + UPDATE
-  // =========================
   event.respondWith(
     (async () => {
       const cached = await caches.match(event.request);
@@ -102,8 +99,8 @@ self.addEventListener("fetch", (event) => {
           cache.put(event.request, network.clone());
         }
 
-        return network || cached;
-      } catch (e) {
+        return network;
+      } catch {
         return cached;
       }
     })()
