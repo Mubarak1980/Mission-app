@@ -1,4 +1,4 @@
-const CACHE_NAME = "mission-cache-v178";
+const CACHE_NAME = "mission-cache-v179";
 const BASE = "/Mission-app/";
 
 const APP_SHELL = [
@@ -16,18 +16,18 @@ const APP_SHELL = [
 ];
 
 // =========================
-// INSTALL
+// INSTALL (FIXED)
 // =========================
 self.addEventListener("install", (event) => {
-  self.skipWaiting();
-
   event.waitUntil(
-    caches.open(CACHE_NAME).then(async (cache) => {
+    (async () => {
+      const cache = await caches.open(CACHE_NAME);
+
       await Promise.allSettled(
         APP_SHELL.map(async (file) => {
           try {
             const res = await fetch(file, { cache: "reload" });
-            if (res.ok) {
+            if (res && res.ok) {
               await cache.put(file, res.clone());
             }
           } catch (err) {
@@ -35,12 +35,15 @@ self.addEventListener("install", (event) => {
           }
         })
       );
-    })
+
+      // ✅ FIX: proper lifecycle control
+      await self.skipWaiting();
+    })()
   );
 });
 
 // =========================
-// ACTIVATE
+// ACTIVATE (FIXED)
 // =========================
 self.addEventListener("activate", (event) => {
   event.waitUntil(
@@ -57,42 +60,53 @@ self.addEventListener("activate", (event) => {
 });
 
 // =========================
-// FETCH (PRODUCTION STRATEGY)
+// FETCH (ROBUST PWA STRATEGY)
 // =========================
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 
   const url = new URL(event.request.url);
 
-  // Ignore external requests
   if (url.origin !== location.origin) return;
 
-  // NAVIGATION FIX (VERY IMPORTANT FOR PWA)
+  // =========================
+  // NAVIGATION (CRITICAL FIX)
+  // =========================
   if (event.request.mode === "navigate") {
     event.respondWith(
-      fetch(event.request).catch(() => {
-        return caches.match(BASE + "index.html");
-      })
+      (async () => {
+        try {
+          const network = await fetch(event.request);
+          if (network && network.ok) return network;
+        } catch (e) {}
+
+        const cached = await caches.match(BASE + "index.html");
+        return cached || new Response("Offline", { status: 200 });
+      })()
     );
     return;
   }
 
-  // CACHE FIRST STRATEGY (STABLE)
+  // =========================
+  // CACHE FIRST + UPDATE
+  // =========================
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      const fetchPromise = fetch(event.request)
-        .then((network) => {
-          if (network && network.ok) {
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, network.clone());
-            });
-          }
-          return network;
-        })
-        .catch(() => cached);
+    (async () => {
+      const cached = await caches.match(event.request);
 
-      return cached || fetchPromise;
-    })
+      try {
+        const network = await fetch(event.request);
+
+        if (network && network.ok) {
+          const cache = await caches.open(CACHE_NAME);
+          cache.put(event.request, network.clone());
+        }
+
+        return network || cached;
+      } catch (e) {
+        return cached;
+      }
+    })()
   );
 });
 
