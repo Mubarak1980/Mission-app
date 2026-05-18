@@ -7,11 +7,14 @@
   "scope": "./",
 
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
 
   "background_color": "#0b0f14",
   "theme_color": "#0b0f14",
 
   "orientation": "portrait-primary",
+
+  "id": "/",
 
   "icons": [
     {
@@ -26,8 +29,5 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
-  ],
-
-  "id": "./",
-  "prefer_related_applications": false
+  ]
 }
