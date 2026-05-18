@@ -10,14 +10,13 @@
 
 <link rel="stylesheet" href="./styles.css" />
 
-<!-- ✅ PWA MANIFEST (RELATIVE = IMPORTANT) -->
+<!-- PWA MANIFEST -->
 <link rel="manifest" href="./manifest.json">
 
-<!-- ✅ ICONS -->
+<!-- ICONS -->
 <link rel="icon" href="./icon-192.png" />
 <link rel="apple-touch-icon" href="./icon-192.png" />
 
-<!-- ✅ PWA META (ADDED FIX) -->
 <meta name="theme-color" content="#0b0f14" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -28,7 +27,6 @@
 
 <body>
 
-<!-- INSTALL BUTTON (UNCHANGED) -->
 <button id="installBtn" style="
     position: fixed;
     bottom: 20px;
@@ -45,7 +43,6 @@
 Install App
 </button>
 
-<!-- SPLASH SCREEN -->
 <div id="splash-screen">
     <div class="splash-content">
         <h1>📘 Mission App</h1>
@@ -54,7 +51,6 @@ Install App
     </div>
 </div>
 
-<!-- APP -->
 <div id="app" style="display:none;">
     <h1>TIME</h1>
 
@@ -75,7 +71,6 @@ Install App
     </div>
 </div>
 
-<!-- JS FILES (UNCHANGED ORDER) -->
 <script src="./Sunnah-tracker.js"></script>
 <script src="./Study-tracker.js"></script>
 <script src="./weekly-timetable.js"></script>
@@ -83,9 +78,6 @@ Install App
 <script src="./top-student-mode.js"></script>
 <script src="./main.js"></script>
 
-<!-- =========================
-PWA INSTALL + SW FIXED (SAFE ADDITIONS ONLY)
-========================= -->
 <script>
 let deferredPrompt = null;
 
@@ -96,76 +88,55 @@ window.addEventListener("beforeinstallprompt", (e) => {
 
     console.log("✅ PWA install available");
 
-    const btn = document.getElementById("installBtn");
-    if (btn) btn.style.display = "block";
+    document.getElementById("installBtn").style.display = "block";
 });
 
 /* INSTALL CLICK */
 document.getElementById("installBtn")?.addEventListener("click", async () => {
-    if (!deferredPrompt) {
-        alert("Install not ready yet. Open in Chrome and reload once.");
-        return;
-    }
+    if (!deferredPrompt) return;
 
     deferredPrompt.prompt();
-
     const result = await deferredPrompt.userChoice;
+
     console.log("Install result:", result.outcome);
 
     deferredPrompt = null;
-
-    const btn = document.getElementById("installBtn");
-    if (btn) btn.style.display = "none";
+    document.getElementById("installBtn").style.display = "none";
 });
 
-/* INSTALLED EVENT */
+/* INSTALLED */
 window.addEventListener("appinstalled", () => {
-    console.log("✅ App installed");
     deferredPrompt = null;
-
-    const btn = document.getElementById("installBtn");
-    if (btn) btn.style.display = "none";
+    document.getElementById("installBtn").style.display = "none";
 });
 
-/* SERVICE WORKER (GITHUB PAGES SAFE) */
+/* =========================
+   🔥 FIX #1: SW REGISTER EARLIER (IMPORTANT)
+========================= */
 if ("serviceWorker" in navigator) {
-    window.addEventListener("load", async () => {
-        try {
-            const reg = await navigator.serviceWorker.register("./service-worker.js", {
-                scope: "./"
-            });
+    navigator.serviceWorker.register("./service-worker.js", {
+        scope: "./"
+    }).then(reg => {
+        console.log("SW registered:", reg.scope);
+        reg.update();
+    }).catch(console.error);
 
-            console.log("SW registered:", reg.scope);
-
-            await navigator.serviceWorker.ready;
-
-            reg.update();
-
-            navigator.serviceWorker.addEventListener("controllerchange", () => {
-                console.log("SW took control → reload");
-                window.location.reload();
-            });
-
-        } catch (err) {
-            console.error("SW ERROR:", err);
-        }
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+        window.location.reload();
     });
 }
 
-/* SPLASH SCREEN */
+/* SPLASH */
 window.addEventListener("DOMContentLoaded", () => {
     const splash = document.getElementById("splash-screen");
     const app = document.getElementById("app");
 
-    if (app) app.style.display = "block";
+    app.style.display = "block";
 
-    requestAnimationFrame(() => {
-        setTimeout(() => {
-            splash?.classList.add("hide");
-
-            setTimeout(() => splash?.remove(), 150);
-        }, 250);
-    });
+    setTimeout(() => {
+        splash?.classList.add("hide");
+        setTimeout(() => splash?.remove(), 150);
+    }, 250);
 });
 </script>
 
