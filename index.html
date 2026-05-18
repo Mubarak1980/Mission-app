@@ -1,28 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
+<meta charset="UTF-8" />
 
-    <meta name="viewport"
-        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 
-    <title>Mission App</title>
+<title>Mission App</title>
 
-    <link rel="stylesheet" href="./styles.css" />
+<link rel="stylesheet" href="./styles.css" />
+<link rel="manifest" href="./manifest.json">
 
-    <!-- MANIFEST -->
-    <link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#00d4ff" />
 
-    <meta name="theme-color" content="#00d4ff" />
-    <meta name="application-name" content="Mission App" />
-
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="Mission App" />
-
-    <link rel="icon" href="./icon-192.png" />
-    <link rel="apple-touch-icon" href="./icon-192.png" />
+<link rel="icon" href="./icon-192.png" />
+<link rel="apple-touch-icon" href="./icon-192.png" />
 </head>
 
 <body>
@@ -82,30 +74,27 @@ Install App
 <script src="./top-student-mode.js"></script>
 <script src="./main.js"></script>
 
-<!-- PWA SCRIPT -->
-
+<!-- =========================
+PWA INSTALL FIX (FULLY STABLE)
+========================= -->
 <script>
 let deferredPrompt = null;
+const installBtn = document.getElementById("installBtn");
 
-/* =========================
-   INSTALL PROMPT
-========================= */
-window.addEventListener('beforeinstallprompt', (e) => {
+/* STEP 1: Detect install eligibility */
+window.addEventListener("beforeinstallprompt", (e) => {
+    console.log("🔥 beforeinstallprompt fired");
+
     e.preventDefault();
     deferredPrompt = e;
 
-    console.log("✅ Install available");
-
-    const btn = document.getElementById("installBtn");
-    if (btn) btn.style.display = "block";
+    if (installBtn) installBtn.style.display = "block";
 });
 
-/* =========================
-   INSTALL CLICK (SAFE + RELIABLE)
-========================= */
-document.getElementById("installBtn")?.addEventListener("click", async () => {
+/* STEP 2: Install click */
+installBtn?.addEventListener("click", async () => {
     if (!deferredPrompt) {
-        alert("Install not ready yet. Reload page or use Chrome menu.");
+        alert("Install not available. Must use HTTPS + valid PWA.");
         return;
     }
 
@@ -115,76 +104,58 @@ document.getElementById("installBtn")?.addEventListener("click", async () => {
     console.log("Install result:", choice.outcome);
 
     deferredPrompt = null;
-
-    const btn = document.getElementById("installBtn");
-    if (btn) btn.style.display = "none";
+    installBtn.style.display = "none";
 });
 
-/* =========================
-   APP INSTALLED
-========================= */
-window.addEventListener('appinstalled', () => {
+/* STEP 3: Installed event */
+window.addEventListener("appinstalled", () => {
     console.log("✅ App installed");
     deferredPrompt = null;
-
-    const btn = document.getElementById("installBtn");
-    if (btn) btn.style.display = "none";
+    installBtn.style.display = "none";
 });
 
-/* =========================
-   SERVICE WORKER (FIXED CORE ISSUE)
-========================= */
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', async () => {
+/* STEP 4: SERVICE WORKER (FIXED + RELIABLE) */
+if ("serviceWorker" in navigator) {
+    window.addEventListener("load", async () => {
         try {
-            const reg = await navigator.serviceWorker.register('./service-worker.js', {
-                updateViaCache: 'none'
+            const reg = await navigator.serviceWorker.register("./service-worker.js", {
+                scope: "./",
+                updateViaCache: "none"
             });
 
-            console.log('SW registered:', reg.scope);
+            console.log("SW registered:", reg.scope);
 
-            // force update
+            await navigator.serviceWorker.ready;
+
             reg.update();
 
-            // 🔥 CRITICAL FIX: ensure new SW takes control
-            navigator.serviceWorker.addEventListener('controllerchange', () => {
-                console.log("SW took control → reloading");
+            // force reload when new SW takes control
+            navigator.serviceWorker.addEventListener("controllerchange", () => {
+                console.log("SW updated → reloading");
                 window.location.reload();
             });
 
-            // force skip waiting if needed
-            reg.addEventListener('updatefound', () => {
-                const newWorker = reg.installing;
-
-                newWorker?.addEventListener('statechange', () => {
-                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                        newWorker.postMessage({ type: 'SKIP_WAITING' });
-                    }
-                });
-            });
-
         } catch (err) {
-            console.error('SW ERROR:', err);
+            console.error("SW ERROR:", err);
         }
     });
 }
 
-/* =========================
-   SPLASH
-========================= */
-window.addEventListener('DOMContentLoaded', () => {
-    const splash = document.getElementById('splash-screen');
-    const app = document.getElementById('app');
+/* STEP 5: SPLASH SCREEN */
+window.addEventListener("DOMContentLoaded", () => {
+    const splash = document.getElementById("splash-screen");
+    const app = document.getElementById("app");
 
-    if (app) app.style.display = 'block';
+    if (app) app.style.display = "block";
 
     requestAnimationFrame(() => {
         setTimeout(() => {
-            splash?.classList.add('hide');
-            setTimeout(() => splash?.remove(), 120);
-        }, 200);
+            splash?.classList.add("hide");
+            setTimeout(() => splash?.remove(), 150);
+        }, 250);
     });
 });
-                        </script>
+</script>
+
 </body>
 </html>
