@@ -1,4 +1,4 @@
-const CACHE_NAME = "mission-cache-v182";
+const CACHE_NAME = "mission-cache-v183";
 const BASE = "/Mission-app/";
 
 const APP_SHELL = [
@@ -12,13 +12,16 @@ const APP_SHELL = [
   BASE + "weekly-timetable.js",
   BASE + "top-student-mode.js",
   BASE + "icon-192.png",
-  BASE + "icon-512.png"
+  BASE + "icon-512.png",
+  BASE + "manifest.json"
 ];
 
 // =========================
 // INSTALL
 // =========================
 self.addEventListener("install", (event) => {
+  self.skipWaiting(); // 🔥 move earlier for faster activation
+
   event.waitUntil(
     (async () => {
       const cache = await caches.open(CACHE_NAME);
@@ -27,14 +30,15 @@ self.addEventListener("install", (event) => {
         APP_SHELL.map(async (file) => {
           try {
             const res = await fetch(file, { cache: "reload" });
+
             if (res && res.ok) {
               await cache.put(file, res.clone());
             }
-          } catch (e) {}
+          } catch (e) {
+            // silent fail (offline safe)
+          }
         })
       );
-
-      await self.skipWaiting();
     })()
   );
 });
@@ -48,16 +52,26 @@ self.addEventListener("activate", (event) => {
       const keys = await caches.keys();
 
       await Promise.all(
-        keys.map((k) => (k !== CACHE_NAME ? caches.delete(k) : null))
+        keys.map((k) => {
+          if (k !== CACHE_NAME) return caches.delete(k);
+        })
       );
 
       await self.clients.claim();
+
+      // 🔥 force refresh clients so new SW takes control immediately
+      const clients = await self.clients.matchAll({ type: "window" });
+      clients.forEach((client) => {
+        if (client.url && "navigate" in client) {
+          client.navigate(client.url);
+        }
+      });
     })()
   );
 });
 
 // =========================
-// FETCH (FIXED PWA SAFE)
+// FETCH (SMART STRATEGY)
 // =========================
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
@@ -67,7 +81,7 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== location.origin) return;
 
   // =========================
-  // NAVIGATION (CRITICAL FIX)
+  // NAVIGATION (APP SHELL FIX)
   // =========================
   if (event.request.mode === "navigate") {
     event.respondWith(
@@ -78,14 +92,14 @@ self.addEventListener("fetch", (event) => {
         } catch (e) {}
 
         const cached = await caches.match(BASE + "index.html");
-        return cached || new Response("Offline", { status: 200 });
+        return cached || caches.match(BASE);
       })()
     );
     return;
   }
 
   // =========================
-  // CACHE FIRST + UPDATE
+  // CACHE FIRST + NETWORK UPDATE
   // =========================
   event.respondWith(
     (async () => {
@@ -94,12 +108,12 @@ self.addEventListener("fetch", (event) => {
       try {
         const network = await fetch(event.request);
 
-        if (network && network.ok) {
+        if (network && network.status === 200) {
           const cache = await caches.open(CACHE_NAME);
           cache.put(event.request, network.clone());
         }
 
-        return network || cached;
+        return network;
       } catch (e) {
         return cached;
       }
