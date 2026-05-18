@@ -1,5 +1,5 @@
 // ===============================
-// Main.js - Core Application Engine (PRODUCTION SAFE)
+// Main.js - Core Application Engine (PWA SAFE + STABLE)
 // ===============================
 
 window.maxPagesByGrade = {
@@ -231,13 +231,15 @@ function getSmartCycle() {
 }
 
 // ===============================
-// UI STATE
+// UI STATE (PWA SAFE)
 // ===============================
 let currentGrade = 9;
 let currentSection = "study";
 
 let nav, prevBtn, nextBtn;
+let _initialized = false;
 
+// ===============================
 function saveUIState() {
   try {
     localStorage.setItem("ui_state", JSON.stringify({
@@ -271,11 +273,13 @@ function updateNavButtons() {
 }
 
 // ===============================
-// SECTION LOADER
+// SECTION LOADER (SAFE)
 // ===============================
 function loadSection(type, grade) {
   currentSection = type;
-  if (grade) currentGrade = Number(grade);
+  if (grade !== undefined && grade !== null) {
+    currentGrade = Number(grade);
+  }
 
   saveUIState();
   updateNavButtons();
@@ -304,18 +308,20 @@ function loadSection(type, grade) {
 // NAVIGATION
 // ===============================
 function nextGrade() {
-  if (currentGrade < 12) loadSection("study", ++currentGrade);
+  if (currentGrade < 12) loadSection("study", currentGrade + 1);
 }
 
 function previousGrade() {
-  if (currentGrade > 9) loadSection("study", --currentGrade);
+  if (currentGrade > 9) loadSection("study", currentGrade - 1);
 }
 
 // ===============================
-// INIT (FIXED)
+// INIT (PWA SAFE GUARDED)
 // ===============================
 function initApp() {
-  if (document.body.dataset.initialized) return;
+  if (_initialized || document.body.dataset.initialized) return;
+
+  _initialized = true;
   document.body.dataset.initialized = "1";
 
   nav = document.getElementById("grade-nav");
@@ -323,18 +329,27 @@ function initApp() {
   nextBtn = document.getElementById("next-btn");
 
   loadUIState();
+  getCycleState();
 
   requestAnimationFrame(() => {
-    getCycleState();
-    setTimeout(() => loadSection(currentSection, currentGrade), 0);
+    setTimeout(() => {
+      loadSection(currentSection, currentGrade);
+    }, 0);
   });
 }
 
 // ===============================
-document.readyState === "loading"
-  ? document.addEventListener("DOMContentLoaded", initApp)
-  : initApp();
+// BOOTSTRAP SAFE FOR PWA + SW RELOAD
+// ===============================
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initApp);
+} else {
+  initApp();
+}
 
+// ===============================
+// GLOBAL EXPORTS
+// ===============================
 window.nextGrade = nextGrade;
 window.previousGrade = previousGrade;
 window.loadSection = loadSection;
