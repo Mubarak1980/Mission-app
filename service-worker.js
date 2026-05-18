@@ -1,8 +1,8 @@
-const CACHE_NAME = 'mission-cache-v169';
+const CACHE_NAME = 'mission-cache-v170';
 
 // ============================
 // APP SHELL (UNCHANGED)
-/// ============================
+// ============================
 const APP_SHELL = [
   './index.html',
   './styles.css',
@@ -18,7 +18,7 @@ const APP_SHELL = [
 ];
 
 // ============================
-// INSTALL (FIXED PROPERLY)
+// INSTALL (IMPROVED)
 // ============================
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -39,14 +39,13 @@ self.addEventListener('install', (event) => {
         })
       );
 
-      // ✅ move skipWaiting INSIDE
       await self.skipWaiting();
     })()
   );
 });
 
 // ============================
-// ACTIVATE (STRONG CONTROL)
+// ACTIVATE (FORCE CONTROL)
 // ============================
 self.addEventListener('activate', (event) => {
   event.waitUntil(
@@ -61,14 +60,19 @@ self.addEventListener('activate', (event) => {
         })
       );
 
-      // ✅ CRITICAL: take control immediately
       await self.clients.claim();
+
+      // ✅ EXTRA FIX: force all tabs to reload under SW
+      const clients = await self.clients.matchAll({ type: "window" });
+      clients.forEach(client => {
+        client.navigate(client.url);
+      });
     })()
   );
 });
 
 // ============================
-// FETCH (IMPROVED NAVIGATION)
+// FETCH (UNCHANGED LOGIC + SAFE)
 // ============================
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
@@ -86,10 +90,7 @@ self.addEventListener('fetch', (event) => {
 
           if (network && network.ok) {
             const cache = await caches.open(CACHE_NAME);
-
-            // ✅ keep index always fresh
             cache.put('./index.html', network.clone());
-
             return network;
           }
 
@@ -108,7 +109,7 @@ self.addEventListener('fetch', (event) => {
   }
 
   // ============================
-  // STATIC FILES (UNCHANGED)
+  // STATIC FILES
   // ============================
   event.respondWith(
     (async () => {
