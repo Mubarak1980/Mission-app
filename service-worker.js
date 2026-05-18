@@ -1,8 +1,8 @@
 const CACHE_NAME = 'mission-cache-v167';
 
 // ============================
-// APP SHELL (FIXED ONLY)
-// ============================
+// APP SHELL (UNCHANGED)
+/// ============================
 const APP_SHELL = [
   './index.html',
   './styles.css',
@@ -18,11 +18,9 @@ const APP_SHELL = [
 ];
 
 // ============================
-// INSTALL
+// INSTALL (FIXED PROPERLY)
 // ============================
 self.addEventListener('install', (event) => {
-  self.skipWaiting();
-
   event.waitUntil(
     (async () => {
       const cache = await caches.open(CACHE_NAME);
@@ -40,12 +38,15 @@ self.addEventListener('install', (event) => {
           }
         })
       );
+
+      // ✅ move skipWaiting INSIDE
+      await self.skipWaiting();
     })()
   );
 });
 
 // ============================
-// ACTIVATE
+// ACTIVATE (STRONG CONTROL)
 // ============================
 self.addEventListener('activate', (event) => {
   event.waitUntil(
@@ -60,26 +61,39 @@ self.addEventListener('activate', (event) => {
         })
       );
 
+      // ✅ CRITICAL: take control immediately
       await self.clients.claim();
     })()
   );
 });
 
 // ============================
-// FETCH
+// FETCH (IMPROVED NAVIGATION)
 // ============================
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
   const request = event.request;
 
-  // NAVIGATION (IMPORTANT FIX)
+  // ============================
+  // NAVIGATION (CRITICAL FIX)
+  // ============================
   if (request.mode === 'navigate') {
     event.respondWith(
       (async () => {
         try {
           const network = await fetch(request);
-          return network;
+
+          if (network && network.ok) {
+            const cache = await caches.open(CACHE_NAME);
+
+            // ✅ keep index always fresh
+            cache.put('./index.html', network.clone());
+
+            return network;
+          }
+
+          throw new Error("Bad response");
         } catch (err) {
           return (
             (await caches.match('./index.html')) ||
@@ -93,7 +107,9 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // STATIC CACHE STRATEGY
+  // ============================
+  // STATIC FILES (UNCHANGED)
+  // ============================
   event.respondWith(
     (async () => {
       const cached = await caches.match(request);
@@ -116,7 +132,7 @@ self.addEventListener('fetch', (event) => {
 });
 
 // ============================
-// UPDATE CONTROL
+// UPDATE CONTROL (UNCHANGED)
 // ============================
 self.addEventListener('message', (event) => {
   if (event.data?.type === 'SKIP_WAITING') {
