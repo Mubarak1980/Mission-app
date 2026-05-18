@@ -3,8 +3,8 @@
   "short_name": "Mission",
   "description": "Mission App - Study tracking system",
 
-  "start_url": "./index.html",
-  "scope": "./",
+  "start_url": "/Mission-app/index.html",
+  "scope": "/Mission-app/",
 
   "display": "standalone",
 
@@ -13,17 +13,17 @@
 
   "orientation": "portrait-primary",
 
-  "id": "/",
+  "id": "/Mission-app/",
 
   "icons": [
     {
-      "src": "./icon-192.png",
+      "src": "/Mission-app/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "./icon-512.png",
+      "src": "/Mission-app/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
