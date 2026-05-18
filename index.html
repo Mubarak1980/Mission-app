@@ -10,13 +10,13 @@
 
 <link rel="stylesheet" href="./styles.css" />
 
-<!-- ✅ FIXED MANIFEST PATH (IMPORTANT FOR GITHUB PAGES) -->
-<link rel="manifest" href="/Mission-app/manifest.json">
+<!-- ✅ MANIFEST (RELATIVE IS SAFER ON GITHUB PAGES) -->
+<link rel="manifest" href="./manifest.json">
 
 <meta name="theme-color" content="#0b0f14" />
 
-<link rel="icon" href="/Mission-app/icon-192.png" />
-<link rel="apple-touch-icon" href="/Mission-app/icon-192.png" />
+<link rel="icon" href="./icon-192.png" />
+<link rel="apple-touch-icon" href="./icon-192.png" />
 </head>
 
 <body>
@@ -77,12 +77,14 @@ Install App
 <script src="./main.js"></script>
 
 <!-- =========================
-PWA INSTALL + SW FIXED
+PWA INSTALL + SERVICE WORKER (FINAL FIXED VERSION)
 ========================= -->
 <script>
 let deferredPrompt = null;
 
-/* ✅ INSTALL PROMPT */
+/* =========================
+INSTALL PROMPT
+========================= */
 window.addEventListener("beforeinstallprompt", (e) => {
     e.preventDefault();
     deferredPrompt = e;
@@ -93,35 +95,48 @@ window.addEventListener("beforeinstallprompt", (e) => {
     if (btn) btn.style.display = "block";
 });
 
-/* ✅ INSTALL CLICK */
-document.getElementById("installBtn")?.addEventListener("click", async () => {
-    if (!deferredPrompt) {
-        alert("App not installable yet. Open in Chrome and refresh once.");
-        return;
+/* =========================
+INSTALL CLICK
+========================= */
+document.addEventListener("click", async (e) => {
+    if (e.target && e.target.id === "installBtn") {
+
+        if (!deferredPrompt) {
+            alert("Install not ready yet. Open in Chrome and refresh once.");
+            return;
+        }
+
+        deferredPrompt.prompt();
+
+        const result = await deferredPrompt.userChoice;
+        console.log("Install result:", result.outcome);
+
+        deferredPrompt = null;
+
+        const btn = document.getElementById("installBtn");
+        if (btn) btn.style.display = "none";
     }
-
-    deferredPrompt.prompt();
-
-    const result = await deferredPrompt.userChoice;
-    console.log("Install result:", result.outcome);
-
-    deferredPrompt = null;
-    document.getElementById("installBtn").style.display = "none";
 });
 
-/* ✅ INSTALLED EVENT */
+/* =========================
+INSTALLED EVENT
+========================= */
 window.addEventListener("appinstalled", () => {
-    console.log("✅ App installed successfully");
+    console.log("✅ App installed");
     deferredPrompt = null;
-    document.getElementById("installBtn").style.display = "none";
+
+    const btn = document.getElementById("installBtn");
+    if (btn) btn.style.display = "none";
 });
 
-/* ✅ SERVICE WORKER (FIXED FOR GITHUB PAGES) */
+/* =========================
+SERVICE WORKER (GITHUB SAFE + STABLE)
+========================= */
 if ("serviceWorker" in navigator) {
     window.addEventListener("load", async () => {
         try {
-            const reg = await navigator.serviceWorker.register("/Mission-app/service-worker.js", {
-                scope: "/Mission-app/"
+            const reg = await navigator.serviceWorker.register("./service-worker.js", {
+                scope: "./"
             });
 
             console.log("SW registered:", reg.scope);
@@ -130,7 +145,6 @@ if ("serviceWorker" in navigator) {
 
             reg.update();
 
-            /* 🔥 IMPORTANT: force reload when SW changes */
             navigator.serviceWorker.addEventListener("controllerchange", () => {
                 console.log("SW updated → reloading page");
                 window.location.reload();
@@ -142,7 +156,9 @@ if ("serviceWorker" in navigator) {
     });
 }
 
-/* ✅ SPLASH SCREEN */
+/* =========================
+SPLASH SCREEN
+========================= */
 window.addEventListener("DOMContentLoaded", () => {
     const splash = document.getElementById("splash-screen");
     const app = document.getElementById("app");
