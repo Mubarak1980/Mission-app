@@ -22,7 +22,6 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="Mission App" />
-
 </head>
 
 <body>
@@ -81,14 +80,18 @@ Install App
 <script>
 let deferredPrompt = null;
 
-/* INSTALL DETECTION */
+/* =========================
+   INSTALL DETECTION (FIXED STABILITY)
+========================= */
 window.addEventListener("beforeinstallprompt", (e) => {
     e.preventDefault();
+
     deferredPrompt = e;
 
     console.log("✅ PWA install available");
 
-    document.getElementById("installBtn").style.display = "block";
+    const btn = document.getElementById("installBtn");
+    if (btn) btn.style.display = "block";
 });
 
 /* INSTALL CLICK */
@@ -101,25 +104,33 @@ document.getElementById("installBtn")?.addEventListener("click", async () => {
     console.log("Install result:", result.outcome);
 
     deferredPrompt = null;
-    document.getElementById("installBtn").style.display = "none";
+
+    const btn = document.getElementById("installBtn");
+    if (btn) btn.style.display = "none";
 });
 
 /* INSTALLED */
 window.addEventListener("appinstalled", () => {
     deferredPrompt = null;
-    document.getElementById("installBtn").style.display = "none";
+
+    const btn = document.getElementById("installBtn");
+    if (btn) btn.style.display = "none";
 });
 
 /* =========================
-   🔥 FIX #1: SW REGISTER EARLIER (IMPORTANT)
+   SERVICE WORKER (FIXED TIMING)
 ========================= */
 if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("./service-worker.js", {
-        scope: "./"
-    }).then(reg => {
-        console.log("SW registered:", reg.scope);
-        reg.update();
-    }).catch(console.error);
+    window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./service-worker.js", {
+            scope: "./"
+        })
+        .then(reg => {
+            console.log("SW registered:", reg.scope);
+            reg.update();
+        })
+        .catch(console.error);
+    });
 
     navigator.serviceWorker.addEventListener("controllerchange", () => {
         window.location.reload();
@@ -131,7 +142,7 @@ window.addEventListener("DOMContentLoaded", () => {
     const splash = document.getElementById("splash-screen");
     const app = document.getElementById("app");
 
-    app.style.display = "block";
+    if (app) app.style.display = "block";
 
     setTimeout(() => {
         splash?.classList.add("hide");
