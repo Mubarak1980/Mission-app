@@ -1,9 +1,7 @@
 const CACHE_NAME = "mission-cache-v175";
-
 const BASE = "/Mission-app/";
 
 const APP_SHELL = [
-  BASE,
   BASE + "index.html",
   BASE + "styles.css",
   BASE + "main.js",
@@ -17,26 +15,33 @@ const APP_SHELL = [
   BASE + "icon-512.png"
 ];
 
+// =========================
 // INSTALL
+// =========================
 self.addEventListener("install", (event) => {
   self.skipWaiting();
 
   event.waitUntil(
     caches.open(CACHE_NAME).then(async (cache) => {
-      const results = await Promise.allSettled(
+      await Promise.allSettled(
         APP_SHELL.map(async (file) => {
-          const res = await fetch(file, { cache: "reload" });
-          if (res && res.ok) {
-            await cache.put(file, res.clone());
+          try {
+            const res = await fetch(file, { cache: "reload" });
+            if (res.ok) {
+              await cache.put(file, res.clone());
+            }
+          } catch (err) {
+            console.warn("Cache skip:", file);
           }
         })
       );
-      return results;
     })
   );
 });
 
+// =========================
 // ACTIVATE
+// =========================
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     (async () => {
@@ -51,28 +56,49 @@ self.addEventListener("activate", (event) => {
   );
 });
 
-// FETCH (SAFE + SIMPLE + RELIABLE)
+// =========================
+// FETCH (PRODUCTION STRATEGY)
+// =========================
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 
   const url = new URL(event.request.url);
 
+  // Ignore external requests
   if (url.origin !== location.origin) return;
 
+  // NAVIGATION FIX (VERY IMPORTANT FOR PWA)
+  if (event.request.mode === "navigate") {
+    event.respondWith(
+      fetch(event.request).catch(() => {
+        return caches.match(BASE + "index.html");
+      })
+    );
+    return;
+  }
+
+  // CACHE FIRST STRATEGY (STABLE)
   event.respondWith(
-    (async () => {
-      try {
-        const network = await fetch(event.request);
-        return network;
-      } catch {
-        const cached = await caches.match(event.request);
-        return cached || caches.match(BASE + "index.html");
-      }
-    })()
+    caches.match(event.request).then((cached) => {
+      const fetchPromise = fetch(event.request)
+        .then((network) => {
+          if (network && network.ok) {
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, network.clone());
+            });
+          }
+          return network;
+        })
+        .catch(() => cached);
+
+      return cached || fetchPromise;
+    })
   );
 });
 
+// =========================
 // UPDATE CONTROL
+// =========================
 self.addEventListener("message", (event) => {
   if (event.data?.type === "SKIP_WAITING") {
     self.skipWaiting();
