@@ -11,7 +11,6 @@ const APP_SHELL = [
   BASE + "dashboard.js",
   BASE + "weekly-timetable.js",
   BASE + "top-student-mode.js",
-  BASE + "manifest.json",
   BASE + "icon-192.png",
   BASE + "icon-512.png"
 ];
@@ -41,7 +40,7 @@ self.addEventListener("install", (event) => {
 });
 
 // =========================
-// ACTIVATE (IMPORTANT FIX)
+// ACTIVATE
 // =========================
 self.addEventListener("activate", (event) => {
   event.waitUntil(
@@ -53,10 +52,6 @@ self.addEventListener("activate", (event) => {
       );
 
       await self.clients.claim();
-
-      // 🔥 CRITICAL: force all tabs to reload so SW controls them
-      const clients = await self.clients.matchAll({ type: "window" });
-      clients.forEach(client => client.navigate(client.url));
     })()
   );
 });
@@ -71,22 +66,22 @@ self.addEventListener("fetch", (event) => {
 
   if (url.origin !== location.origin) return;
 
-  // NAVIGATION (PWA requirement)
+  // NAVIGATION FIX (PWA CORE)
   if (event.request.mode === "navigate") {
     event.respondWith(
       (async () => {
         try {
           const network = await fetch(event.request);
-          if (network && network.ok) return network;
-        } catch {}
-
-        return caches.match(BASE + "index.html");
+          return network;
+        } catch {
+          return caches.match(BASE + "index.html");
+        }
       })()
     );
     return;
   }
 
-  // CACHE FIRST + UPDATE
+  // CACHE FIRST STRATEGY
   event.respondWith(
     (async () => {
       const cached = await caches.match(event.request);
@@ -94,7 +89,7 @@ self.addEventListener("fetch", (event) => {
       try {
         const network = await fetch(event.request);
 
-        if (network && network.ok) {
+        if (network && network.status === 200) {
           const cache = await caches.open(CACHE_NAME);
           cache.put(event.request, network.clone());
         }
