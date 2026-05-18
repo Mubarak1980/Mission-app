@@ -3,7 +3,7 @@
   "short_name": "Mission",
   "description": "Mission App - Study tracking system",
 
-  "start_url": "/Mission-app/",
+  "start_url": ".",
   "scope": "/Mission-app/",
 
   "display": "standalone",
