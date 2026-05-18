@@ -1,4 +1,4 @@
-const CACHE_NAME = "mission-cache-v181";
+const CACHE_NAME = "mission-cache-v182";
 const BASE = "/Mission-app/";
 
 const APP_SHELL = [
@@ -30,7 +30,7 @@ self.addEventListener("install", (event) => {
             if (res && res.ok) {
               await cache.put(file, res.clone());
             }
-          } catch {}
+          } catch (e) {}
         })
       );
 
@@ -57,7 +57,7 @@ self.addEventListener("activate", (event) => {
 });
 
 // =========================
-// FETCH
+// FETCH (FIXED PWA SAFE)
 // =========================
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
@@ -66,22 +66,27 @@ self.addEventListener("fetch", (event) => {
 
   if (url.origin !== location.origin) return;
 
-  // NAVIGATION FIX (PWA CORE)
+  // =========================
+  // NAVIGATION (CRITICAL FIX)
+  // =========================
   if (event.request.mode === "navigate") {
     event.respondWith(
       (async () => {
         try {
           const network = await fetch(event.request);
-          return network;
-        } catch {
-          return caches.match(BASE + "index.html");
-        }
+          if (network && network.ok) return network;
+        } catch (e) {}
+
+        const cached = await caches.match(BASE + "index.html");
+        return cached || new Response("Offline", { status: 200 });
       })()
     );
     return;
   }
 
-  // CACHE FIRST STRATEGY
+  // =========================
+  // CACHE FIRST + UPDATE
+  // =========================
   event.respondWith(
     (async () => {
       const cached = await caches.match(event.request);
@@ -89,13 +94,13 @@ self.addEventListener("fetch", (event) => {
       try {
         const network = await fetch(event.request);
 
-        if (network && network.status === 200) {
+        if (network && network.ok) {
           const cache = await caches.open(CACHE_NAME);
           cache.put(event.request, network.clone());
         }
 
-        return network;
-      } catch {
+        return network || cached;
+      } catch (e) {
         return cached;
       }
     })()
