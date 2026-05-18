@@ -85,50 +85,71 @@ Install App
 <!-- PWA SCRIPT -->
 <script>
 let deferredPrompt = null;
-const installBtn = document.getElementById("installBtn");
 
-/* INSTALL PROMPT */
+/* =========================
+   INSTALL PROMPT (FIXED)
+========================= */
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
 
-    console.log("Install available");
+    console.log("✅ Install available");
 
-    if (installBtn) installBtn.style.display = "block";
+    const btn = document.getElementById("installBtn");
+    if (btn) btn.style.display = "block";
 });
 
-/* INSTALL CLICK */
-installBtn?.addEventListener("click", async () => {
-    if (!deferredPrompt) return;
+/* =========================
+   INSTALL CLICK (FIXED)
+========================= */
+document.addEventListener("click", async (e) => {
+    if (e.target && e.target.id === "installBtn") {
 
-    deferredPrompt.prompt();
-    const choice = await deferredPrompt.userChoice;
+        if (!deferredPrompt) {
+            alert("Install not available yet. Use Chrome menu → Add to Home Screen.");
+            return;
+        }
 
-    if (choice.outcome === "accepted") {
-        console.log("Installed");
+        deferredPrompt.prompt();
+
+        const choice = await deferredPrompt.userChoice;
+
+        console.log("User choice:", choice.outcome);
+
+        deferredPrompt = null;
+
+        const btn = document.getElementById("installBtn");
+        if (btn) btn.style.display = "none";
     }
-
-    deferredPrompt = null;
-    installBtn.style.display = "none";
 });
 
-/* SERVICE WORKER */
+/* =========================
+   APP INSTALLED
+========================= */
+window.addEventListener('appinstalled', () => {
+    console.log("✅ App installed");
+    deferredPrompt = null;
+
+    const btn = document.getElementById("installBtn");
+    if (btn) btn.style.display = "none";
+});
+
+/* =========================
+   SERVICE WORKER (IMPROVED)
+========================= */
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', async () => {
         try {
-            const reg = await navigator.serviceWorker.register('./service-worker.js');
+            const reg = await navigator.serviceWorker.register('./service-worker.js', {
+                updateViaCache: 'none'
+            });
 
             console.log('SW registered:', reg.scope);
 
-            reg.addEventListener('updatefound', () => {
-                const newWorker = reg.installing;
+            await navigator.serviceWorker.ready;
 
-                newWorker?.addEventListener('statechange', () => {
-                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                        console.log('Update available');
-                    }
-                });
-            });
+            // force update (important for GitHub)
+            reg.update();
 
         } catch (err) {
             console.error('SW ERROR:', err);
@@ -136,7 +157,9 @@ if ('serviceWorker' in navigator) {
     });
 }
 
-/* SPLASH (FAST + CLEAN) */
+/* =========================
+   SPLASH
+========================= */
 window.addEventListener('DOMContentLoaded', () => {
     const splash = document.getElementById('splash-screen');
     const app = document.getElementById('app');
@@ -156,4 +179,4 @@ window.addEventListener('DOMContentLoaded', () => {
 </script>
 
 </body>
-                                                              </html>
+</html>
