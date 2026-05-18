@@ -9,12 +9,14 @@
 <title>Mission App</title>
 
 <link rel="stylesheet" href="./styles.css" />
-<link rel="manifest" href="./manifest.json">
 
-<meta name="theme-color" content="#00d4ff" />
+<!-- ✅ FIXED MANIFEST PATH (IMPORTANT FOR GITHUB PAGES) -->
+<link rel="manifest" href="/Mission-app/manifest.json">
 
-<link rel="icon" href="./icon-192.png" />
-<link rel="apple-touch-icon" href="./icon-192.png" />
+<meta name="theme-color" content="#0b0f14" />
+
+<link rel="icon" href="/Mission-app/icon-192.png" />
+<link rel="apple-touch-icon" href="/Mission-app/icon-192.png" />
 </head>
 
 <body>
@@ -75,52 +77,51 @@ Install App
 <script src="./main.js"></script>
 
 <!-- =========================
-PWA INSTALL FIX (FULLY STABLE)
+PWA INSTALL + SW FIXED
 ========================= -->
 <script>
 let deferredPrompt = null;
-const installBtn = document.getElementById("installBtn");
 
-/* STEP 1: Detect install eligibility */
+/* ✅ INSTALL PROMPT */
 window.addEventListener("beforeinstallprompt", (e) => {
-    console.log("🔥 beforeinstallprompt fired");
-
     e.preventDefault();
     deferredPrompt = e;
 
-    if (installBtn) installBtn.style.display = "block";
+    console.log("✅ PWA install available");
+
+    const btn = document.getElementById("installBtn");
+    if (btn) btn.style.display = "block";
 });
 
-/* STEP 2: Install click */
-installBtn?.addEventListener("click", async () => {
+/* ✅ INSTALL CLICK */
+document.getElementById("installBtn")?.addEventListener("click", async () => {
     if (!deferredPrompt) {
-        alert("Install not available. Must use HTTPS + valid PWA.");
+        alert("App not installable yet. Open in Chrome and refresh once.");
         return;
     }
 
     deferredPrompt.prompt();
 
-    const choice = await deferredPrompt.userChoice;
-    console.log("Install result:", choice.outcome);
+    const result = await deferredPrompt.userChoice;
+    console.log("Install result:", result.outcome);
 
     deferredPrompt = null;
-    installBtn.style.display = "none";
+    document.getElementById("installBtn").style.display = "none";
 });
 
-/* STEP 3: Installed event */
+/* ✅ INSTALLED EVENT */
 window.addEventListener("appinstalled", () => {
-    console.log("✅ App installed");
+    console.log("✅ App installed successfully");
     deferredPrompt = null;
-    installBtn.style.display = "none";
+    document.getElementById("installBtn").style.display = "none";
 });
 
-/* STEP 4: SERVICE WORKER (FIXED + RELIABLE) */
+/* ✅ SERVICE WORKER (FIXED FOR GITHUB PAGES) */
 if ("serviceWorker" in navigator) {
     window.addEventListener("load", async () => {
         try {
-            const reg = await navigator.serviceWorker.register("./service-worker.js", {
-                scope: "./",
-                updateViaCache: "none"
+            const reg = await navigator.serviceWorker.register("/Mission-app/service-worker.js", {
+                scope: "/Mission-app/"
             });
 
             console.log("SW registered:", reg.scope);
@@ -129,9 +130,9 @@ if ("serviceWorker" in navigator) {
 
             reg.update();
 
-            // force reload when new SW takes control
+            /* 🔥 IMPORTANT: force reload when SW changes */
             navigator.serviceWorker.addEventListener("controllerchange", () => {
-                console.log("SW updated → reloading");
+                console.log("SW updated → reloading page");
                 window.location.reload();
             });
 
@@ -141,7 +142,7 @@ if ("serviceWorker" in navigator) {
     });
 }
 
-/* STEP 5: SPLASH SCREEN */
+/* ✅ SPLASH SCREEN */
 window.addEventListener("DOMContentLoaded", () => {
     const splash = document.getElementById("splash-screen");
     const app = document.getElementById("app");
@@ -151,6 +152,7 @@ window.addEventListener("DOMContentLoaded", () => {
     requestAnimationFrame(() => {
         setTimeout(() => {
             splash?.classList.add("hide");
+
             setTimeout(() => splash?.remove(), 150);
         }, 250);
     });
