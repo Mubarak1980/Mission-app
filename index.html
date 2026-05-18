@@ -10,18 +10,25 @@
 
 <link rel="stylesheet" href="./styles.css" />
 
-<!-- ✅ MANIFEST (RELATIVE IS SAFER ON GITHUB PAGES) -->
+<!-- ✅ PWA MANIFEST (RELATIVE = IMPORTANT) -->
 <link rel="manifest" href="./manifest.json">
 
-<meta name="theme-color" content="#0b0f14" />
-
+<!-- ✅ ICONS -->
 <link rel="icon" href="./icon-192.png" />
 <link rel="apple-touch-icon" href="./icon-192.png" />
+
+<!-- ✅ PWA META (ADDED FIX) -->
+<meta name="theme-color" content="#0b0f14" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Mission App" />
+
 </head>
 
 <body>
 
-<!-- INSTALL BUTTON -->
+<!-- INSTALL BUTTON (UNCHANGED) -->
 <button id="installBtn" style="
     position: fixed;
     bottom: 20px;
@@ -38,7 +45,7 @@
 Install App
 </button>
 
-<!-- SPLASH -->
+<!-- SPLASH SCREEN -->
 <div id="splash-screen">
     <div class="splash-content">
         <h1>📘 Mission App</h1>
@@ -68,7 +75,7 @@ Install App
     </div>
 </div>
 
-<!-- JS FILES -->
+<!-- JS FILES (UNCHANGED ORDER) -->
 <script src="./Sunnah-tracker.js"></script>
 <script src="./Study-tracker.js"></script>
 <script src="./weekly-timetable.js"></script>
@@ -77,14 +84,12 @@ Install App
 <script src="./main.js"></script>
 
 <!-- =========================
-PWA INSTALL + SERVICE WORKER (FINAL FIXED VERSION)
+PWA INSTALL + SW FIXED (SAFE ADDITIONS ONLY)
 ========================= -->
 <script>
 let deferredPrompt = null;
 
-/* =========================
-INSTALL PROMPT
-========================= */
+/* INSTALL DETECTION */
 window.addEventListener("beforeinstallprompt", (e) => {
     e.preventDefault();
     deferredPrompt = e;
@@ -95,32 +100,25 @@ window.addEventListener("beforeinstallprompt", (e) => {
     if (btn) btn.style.display = "block";
 });
 
-/* =========================
-INSTALL CLICK
-========================= */
-document.addEventListener("click", async (e) => {
-    if (e.target && e.target.id === "installBtn") {
-
-        if (!deferredPrompt) {
-            alert("Install not ready yet. Open in Chrome and refresh once.");
-            return;
-        }
-
-        deferredPrompt.prompt();
-
-        const result = await deferredPrompt.userChoice;
-        console.log("Install result:", result.outcome);
-
-        deferredPrompt = null;
-
-        const btn = document.getElementById("installBtn");
-        if (btn) btn.style.display = "none";
+/* INSTALL CLICK */
+document.getElementById("installBtn")?.addEventListener("click", async () => {
+    if (!deferredPrompt) {
+        alert("Install not ready yet. Open in Chrome and reload once.");
+        return;
     }
+
+    deferredPrompt.prompt();
+
+    const result = await deferredPrompt.userChoice;
+    console.log("Install result:", result.outcome);
+
+    deferredPrompt = null;
+
+    const btn = document.getElementById("installBtn");
+    if (btn) btn.style.display = "none";
 });
 
-/* =========================
-INSTALLED EVENT
-========================= */
+/* INSTALLED EVENT */
 window.addEventListener("appinstalled", () => {
     console.log("✅ App installed");
     deferredPrompt = null;
@@ -129,9 +127,7 @@ window.addEventListener("appinstalled", () => {
     if (btn) btn.style.display = "none";
 });
 
-/* =========================
-SERVICE WORKER (GITHUB SAFE + STABLE)
-========================= */
+/* SERVICE WORKER (GITHUB PAGES SAFE) */
 if ("serviceWorker" in navigator) {
     window.addEventListener("load", async () => {
         try {
@@ -146,7 +142,7 @@ if ("serviceWorker" in navigator) {
             reg.update();
 
             navigator.serviceWorker.addEventListener("controllerchange", () => {
-                console.log("SW updated → reloading page");
+                console.log("SW took control → reload");
                 window.location.reload();
             });
 
@@ -156,9 +152,7 @@ if ("serviceWorker" in navigator) {
     });
 }
 
-/* =========================
-SPLASH SCREEN
-========================= */
+/* SPLASH SCREEN */
 window.addEventListener("DOMContentLoaded", () => {
     const splash = document.getElementById("splash-screen");
     const app = document.getElementById("app");
