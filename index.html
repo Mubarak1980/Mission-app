@@ -83,11 +83,12 @@ Install App
 <script src="./main.js"></script>
 
 <!-- PWA SCRIPT -->
+
 <script>
 let deferredPrompt = null;
 
 /* =========================
-   INSTALL PROMPT (FIXED)
+   INSTALL PROMPT
 ========================= */
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
@@ -100,27 +101,23 @@ window.addEventListener('beforeinstallprompt', (e) => {
 });
 
 /* =========================
-   INSTALL CLICK (FIXED)
+   INSTALL CLICK (SAFE + RELIABLE)
 ========================= */
-document.addEventListener("click", async (e) => {
-    if (e.target && e.target.id === "installBtn") {
-
-        if (!deferredPrompt) {
-            alert("Install not available yet. Use Chrome menu → Add to Home Screen.");
-            return;
-        }
-
-        deferredPrompt.prompt();
-
-        const choice = await deferredPrompt.userChoice;
-
-        console.log("User choice:", choice.outcome);
-
-        deferredPrompt = null;
-
-        const btn = document.getElementById("installBtn");
-        if (btn) btn.style.display = "none";
+document.getElementById("installBtn")?.addEventListener("click", async () => {
+    if (!deferredPrompt) {
+        alert("Install not ready yet. Reload page or use Chrome menu.");
+        return;
     }
+
+    deferredPrompt.prompt();
+
+    const choice = await deferredPrompt.userChoice;
+    console.log("Install result:", choice.outcome);
+
+    deferredPrompt = null;
+
+    const btn = document.getElementById("installBtn");
+    if (btn) btn.style.display = "none";
 });
 
 /* =========================
@@ -135,7 +132,7 @@ window.addEventListener('appinstalled', () => {
 });
 
 /* =========================
-   SERVICE WORKER (IMPROVED)
+   SERVICE WORKER (FIXED CORE ISSUE)
 ========================= */
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', async () => {
@@ -146,10 +143,25 @@ if ('serviceWorker' in navigator) {
 
             console.log('SW registered:', reg.scope);
 
-            await navigator.serviceWorker.ready;
-
-            // force update (important for GitHub)
+            // force update
             reg.update();
+
+            // 🔥 CRITICAL FIX: ensure new SW takes control
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                console.log("SW took control → reloading");
+                window.location.reload();
+            });
+
+            // force skip waiting if needed
+            reg.addEventListener('updatefound', () => {
+                const newWorker = reg.installing;
+
+                newWorker?.addEventListener('statechange', () => {
+                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                        newWorker.postMessage({ type: 'SKIP_WAITING' });
+                    }
+                });
+            });
 
         } catch (err) {
             console.error('SW ERROR:', err);
@@ -169,14 +181,10 @@ window.addEventListener('DOMContentLoaded', () => {
     requestAnimationFrame(() => {
         setTimeout(() => {
             splash?.classList.add('hide');
-
-            setTimeout(() => {
-                splash?.remove();
-            }, 120);
+            setTimeout(() => splash?.remove(), 120);
         }, 200);
     });
 });
-</script>
-
+                        </script>
 </body>
 </html>
