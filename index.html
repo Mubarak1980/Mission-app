@@ -9,19 +9,12 @@ content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable
 <title>Mission App</title>
 
 <link rel="stylesheet" href="./styles.css" />
-
-<!-- PWA MANIFEST -->
 <link rel="manifest" href="./manifest.json">
 
-<!-- ICONS -->
 <link rel="icon" href="./icon-192.png" />
 <link rel="apple-touch-icon" href="./icon-192.png" />
 
 <meta name="theme-color" content="#0b0f14" />
-<meta name="mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="apple-mobile-web-app-title" content="Mission App" />
 </head>
 
 <body>
@@ -42,7 +35,7 @@ z-index: 9999;
 Install App
 </button>
 
-<!-- SPLASH SCREEN -->
+<!-- SPLASH -->
 <div id="splash-screen">
     <div class="splash-content">
         <h1>📘 Mission App</h1>
@@ -51,12 +44,12 @@ Install App
     </div>
 </div>
 
-<!-- MAIN APP -->
+<!-- APP -->
 <div id="app" style="display:none;">
     <h1>TIME</h1>
 
     <div class="section-buttons">
-        <button onclick="loadSection('study', window.currentGrade || 9)">Study Tracker</button>
+        <button onclick="loadSection('study', getCurrentGrade())">Study Tracker</button>
         <button onclick="loadSection('timetable')">Weekly Timetable</button>
         <button onclick="loadSection('dashboard')">Dashboard</button>
         <button onclick="loadSection('top-student')">Top Student Mode</button>
@@ -72,31 +65,31 @@ Install App
     </div>
 </div>
 
-<!-- SCRIPTS -->
-<script src="./Sunnah-tracker.js"></script>
+<!-- SCRIPTS (ORDER FIXED) -->
+<script src="./main.js"></script>
 <script src="./Study-tracker.js"></script>
 <script src="./weekly-timetable.js"></script>
 <script src="./dashboard.js"></script>
 <script src="./top-student-mode.js"></script>
-<script src="./main.js"></script>
+<script src="./Sunnah-tracker.js"></script>
 
 <script>
 let deferredPrompt = null;
 
-/* =========================
-   INSTALL DETECTION
-========================= */
+/* SAFE GRADE STATE */
+function getCurrentGrade() {
+    return window.currentGrade || 9;
+}
+
+/* INSTALL */
 window.addEventListener("beforeinstallprompt", (e) => {
     e.preventDefault();
     deferredPrompt = e;
-
-    console.log("PWA install available");
 
     const btn = document.getElementById("installBtn");
     if (btn) btn.style.display = "block";
 });
 
-/* INSTALL CLICK */
 window.addEventListener("DOMContentLoaded", () => {
 
     const installBtn = document.getElementById("installBtn");
@@ -104,22 +97,17 @@ window.addEventListener("DOMContentLoaded", () => {
     if (installBtn) {
         installBtn.addEventListener("click", async () => {
 
-            if (!deferredPrompt) {
-                alert("Install not ready yet. Try refreshing Chrome.");
-                return;
-            }
+            if (!deferredPrompt) return;
 
             deferredPrompt.prompt();
-
-            const result = await deferredPrompt.userChoice;
-            console.log("Install result:", result.outcome);
+            await deferredPrompt.userChoice;
 
             deferredPrompt = null;
             installBtn.style.display = "none";
         });
     }
 
-    /* SPLASH SCREEN CONTROL (FIXED) */
+    /* SAFE SPLASH CONTROL */
     const splash = document.getElementById("splash-screen");
     const app = document.getElementById("app");
 
@@ -129,31 +117,24 @@ window.addEventListener("DOMContentLoaded", () => {
 
             setTimeout(() => {
                 splash.remove();
+
                 if (app) app.style.display = "block";
+
+                // 🔥 IMPORTANT: ensure app initializes AFTER everything loads
+                if (typeof window.initApp === "function") {
+                    window.initApp();
+                }
+
             }, 200);
-        } else {
-            if (app) app.style.display = "block";
         }
-    }, 400);
+    }, 500);
 });
 
-/* INSTALLED EVENT */
-window.addEventListener("appinstalled", () => {
-    console.log("App installed successfully");
-    const btn = document.getElementById("installBtn");
-    if (btn) btn.style.display = "none";
-});
-
-/* =========================
-   SERVICE WORKER (FIXED)
-========================= */
+/* SERVICE WORKER */
 if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
         navigator.serviceWorker.register("./service-worker.js")
-        .then(reg => {
-            console.log("SW registered:", reg.scope);
-            reg.update();
-        })
+        .then(reg => reg.update())
         .catch(console.error);
     });
 
