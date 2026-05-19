@@ -1,4 +1,4 @@
-const CACHE_NAME = "mission-cache-v184";
+const CACHE_NAME = "mission-cache-v185";
 
 // 🔥 AUTO BASE (works anywhere: local, GitHub, server)
 const BASE = self.location.pathname.replace("service-worker.js", "");
