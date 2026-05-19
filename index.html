@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 
 <meta name="viewport"
-    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
 <title>Mission App</title>
 
@@ -27,22 +27,12 @@
 
 <body>
 
-<button id="installBtn" style="
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    padding: 12px 16px;
-    border: none;
-    background: #00d4ff;
-    color: black;
-    font-weight: bold;
-    border-radius: 10px;
-    display: none;
-    z-index: 9999;
-">
-Install App
+<!-- INSTALL BUTTON -->
+<button id="installBtn" class="install-btn">
+    Install App
 </button>
 
+<!-- SPLASH -->
 <div id="splash-screen">
     <div class="splash-content">
         <h1>📘 Mission App</h1>
@@ -51,110 +41,112 @@ Install App
     </div>
 </div>
 
-<div id="app" style="display:none;">
+<!-- MAIN APP -->
+<div id="app" hidden>
     <h1>TIME</h1>
 
     <div class="section-buttons">
-        <button onclick="loadSection('study', currentGrade)">Study Tracker</button>
-        <button onclick="loadSection('timetable')">Weekly Timetable</button>
-        <button onclick="loadSection('dashboard')">Dashboard</button>
-        <button onclick="loadSection('top-student')">Top Student Mode</button>
-        <button onclick="loadSection('sunnah')">Sunnah Tracker</button>
+        <button data-section="study">Study Tracker</button>
+        <button data-section="timetable">Weekly Timetable</button>
+        <button data-section="dashboard">Dashboard</button>
+        <button data-section="top-student">Top Student Mode</button>
+        <button data-section="sunnah">Sunnah Tracker</button>
     </div>
 
     <div id="grade-progress-bar"></div>
     <div id="main-content"></div>
 
     <div id="grade-nav">
-        <button onclick="previousGrade()" id="prev-btn">Previous</button>
-        <button onclick="nextGrade()" id="next-btn">Next</button>
+        <button id="prev-btn">Previous</button>
+        <button id="next-btn">Next</button>
     </div>
 </div>
 
-<script src="./Sunnah-tracker.js"></script>
-<script src="./Study-tracker.js"></script>
-<script src="./weekly-timetable.js"></script>
-<script src="./dashboard.js"></script>
-<script src="./top-student-mode.js"></script>
-<script src="./main.js"></script>
+<!-- SCRIPTS (DEFERRED = FASTER LOAD) -->
+<script src="./Sunnah-tracker.js" defer></script>
+<script src="./Study-tracker.js" defer></script>
+<script src="./weekly-timetable.js" defer></script>
+<script src="./dashboard.js" defer></script>
+<script src="./top-student-mode.js" defer></script>
+<script src="./main.js" defer></script>
 
-<script>
+<script defer>
 let deferredPrompt = null;
 
 /* =========================
-   INSTALL DETECTION (STABLE)
+   INSTALL HANDLING
 ========================= */
 window.addEventListener("beforeinstallprompt", (e) => {
     e.preventDefault();
     deferredPrompt = e;
 
-    console.log("✅ PWA install available");
-
     const btn = document.getElementById("installBtn");
     if (btn) btn.style.display = "block";
 });
 
-/* INSTALL CLICK */
 document.getElementById("installBtn")?.addEventListener("click", async () => {
-    if (!deferredPrompt) {
-        alert("Install not ready yet. Try refreshing Chrome.");
-        return;
-    }
+    if (!deferredPrompt) return alert("Install not ready yet.");
 
     deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
 
-    const result = await deferredPrompt.userChoice;
-    console.log("Install result:", result.outcome);
-
+    console.log("Install:", outcome);
     deferredPrompt = null;
 
-    const btn = document.getElementById("installBtn");
-    if (btn) btn.style.display = "none";
+    document.getElementById("installBtn").style.display = "none";
 });
 
-/* INSTALLED EVENT */
 window.addEventListener("appinstalled", () => {
-    console.log("App installed successfully");
-
     deferredPrompt = null;
-
-    const btn = document.getElementById("installBtn");
-    if (btn) btn.style.display = "none";
+    document.getElementById("installBtn").style.display = "none";
 });
 
 /* =========================
-   SERVICE WORKER (CHROME SAFE)
+   SERVICE WORKER (SAFE + NO LOOP)
 ========================= */
 if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => {
-        navigator.serviceWorker.register("./service-worker.js", {
-            scope: "./"
-        })
-        .then(reg => {
+    window.addEventListener("load", async () => {
+        try {
+            const reg = await navigator.serviceWorker.register("./service-worker.js");
             console.log("SW registered:", reg.scope);
-            reg.update();
-        })
-        .catch(console.error);
-    });
-
-    navigator.serviceWorker.addEventListener("controllerchange", () => {
-        window.location.reload();
+        } catch (err) {
+            console.error("SW failed:", err);
+        }
     });
 }
 
 /* =========================
-   SPLASH SCREEN
+   SPLASH SCREEN (SMOOTHER)
 ========================= */
-window.addEventListener("DOMContentLoaded", () => {
+window.addEventListener("load", () => {
     const splash = document.getElementById("splash-screen");
     const app = document.getElementById("app");
 
-    if (app) app.style.display = "block";
+    app.hidden = false;
 
     setTimeout(() => {
         splash?.classList.add("hide");
-        setTimeout(() => splash?.remove(), 150);
-    }, 250);
+        setTimeout(() => splash?.remove(), 200);
+    }, 400);
+});
+
+/* =========================
+   EVENT HANDLING (NO INLINE JS)
+========================= */
+document.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-section]");
+    if (btn) {
+        const section = btn.dataset.section;
+        window.loadSection?.(section, window.currentGrade);
+    }
+});
+
+document.getElementById("prev-btn")?.addEventListener("click", () => {
+    window.previousGrade?.();
+});
+
+document.getElementById("next-btn")?.addEventListener("click", () => {
+    window.nextGrade?.();
 });
 </script>
 
