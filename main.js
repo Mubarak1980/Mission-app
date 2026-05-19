@@ -1,5 +1,5 @@
 // ===============================
-// MAIN ENGINE (OPTIMIZED + MODULAR + SAFE)
+// MAIN ENGINE (OPTIMIZED + MODULAR + SAFE + FULL)
 // ===============================
 
 (() => {
@@ -15,7 +15,7 @@ const TOTAL_DAYS = 90;
 const TOTAL_PAGES = 5705;
 
 /* ===============================
-   STORAGE UTILS (SAFE)
+   STORAGE UTILS
 =============================== */
 const Storage = {
   get(key, fallback) {
@@ -111,7 +111,7 @@ function getActualProgress() {
 }
 
 /* ===============================
-   STATUS ENGINE
+   DELAY STATUS
 =============================== */
 function getDelayStatus() {
   const expected = getExpectedProgress();
@@ -212,7 +212,7 @@ const UI = {
 };
 
 /* ===============================
-   NAV CONTROLLER (SAFE)
+   NAV CONTROLLER
 =============================== */
 const Nav = {
   nav: null,
@@ -230,7 +230,6 @@ const Nav = {
 
     if (UI.currentSection === "study") {
       this.nav.style.display = "flex";
-
       this.prev.disabled = UI.currentGrade <= 9;
       this.next.disabled = UI.currentGrade >= 12;
     } else {
@@ -240,16 +239,62 @@ const Nav = {
 };
 
 /* ===============================
-   SECTION MAP
+   SAFE MODULE CALL (NEW FIX)
+=============================== */
+function safeCall(fnName, fallbackText) {
+  const fn = window[fnName];
+
+  if (typeof fn !== "function") {
+    console.error(`❌ Missing module: ${fnName}`);
+
+    const main = document.getElementById("main-content");
+    if (main) {
+      main.innerHTML = `
+        <p style="padding:20px;text-align:center;color:red;">
+          ${fallbackText || fnName + " not loaded"}
+        </p>
+      `;
+    }
+
+    return false;
+  }
+
+  return true;
+}
+
+/* ===============================
+   SECTION MAP (FIXED BUT FULL)
 =============================== */
 const SectionMap = {
-  study: () => window.loadStudySection?.(UI.currentGrade),
-  timetable: () => window.loadWeeklyTimetable?.(),
-  dashboard: () => window.loadDashboard?.(),
-  "top-student": () => window.loadTopStudentMode?.(),
-  sunnah: () => window.loadSunnahTracker?.()
+  study: () => {
+    if (!safeCall("loadStudySection", "Study Tracker not loaded")) return;
+    window.loadStudySection(UI.currentGrade);
+  },
+
+  timetable: () => {
+    if (!safeCall("loadWeeklyTimetable", "Weekly Timetable not loaded")) return;
+    window.loadWeeklyTimetable();
+  },
+
+  dashboard: () => {
+    if (!safeCall("loadDashboard", "Dashboard not loaded")) return;
+    window.loadDashboard();
+  },
+
+  "top-student": () => {
+    if (!safeCall("loadTopStudentMode", "Top Student Mode not loaded")) return;
+    window.loadTopStudentMode();
+  },
+
+  sunnah: () => {
+    if (!safeCall("loadSunnahTracker", "Sunnah Tracker not loaded")) return;
+    window.loadSunnahTracker();
+  }
 };
 
+/* ===============================
+   LOAD SECTION
+=============================== */
 function loadSection(type, grade) {
   UI.currentSection = type;
 
@@ -285,7 +330,7 @@ function previousGrade() {
 }
 
 /* ===============================
-   INIT
+   INIT APP
 =============================== */
 let initialized = false;
 
@@ -296,6 +341,8 @@ function initApp() {
   UI.load();
   Nav.init();
   getCycleState();
+
+  console.log("✅ Mission App Initialized");
 
   requestAnimationFrame(() => {
     loadSection(UI.currentSection, UI.currentGrade);
