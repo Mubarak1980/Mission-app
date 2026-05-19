@@ -1,135 +1,121 @@
-const CACHE_NAME = "mission-cache-v200";
-const BASE = "/Mission-app/";
+// =========================
+// SERVICE WORKER (STABLE VERSION)
+// =========================
+
+const CACHE_NAME = "mission-cache-v201";
+
+// safer BASE handling (works even if hosted at root)
+const BASE = self.registration.scope;
 
 const APP_SHELL = [
-BASE,
-BASE + "index.html",
-BASE + "styles.css",
-BASE + "main.js",
-BASE + "Study-tracker.js",
-BASE + "Sunnah-tracker.js",
-BASE + "dashboard.js",
-BASE + "weekly-timetable.js",
-BASE + "top-student-mode.js",
-BASE + "icon-192.png",
-BASE + "icon-512.png",
-BASE + "manifest.json"
+  "./",
+  "index.html",
+  "styles.css",
+  "main.js",
+  "Study-tracker.js",
+  "Sunnah-tracker.js",
+  "dashboard.js",
+  "weekly-timetable.js",
+  "top-student-mode.js",
+  "icon-192.png",
+  "icon-512.png",
+  "manifest.json"
 ];
 
 // =========================
 // INSTALL
 // =========================
 self.addEventListener("install", (event) => {
-self.skipWaiting(); // 🔥 move earlier for faster activation
+  self.skipWaiting();
 
-event.waitUntil(
-(async () => {
-const cache = await caches.open(CACHE_NAME);
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE_NAME);
 
-await Promise.allSettled(  
-    APP_SHELL.map(async (file) => {  
-      try {  
-        const res = await fetch(file, { cache: "reload" });  
-
-        if (res && res.ok) {  
-          await cache.put(file, res.clone());  
-        }  
-      } catch (e) {  
-        // silent fail (offline safe)  
-      }  
-    })  
-  );  
-})()
-
-);
+    await Promise.allSettled(
+      APP_SHELL.map(async (file) => {
+        try {
+          const res = await fetch(file, { cache: "reload" });
+          if (res && res.ok) {
+            await cache.put(file, res.clone());
+          }
+        } catch (e) {
+          // offline-safe silent fail
+        }
+      })
+    );
+  })());
 });
 
 // =========================
 // ACTIVATE
 // =========================
 self.addEventListener("activate", (event) => {
-event.waitUntil(
-(async () => {
-const keys = await caches.keys();
+  event.waitUntil((async () => {
+    const keys = await caches.keys();
 
-await Promise.all(  
-    keys.map((k) => {  
-      if (k !== CACHE_NAME) return caches.delete(k);  
-    })  
-  );  
+    await Promise.all(
+      keys.map((k) => {
+        if (k !== CACHE_NAME) return caches.delete(k);
+      })
+    );
 
-  await self.clients.claim();  
-
-  // 🔥 force refresh clients so new SW takes control immediately  
-  const clients = await self.clients.matchAll({ type: "window" });  
-  clients.forEach((client) => {  
-    if (client.url && "navigate" in client) {  
-      client.navigate(client.url);  
-    }  
-  });  
-})()
-
-);
+    await self.clients.claim();
+  })());
 });
 
 // =========================
-// FETCH (SMART STRATEGY)
+// FETCH STRATEGY
 // =========================
 self.addEventListener("fetch", (event) => {
-if (event.request.method !== "GET") return;
+  if (event.request.method !== "GET") return;
 
-const url = new URL(event.request.url);
+  const url = new URL(event.request.url);
 
-if (url.origin !== location.origin) return;
+  if (url.origin !== location.origin) return;
 
-// =========================
-// NAVIGATION (APP SHELL FIX)
-// =========================
-if (event.request.mode === "navigate") {
-event.respondWith(
-(async () => {
-try {
-const network = await fetch(event.request);
-if (network && network.ok) return network;
-} catch (e) {}
+  // =========================
+  // NAVIGATION (APP SHELL)
+  // =========================
+  if (event.request.mode === "navigate") {
+    event.respondWith((async () => {
+      try {
+        const network = await fetch(event.request);
+        if (network && network.ok) return network;
+      } catch (e) {}
 
-const cached = await caches.match(BASE + "index.html");  
-    return cached || caches.match(BASE);  
-  })()  
-);  
-return;
+      const cached = await caches.match("index.html");
+      return cached || new Response("Offline", { status: 200 });
+    })());
 
-}
+    return;
+  }
 
-// =========================
-// CACHE FIRST + NETWORK UPDATE
-// =========================
-event.respondWith(
-(async () => {
-const cached = await caches.match(event.request);
+  // =========================
+  // CACHE FIRST + UPDATE
+  // =========================
+  event.respondWith((async () => {
+    const cached = await caches.match(event.request);
 
-try {  
-    const network = await fetch(event.request);  
+    try {
+      const network = await fetch(event.request);
 
-    if (network && network.status === 200) {  
-      const cache = await caches.open(CACHE_NAME);  
-      cache.put(event.request, network.clone());  
-    }  
+      if (network && network.status === 200) {
+        const cache = await caches.open(CACHE_NAME);
+        cache.put(event.request, network.clone());
+      }
 
-    return network;  
-  } catch (e) {  
-    return cached;  
-  }  
-})()
-
-);
+      return network;
+    } catch (e) {
+      return cached;
+    }
+  })());
 });
 
 // =========================
 // UPDATE CONTROL
 // =========================
 self.addEventListener("message", (event) => {
-if (event.data?.type === "SKIP_WAITING") {
-self.skipWaiting();
-}
+  if (event.data?.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
 });
