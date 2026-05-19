@@ -1,5 +1,5 @@
 // ===============================
-// MAIN ENGINE (OPTIMIZED + MODULAR)
+// MAIN ENGINE (OPTIMIZED + MODULAR + SAFE)
 // ===============================
 
 (() => {
@@ -15,7 +15,7 @@ const TOTAL_DAYS = 90;
 const TOTAL_PAGES = 5705;
 
 /* ===============================
-   STORAGE UTILS (SAFE + FAST)
+   STORAGE UTILS (SAFE)
 =============================== */
 const Storage = {
   get(key, fallback) {
@@ -35,7 +35,7 @@ const Storage = {
 };
 
 /* ===============================
-   DATE UTILS (UTC SAFE)
+   DATE UTILS
 =============================== */
 function todayISO() {
   const d = new Date();
@@ -88,11 +88,11 @@ function getTodayLog() {
    PROGRESS ENGINE
 =============================== */
 function getExpectedProgress() {
-  const { cycleDay, remainingDays } = getCycleState();
+  const { cycleDay } = getCycleState();
 
   return {
     cycleDay,
-    remainingDays,
+    remainingDays: Math.max(0, TOTAL_DAYS - cycleDay),
     expectedPages: Math.round((cycleDay / TOTAL_DAYS) * TOTAL_PAGES)
   };
 }
@@ -103,7 +103,7 @@ function getActualProgress() {
   for (const g of GRADES) {
     const saved = Storage.get(`grade_${g}_progress`, {});
     for (const s of SUBJECTS) {
-      total += Number(saved[s]) || 0;
+      total += Number(saved?.[s]) || 0;
     }
   }
 
@@ -111,7 +111,7 @@ function getActualProgress() {
 }
 
 /* ===============================
-   DELAY STATUS (IMPROVED LOGIC)
+   STATUS ENGINE
 =============================== */
 function getDelayStatus() {
   const expected = getExpectedProgress();
@@ -148,7 +148,7 @@ function getPlannedVsActual() {
 
     for (const subject in p.subjects) {
       const planned = Number(p.subjects[subject]) || 0;
-      const done = Number(actual[subject]) || 0;
+      const done = Number(actual?.[subject]) || 0;
 
       if (done < planned) {
         delays.push({
@@ -164,7 +164,7 @@ function getPlannedVsActual() {
 }
 
 /* ===============================
-   SMART TARGET SYSTEM (UPGRADED)
+   SMART TARGET
 =============================== */
 function getSmartCycle() {
   const cycle = getDelayStatus();
@@ -189,7 +189,7 @@ function getSmartCycle() {
 }
 
 /* ===============================
-   UI STATE (ISOLATED)
+   UI STATE
 =============================== */
 const UI = {
   currentGrade: 9,
@@ -212,7 +212,7 @@ const UI = {
 };
 
 /* ===============================
-   NAVIGATION CONTROLLER
+   NAV CONTROLLER (SAFE)
 =============================== */
 const Nav = {
   nav: null,
@@ -226,10 +226,11 @@ const Nav = {
   },
 
   update() {
-    if (!this.nav) return;
+    if (!this.nav || !this.prev || !this.next) return;
 
     if (UI.currentSection === "study") {
       this.nav.style.display = "flex";
+
       this.prev.disabled = UI.currentGrade <= 9;
       this.next.disabled = UI.currentGrade >= 12;
     } else {
@@ -239,7 +240,7 @@ const Nav = {
 };
 
 /* ===============================
-   SECTION LOADER (CLEAN MAP)
+   SECTION MAP
 =============================== */
 const SectionMap = {
   study: () => window.loadStudySection?.(UI.currentGrade),
@@ -252,22 +253,24 @@ const SectionMap = {
 function loadSection(type, grade) {
   UI.currentSection = type;
 
-  if (grade !== undefined) {
-    UI.currentGrade = Number(grade);
+  const parsedGrade = Number(grade);
+  if (!Number.isNaN(parsedGrade)) {
+    UI.currentGrade = parsedGrade;
   }
 
   UI.save();
   Nav.update();
 
   try {
-    SectionMap[type]?.();
+    const fn = SectionMap[type];
+    if (typeof fn === "function") fn();
   } catch (e) {
     console.error("Section error:", e);
   }
 }
 
 /* ===============================
-   NAVIGATION ACTIONS
+   NAV ACTIONS
 =============================== */
 function nextGrade() {
   if (UI.currentGrade < 12) {
@@ -282,7 +285,7 @@ function previousGrade() {
 }
 
 /* ===============================
-   INIT (PWA SAFE)
+   INIT
 =============================== */
 let initialized = false;
 
@@ -309,7 +312,7 @@ if (document.readyState === "loading") {
 }
 
 /* ===============================
-   GLOBAL EXPORTS (CONTROLLED)
+   GLOBAL EXPORTS
 =============================== */
 window.loadSection = loadSection;
 window.nextGrade = nextGrade;
