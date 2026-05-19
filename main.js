@@ -1,5 +1,5 @@
 // ===============================
-// MAIN ENGINE (OPTIMIZED + MODULAR + SAFE + FULL)
+// MAIN ENGINE (FINAL STABLE VERSION)
 // ===============================
 
 (() => {
@@ -15,7 +15,7 @@ const TOTAL_DAYS = 90;
 const TOTAL_PAGES = 5705;
 
 /* ===============================
-   STORAGE UTILS
+   STORAGE UTILITIES
 =============================== */
 const Storage = {
   get(key, fallback) {
@@ -35,7 +35,7 @@ const Storage = {
 };
 
 /* ===============================
-   DATE UTILS
+   DATE UTIL
 =============================== */
 function todayISO() {
   const d = new Date();
@@ -54,10 +54,11 @@ function getCycleState() {
   const start = new Date(state.startDate);
   const now = new Date(today);
 
-  const diffDays = Math.floor(
-    (Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) -
-     Date.UTC(start.getFullYear(), start.getMonth(), start.getDate())) / 86400000
-  );
+  const diffDays =
+    Math.floor(
+      (Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) -
+       Date.UTC(start.getFullYear(), start.getMonth(), start.getDate())) / 86400000
+    );
 
   const cycleDay = Math.min(Math.max(1, diffDays + 1), TOTAL_DAYS);
 
@@ -69,19 +70,6 @@ function getCycleState() {
 
   Storage.set("cycleState", result);
   return result;
-}
-
-/* ===============================
-   TODAY DATA
-=============================== */
-function getTodayPlan() {
-  const plan = Storage.get("todayPlan", {});
-  return plan[todayISO()] ?? [];
-}
-
-function getTodayLog() {
-  const logs = Storage.get("dailyStudyLog", {});
-  return logs[todayISO()] ?? {};
 }
 
 /* ===============================
@@ -111,7 +99,7 @@ function getActualProgress() {
 }
 
 /* ===============================
-   DELAY STATUS
+   STATUS ENGINE
 =============================== */
 function getDelayStatus() {
   const expected = getExpectedProgress();
@@ -119,10 +107,9 @@ function getDelayStatus() {
 
   const gap = actual - expected.expectedPages;
 
-  let status;
-  if (gap >= 0) status = "🟢 ON TRACK";
-  else if (gap >= -200) status = "🟡 SLIGHTLY BEHIND";
-  else status = "🔴 CRITICAL";
+  let status = "🟢 ON TRACK";
+  if (gap < 0 && gap >= -200) status = "🟡 SLIGHTLY BEHIND";
+  if (gap < -200) status = "🔴 CRITICAL";
 
   return {
     ...expected,
@@ -133,48 +120,16 @@ function getDelayStatus() {
 }
 
 /* ===============================
-   DAILY DELAYS
-=============================== */
-function getPlannedVsActual() {
-  const plan = getTodayPlan();
-  const log = getTodayLog();
-
-  const delays = [];
-
-  for (const p of plan) {
-    if (!p?.grade || !p?.subjects) continue;
-
-    const actual = log[p.grade] || {};
-
-    for (const subject in p.subjects) {
-      const planned = Number(p.subjects[subject]) || 0;
-      const done = Number(actual?.[subject]) || 0;
-
-      if (done < planned) {
-        delays.push({
-          grade: p.grade,
-          subject,
-          missing: planned - done
-        });
-      }
-    }
-  }
-
-  return delays;
-}
-
-/* ===============================
-   SMART TARGET
+   SMART CYCLE
 =============================== */
 function getSmartCycle() {
   const cycle = getDelayStatus();
 
-  const gap = cycle.gap;
   const remainingDays = Math.max(1, TOTAL_DAYS - cycle.cycleDay);
-
-  const catchUp = gap < 0
-    ? Math.min(Math.ceil(Math.abs(gap) / remainingDays), 60)
-    : 0;
+  const catchUp =
+    cycle.gap < 0
+      ? Math.min(Math.ceil(Math.abs(cycle.gap) / remainingDays), 60)
+      : 0;
 
   let target = (TOTAL_PAGES / TOTAL_DAYS) + catchUp;
   target = Math.min(Math.max(target, 25), 85);
@@ -215,10 +170,6 @@ const UI = {
    NAV CONTROLLER
 =============================== */
 const Nav = {
-  nav: null,
-  prev: null,
-  next: null,
-
   init() {
     this.nav = document.getElementById("grade-nav");
     this.prev = document.getElementById("prev-btn");
@@ -239,23 +190,23 @@ const Nav = {
 };
 
 /* ===============================
-   SAFE MODULE CALL (NEW FIX)
+   SAFE MODULE CALL
 =============================== */
 function safeCall(fnName, fallbackText) {
   const fn = window[fnName];
 
   if (typeof fn !== "function") {
-    console.error(`❌ Missing module: ${fnName}`);
-
     const main = document.getElementById("main-content");
+
     if (main) {
       main.innerHTML = `
         <p style="padding:20px;text-align:center;color:red;">
-          ${fallbackText || fnName + " not loaded"}
+          ${fallbackText}
         </p>
       `;
     }
 
+    console.warn("Missing module:", fnName);
     return false;
   }
 
@@ -263,7 +214,7 @@ function safeCall(fnName, fallbackText) {
 }
 
 /* ===============================
-   SECTION MAP (FIXED BUT FULL)
+   SECTION MAP
 =============================== */
 const SectionMap = {
   study: () => {
@@ -272,7 +223,7 @@ const SectionMap = {
   },
 
   timetable: () => {
-    if (!safeCall("loadWeeklyTimetable", "Weekly Timetable not loaded")) return;
+    if (!safeCall("loadWeeklyTimetable", "Timetable not loaded")) return;
     window.loadWeeklyTimetable();
   },
 
@@ -298,20 +249,14 @@ const SectionMap = {
 function loadSection(type, grade) {
   UI.currentSection = type;
 
-  const parsedGrade = Number(grade);
-  if (!Number.isNaN(parsedGrade)) {
-    UI.currentGrade = parsedGrade;
-  }
+  const g = Number(grade);
+  if (!isNaN(g)) UI.currentGrade = g;
 
   UI.save();
   Nav.update();
 
-  try {
-    const fn = SectionMap[type];
-    if (typeof fn === "function") fn();
-  } catch (e) {
-    console.error("Section error:", e);
-  }
+  const fn = SectionMap[type];
+  if (typeof fn === "function") fn();
 }
 
 /* ===============================
@@ -330,7 +275,7 @@ function previousGrade() {
 }
 
 /* ===============================
-   INIT APP
+   INIT
 =============================== */
 let initialized = false;
 
@@ -359,10 +304,14 @@ if (document.readyState === "loading") {
 }
 
 /* ===============================
-   GLOBAL EXPORTS
+   GLOBAL EXPORTS (IMPORTANT FIX)
 =============================== */
 window.loadSection = loadSection;
 window.nextGrade = nextGrade;
 window.previousGrade = previousGrade;
+
+// 🔥 CRITICAL FIX FOR YOUR OTHER FILES
+window.UI = UI;
+window.getCurrentGradeSafe = () => UI.currentGrade || 9;
 
 })();
