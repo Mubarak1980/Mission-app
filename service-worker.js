@@ -1,4 +1,4 @@
-const CACHE_NAME = "mission-cache-v194";
+const CACHE_NAME = "mission-cache-v195";
 const BASE = "/Mission-app/";
 
 const APP_SHELL = [
