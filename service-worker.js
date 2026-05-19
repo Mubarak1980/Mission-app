@@ -2,7 +2,7 @@
 // SERVICE WORKER (STABLE VERSION)
 // =========================
 
-const CACHE_NAME = "mission-cache-v203";
+const CACHE_NAME = "mission-cache-v204";
 
 // safer BASE handling (works even if hosted at root)
 const BASE = self.registration.scope;
