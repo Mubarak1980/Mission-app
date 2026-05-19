@@ -1,25 +1,26 @@
 // =========================
-// SERVICE WORKER (STABLE VERSION)
+// SERVICE WORKER (PRODUCTION SAFE)
 // =========================
 
-const CACHE_NAME = "mission-cache-v206";
+const CACHE_NAME = "mission-cache-v207";
 
-// safer BASE handling (works even if hosted at root)
+// Use scope correctly
 const BASE = self.registration.scope;
 
+// Normalize app paths safely
 const APP_SHELL = [
-  "./",
-  "index.html",
-  "styles.css",
-  "main.js",
-  "Study-tracker.js",
-  "Sunnah-tracker.js",
-  "dashboard.js",
-  "weekly-timetable.js",
-  "top-student-mode.js",
-  "icon-192.png",
-  "icon-512.png",
-  "manifest.json"
+  BASE,
+  BASE + "index.html",
+  BASE + "styles.css",
+  BASE + "main.js",
+  BASE + "Study-tracker.js",
+  BASE + "Sunnah-tracker.js",
+  BASE + "dashboard.js",
+  BASE + "weekly-timetable.js",
+  BASE + "top-student-mode.js",
+  BASE + "icon-192.png",
+  BASE + "icon-512.png",
+  BASE + "manifest.json"
 ];
 
 // =========================
@@ -39,7 +40,7 @@ self.addEventListener("install", (event) => {
             await cache.put(file, res.clone());
           }
         } catch (e) {
-          // offline-safe silent fail
+          // silent fail
         }
       })
     );
@@ -64,7 +65,7 @@ self.addEventListener("activate", (event) => {
 });
 
 // =========================
-// FETCH STRATEGY
+// FETCH STRATEGY (SAFE SPA)
 // =========================
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
@@ -74,7 +75,7 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== location.origin) return;
 
   // =========================
-  // NAVIGATION (APP SHELL)
+  // NAVIGATION (FIXED)
   // =========================
   if (event.request.mode === "navigate") {
     event.respondWith((async () => {
@@ -83,8 +84,13 @@ self.addEventListener("fetch", (event) => {
         if (network && network.ok) return network;
       } catch (e) {}
 
-      const cached = await caches.match("index.html");
-      return cached || new Response("Offline", { status: 200 });
+      // FIX: always use scope-based index fallback
+      const cached = await caches.match(BASE + "index.html");
+
+      return cached || new Response(
+        `<!DOCTYPE html><html><body><h3>Offline</h3></body></html>`,
+        { headers: { "Content-Type": "text/html" } }
+      );
     })());
 
     return;
