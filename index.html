@@ -65,13 +65,22 @@ Install App
     </div>
 </div>
 
-<!-- SCRIPTS -->
-<script src="./main.js"></script>
+<!-- ========================= -->
+<!-- SCRIPTS (CORRECT ORDER) -->
+<!-- ========================= -->
+
+<!-- ✅ DATA FIRST -->
+<script src="./data.js"></script>
+
+<!-- ✅ MODULES -->
 <script src="./Study-tracker.js"></script>
 <script src="./weekly-timetable.js"></script>
 <script src="./dashboard.js"></script>
 <script src="./top-student-mode.js"></script>
 <script src="./Sunnah-tracker.js"></script>
+
+<!-- ✅ MAIN LAST -->
+<script src="./main.js"></script>
 
 <script>
 let deferredPrompt = null;
@@ -107,7 +116,6 @@ window.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    /* SAFE SPLASH */
     const splash = document.getElementById("splash-screen");
     const app = document.getElementById("app");
 
@@ -119,9 +127,6 @@ window.addEventListener("DOMContentLoaded", () => {
                 splash.remove();
 
                 if (app) app.style.display = "block";
-
-                // ❌ REMOVED initApp CALL (was broken)
-                // main.js already auto-initializes safely
 
             }, 200);
         }
