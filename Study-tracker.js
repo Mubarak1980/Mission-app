@@ -1,10 +1,10 @@
 "use strict";
 
 // ===============================
-// Study-tracker.js (STABLE VERSION)
+// Study-tracker.js (STABLE + FIXED)
 // ===============================
 
-const SUBJECTS = ['Math', 'Physics', 'Chemistry', 'Biology', 'English'];
+const SUBJECTS = ["Math", "Physics", "Chemistry", "Biology", "English"];
 
 // ===============================
 // SAFE STORAGE
@@ -32,7 +32,7 @@ function createSubject(name, maxPages, savedPages) {
     const percent = maxPages ? Math.round((savedPages / maxPages) * 100) : 0;
 
     return `
-        <div class="subject ${percent === 100 ? 'complete' : ''}">
+        <div class="subject ${percent === 100 ? "complete" : ""}">
             <h3>${name}</h3>
 
             <input 
@@ -58,13 +58,13 @@ function createSubject(name, maxPages, savedPages) {
 function updateSubjectUI(container, value, max) {
     const percent = max ? Math.round((value / max) * 100) : 0;
 
-    const progressBar = container.querySelector('progress');
-    const text = container.querySelector('p');
+    const progressBar = container.querySelector("progress");
+    const text = container.querySelector("p");
 
     if (progressBar) progressBar.value = value;
     if (text) text.textContent = `${percent}% complete`;
 
-    container.classList.toggle('complete', percent === 100);
+    container.classList.toggle("complete", percent === 100);
 }
 
 // ===============================
@@ -94,23 +94,23 @@ function handleInput(e, grade, saved) {
 }
 
 // ===============================
-// LOAD SECTION (FIXED CORE BUG)
+// LOAD SECTION (FIXED)
 // ===============================
 function loadStudySection(grade) {
-    const mainContent = document.getElementById('main-content');
+    const mainContent = document.getElementById("main-content");
     if (!mainContent) return;
 
-    const data = window.maxPagesByGrade?.[grade];
-
-    // ❌ FIX: no false "No data" error anymore
+    // ❗ MUST EXIST FIRST
     if (!window.maxPagesByGrade) {
         mainContent.innerHTML = `
-            <p style="padding:20px;text-align:center;">
-                System error: grade data not loaded
+            <p style="padding:20px;text-align:center;color:red;">
+                System error: maxPagesByGrade is not loaded
             </p>
         `;
         return;
     }
+
+    const data = window.maxPagesByGrade[grade];
 
     if (!data) {
         mainContent.innerHTML = `
@@ -140,12 +140,8 @@ function loadStudySection(grade) {
 
     mainContent.innerHTML = html;
 
-    // ✅ FIX: prevent duplicate event listeners
-    const freshMain = document.getElementById("main-content");
-
-    freshMain.addEventListener("input", (e) => {
-        handleInput(e, grade, saved);
-    });
+    // ✅ FIXED: NO duplicate event listeners
+    mainContent.oninput = (e) => handleInput(e, grade, saved);
 
     updateGradeSummary(grade);
 }
@@ -173,7 +169,7 @@ function updateGradeSummary(grade) {
         ? Math.round((totalDone / totalPages) * 100)
         : 0;
 
-    const el = document.getElementById('grade-progress-bar');
+    const el = document.getElementById("grade-progress-bar");
 
     if (el) {
         el.innerHTML = `
@@ -184,7 +180,7 @@ function updateGradeSummary(grade) {
 }
 
 // ===============================
-// EXPORT
+// EXPORTS (IMPORTANT)
 // ===============================
 window.loadStudySection = loadStudySection;
 window.updateGradeSummary = updateGradeSummary;
