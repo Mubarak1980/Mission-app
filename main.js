@@ -1,318 +1,358 @@
 // ===============================
-// MAIN ENGINE (OPTIMIZED + MODULAR)
+// Main.js - Core Application Engine (PWA SAFE + STABLE)
 // ===============================
 
-(() => {
-"use strict";
-
-/* ===============================
-   CONSTANTS
-=============================== */
-const GRADES = [9, 10, 11, 12];
-const SUBJECTS = ["Math", "Physics", "Chemistry", "Biology", "English"];
+window.maxPagesByGrade = {
+9:  { Math: 363, Physics: 174, Chemistry: 175, Biology: 164, English: 223 },
+10: { Math: 385, Physics: 249, Chemistry: 298, Biology: 174, English: 316 },
+11: { Math: 479, Physics: 329, Chemistry: 330, Biology: 284, English: 283 },
+12: { Math: 416, Physics: 177, Chemistry: 287, Biology: 354, English: 263 }
+};
 
 const TOTAL_DAYS = 90;
 const TOTAL_PAGES = 5705;
 
-/* ===============================
-   STORAGE UTILS (SAFE + FAST)
-=============================== */
-const Storage = {
-  get(key, fallback) {
-    try {
-      const v = localStorage.getItem(key);
-      return v ? JSON.parse(v) : fallback;
-    } catch {
-      return fallback;
-    }
-  },
+// ===============================
+// SAFE STORAGE
+// ===============================
+function safeJSON(key, fallback) {
+try {
+const v = localStorage.getItem(key);
+return v ? JSON.parse(v) : fallback;
+} catch {
+return fallback;
+}
+}
 
-  set(key, value) {
-    try {
-      localStorage.setItem(key, JSON.stringify(value));
-    } catch {}
-  }
-};
-
-/* ===============================
-   DATE UTILS (UTC SAFE)
-=============================== */
 function todayISO() {
-  const d = new Date();
-  return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()))
-    .toISOString()
-    .split("T")[0];
+return new Date().toISOString().split("T")[0];
 }
 
-/* ===============================
-   CYCLE ENGINE
-=============================== */
+// ===============================
+// CYCLE ENGINE
+// ===============================
 function getCycleState() {
-  const today = todayISO();
-  const state = Storage.get("cycleState", { startDate: today });
+const todayStr = todayISO();
+const state = safeJSON("cycleState", {});
 
-  const start = new Date(state.startDate);
-  const now = new Date(today);
+if (!state.startDate) state.startDate = todayStr;
 
-  const diffDays = Math.floor(
-    (Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) -
-     Date.UTC(start.getFullYear(), start.getMonth(), start.getDate())) / 86400000
-  );
+const start = new Date(state.startDate);
+const now = new Date(todayStr);
 
-  const cycleDay = Math.min(Math.max(1, diffDays + 1), TOTAL_DAYS);
+const diff = Math.floor(
+(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) -
+Date.UTC(start.getFullYear(), start.getMonth(), start.getDate())) / 86400000
+);
 
-  const result = {
-    ...state,
-    cycleDay,
-    remainingDays: Math.max(0, TOTAL_DAYS - cycleDay)
-  };
+state.cycleDay = Math.min(Math.max(1, diff + 1), TOTAL_DAYS);
+state.remainingDays = Math.max(0, TOTAL_DAYS - state.cycleDay);
 
-  Storage.set("cycleState", result);
-  return result;
+try {
+localStorage.setItem("cycleState", JSON.stringify(state));
+} catch {}
+
+return state;
 }
 
-/* ===============================
-   TODAY DATA
-=============================== */
+// ===============================
+// TODAY DATA
+// ===============================
+function getTodayKey() {
+return todayISO();
+}
+
 function getTodayPlan() {
-  const plan = Storage.get("todayPlan", {});
-  return plan[todayISO()] ?? [];
+const plan = safeJSON("todayPlan", {});
+const today = plan[getTodayKey()];
+return Array.isArray(today) ? today : [];
 }
 
 function getTodayLog() {
-  const logs = Storage.get("dailyStudyLog", {});
-  return logs[todayISO()] ?? {};
+const logs = safeJSON("dailyStudyLog", {});
+const today = logs[getTodayKey()];
+return (today && typeof today === "object") ? today : {};
 }
 
-/* ===============================
-   PROGRESS ENGINE
-=============================== */
+// ===============================
+// PROGRESS ENGINE
+// ===============================
 function getExpectedProgress() {
-  const { cycleDay, remainingDays } = getCycleState();
+const cycle = getCycleState();
 
-  return {
-    cycleDay,
-    remainingDays,
-    expectedPages: Math.round((cycleDay / TOTAL_DAYS) * TOTAL_PAGES)
-  };
+return {
+cycleDay: cycle.cycleDay,
+remainingDays: cycle.remainingDays,
+expectedPages: Math.round((cycle.cycleDay / TOTAL_DAYS) * TOTAL_PAGES)
+};
 }
 
+// ===============================
+// ACTUAL PROGRESS
+// ===============================
 function getActualProgress() {
-  let total = 0;
+const grades = [9, 10, 11, 12];
+const subjects = ["Math", "Physics", "Chemistry", "Biology", "English"];
 
-  for (const g of GRADES) {
-    const saved = Storage.get(`grade_${g}_progress`, {});
-    for (const s of SUBJECTS) {
-      total += Number(saved[s]) || 0;
-    }
-  }
+let total = 0;
 
-  return total;
+for (const g of grades) {
+const saved = safeJSON(grade_${g}_progress, {});
+for (const s of subjects) {
+total += Number(saved[s]) || 0;
+}
 }
 
-/* ===============================
-   DELAY STATUS (IMPROVED LOGIC)
-=============================== */
+return { actualPages: total };
+}
+
+// ===============================
+// DELAY STATUS
+// ===============================
 function getDelayStatus() {
-  const expected = getExpectedProgress();
-  const actual = getActualProgress();
+const expected = getExpectedProgress();
+const actual = getActualProgress();
 
-  const gap = actual - expected.expectedPages;
+const gap = actual.actualPages - expected.expectedPages;
 
-  let status;
-  if (gap >= 0) status = "🟢 ON TRACK";
-  else if (gap >= -200) status = "🟡 SLIGHTLY BEHIND";
-  else status = "🔴 CRITICAL";
+let status = "🟢 AHEAD / ON TRACK";
+if (gap < 0) status = "🟡 SLIGHTLY BEHIND";
+if (gap < -200) status = "🔴 SERIOUSLY BEHIND";
 
-  return {
-    ...expected,
-    actualPages: actual,
-    gap,
-    status
-  };
+return {
+cycleDay: expected.cycleDay,
+expectedPages: expected.expectedPages,
+actualPages: actual.actualPages,
+gap,
+status
+};
 }
 
-/* ===============================
-   DAILY DELAYS
-=============================== */
+// ===============================
+// DAILY DELAYS
+// ===============================
 function getPlannedVsActual() {
-  const plan = getTodayPlan();
-  const log = getTodayLog();
+const plan = getTodayPlan();
+const log = getTodayLog();
 
-  const delays = [];
+const delays = [];
 
-  for (const p of plan) {
-    if (!p?.grade || !p?.subjects) continue;
+for (const p of plan) {
+if (!p?.grade || !p?.subjects) continue;
 
-    const actual = log[p.grade] || {};
+const actual = log[p.grade] || {};  
 
-    for (const subject in p.subjects) {
-      const planned = Number(p.subjects[subject]) || 0;
-      const done = Number(actual[subject]) || 0;
+for (const subject in p.subjects) {  
+  const planned = Number(p.subjects[subject]) || 0;  
+  const done = Number(actual[subject]) || 0;  
 
-      if (done < planned) {
-        delays.push({
-          grade: p.grade,
-          subject,
-          missing: planned - done
-        });
-      }
-    }
-  }
-
-  return delays;
+  if (done < planned) {  
+    delays.push({  
+      grade: p.grade,  
+      subject,  
+      missing: planned - done  
+    });  
+  }  
 }
 
-/* ===============================
-   SMART TARGET SYSTEM (UPGRADED)
-=============================== */
+}
+
+return delays;
+}
+
+// ===============================
+// SYSTEM STATUS
+// ===============================
+function getSystemStatus() {
+const cycle = getDelayStatus();
+const dailyDelays = getPlannedVsActual();
+
+return {
+cycle,
+dailyDelays,
+isOnTrack: cycle.gap >= 0 && dailyDelays.length === 0
+};
+}
+
+// ===============================
+// SNAPSHOT
+// ===============================
+function getSystemSnapshot() {
+const status = getSystemStatus();
+
+return {
+time: {
+cycleDay: status.cycle.cycleDay,
+remainingDays: TOTAL_DAYS - status.cycle.cycleDay
+},
+progress: {
+actual: status.cycle.actualPages,
+expected: status.cycle.expectedPages,
+gap: status.cycle.gap
+},
+alerts: {
+isOnTrack: status.isOnTrack,
+hasDailyIssues: status.dailyDelays.length > 0,
+delayCount: status.dailyDelays.length
+}
+};
+}
+
+// ===============================
+// SMART CYCLE
+// ===============================
 function getSmartCycle() {
-  const cycle = getDelayStatus();
+const cycle = getDelayStatus();
+const actualTotal = getActualProgress().actualPages;
 
-  const gap = cycle.gap;
-  const remainingDays = Math.max(1, TOTAL_DAYS - cycle.cycleDay);
+const expected = cycle.expectedPages;
+const gap = actualTotal - expected;
 
-  const catchUp = gap < 0
-    ? Math.min(Math.ceil(Math.abs(gap) / remainingDays), 60)
-    : 0;
+const remainingDays = Math.max(1, TOTAL_DAYS - cycle.cycleDay);
 
-  let target = (TOTAL_PAGES / TOTAL_DAYS) + catchUp;
-  target = Math.min(Math.max(target, 25), 85);
+let catchUp = gap < 0 ? Math.ceil(Math.abs(gap) / remainingDays) : 0;
+catchUp = Math.min(catchUp, 60);
 
-  return {
-    ...cycle,
-    catchUpPerDay: catchUp,
-    remainingDays,
-    dailyTarget: Math.round(target),
-    intensity: target <= 70 ? "SAFE" : "HIGH"
-  };
+let target = (TOTAL_PAGES / TOTAL_DAYS) + catchUp;
+target = Math.min(Math.max(target, 25), 85);
+
+return {
+expected: Math.round(expected),
+actual: Math.round(actualTotal),
+gap: Math.round(gap),
+status: gap >= 0 ? "AHEAD / ON TRACK" : "BEHIND",
+catchUpPerDay: catchUp,
+remainingDays,
+dailyLimit: {
+target: Math.round(target),
+safe: target <= 70,
+warning: target > 70
+}
+};
 }
 
-/* ===============================
-   UI STATE (ISOLATED)
-=============================== */
-const UI = {
-  currentGrade: 9,
-  currentSection: "study",
+// ===============================
+// UI STATE (PWA SAFE)
+// ===============================
+let currentGrade = 9;
+let currentSection = "study";
 
-  save() {
-    Storage.set("ui_state", {
-      grade: this.currentGrade,
-      section: this.currentSection
-    });
-  },
+let nav, prevBtn, nextBtn;
+let _initialized = false;
 
-  load() {
-    const saved = Storage.get("ui_state", null);
-    if (!saved) return;
+// ===============================
+function saveUIState() {
+try {
+localStorage.setItem("ui_state", JSON.stringify({
+grade: currentGrade,
+section: currentSection
+}));
+} catch {}
+}
 
-    this.currentGrade = Number(saved.grade) || 9;
-    this.currentSection = saved.section || "study";
-  }
-};
+function loadUIState() {
+const saved = safeJSON("ui_state", null);
+if (!saved) return;
 
-/* ===============================
-   NAVIGATION CONTROLLER
-=============================== */
-const Nav = {
-  nav: null,
-  prev: null,
-  next: null,
+currentGrade = Number(saved.grade) || 9;
+currentSection = saved.section || "study";
+}
 
-  init() {
-    this.nav = document.getElementById("grade-nav");
-    this.prev = document.getElementById("prev-btn");
-    this.next = document.getElementById("next-btn");
-  },
+// ===============================
+// NAV BUTTONS
+// ===============================
+function updateNavButtons() {
+if (!nav || !prevBtn || !nextBtn) return;
 
-  update() {
-    if (!this.nav) return;
+if (currentSection === "study") {
+nav.style.display = "flex";
+prevBtn.disabled = currentGrade <= 9;
+nextBtn.disabled = currentGrade >= 12;
+} else {
+nav.style.display = "none";
+}
+}
 
-    if (UI.currentSection === "study") {
-      this.nav.style.display = "flex";
-      this.prev.disabled = UI.currentGrade <= 9;
-      this.next.disabled = UI.currentGrade >= 12;
-    } else {
-      this.nav.style.display = "none";
-    }
-  }
-};
-
-/* ===============================
-   SECTION LOADER (CLEAN MAP)
-=============================== */
-const SectionMap = {
-  study: () => window.loadStudySection?.(UI.currentGrade),
-  timetable: () => window.loadWeeklyTimetable?.(),
-  dashboard: () => window.loadDashboard?.(),
-  "top-student": () => window.loadTopStudentMode?.(),
-  sunnah: () => window.loadSunnahTracker?.()
-};
-
+// ===============================
+// SECTION LOADER (SAFE)
+// ===============================
 function loadSection(type, grade) {
-  UI.currentSection = type;
+currentSection = type;
 
-  if (grade !== undefined) {
-    UI.currentGrade = Number(grade);
-  }
-
-  UI.save();
-  Nav.update();
-
-  try {
-    SectionMap[type]?.();
-  } catch (e) {
-    console.error("Section error:", e);
-  }
+if (grade !== undefined && grade !== null) {
+currentGrade = Number(grade);
 }
 
-/* ===============================
-   NAVIGATION ACTIONS
-=============================== */
+saveUIState();
+updateNavButtons();
+
+try {
+if (type === "study" && typeof loadStudySection === "function")
+loadStudySection(currentGrade);
+
+if (type === "timetable" && typeof loadWeeklyTimetable === "function")  
+  loadWeeklyTimetable();  
+
+if (type === "dashboard" && typeof loadDashboard === "function")  
+  loadDashboard();  
+
+if (type === "top-student" && typeof loadTopStudentMode === "function")  
+  loadTopStudentMode();  
+
+if (type === "sunnah" && typeof loadSunnahTracker === "function")  
+  loadSunnahTracker();
+
+} catch (e) {
+console.error("Section load error:", e);
+}
+}
+
+// ===============================
+// NAVIGATION
+// ===============================
 function nextGrade() {
-  if (UI.currentGrade < 12) {
-    loadSection("study", UI.currentGrade + 1);
-  }
+if (currentGrade < 12) loadSection("study", currentGrade + 1);
 }
 
 function previousGrade() {
-  if (UI.currentGrade > 9) {
-    loadSection("study", UI.currentGrade - 1);
-  }
+if (currentGrade > 9) loadSection("study", currentGrade - 1);
 }
 
-/* ===============================
-   INIT (PWA SAFE)
-=============================== */
-let initialized = false;
-
+// ===============================
+// INIT (FIXED FOR PWA + SW + CHROME)
+// ===============================
 function initApp() {
-  if (initialized) return;
-  initialized = true;
+if (_initialized || document.body.dataset.initialized === "1") return;
 
-  UI.load();
-  Nav.init();
-  getCycleState();
+_initialized = true;
+document.body.dataset.initialized = "1";
 
-  requestAnimationFrame(() => {
-    loadSection(UI.currentSection, UI.currentGrade);
-  });
+nav = document.getElementById("grade-nav");
+prevBtn = document.getElementById("prev-btn");
+nextBtn = document.getElementById("next-btn");
+
+loadUIState();
+getCycleState();
+
+requestAnimationFrame(() => {
+setTimeout(() => {
+loadSection(currentSection, currentGrade);
+}, 0);
+});
 }
 
-/* ===============================
-   BOOTSTRAP
-=============================== */
+// ===============================
+// BOOTSTRAP SAFE
+// ===============================
 if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", initApp);
+document.addEventListener("DOMContentLoaded", initApp);
 } else {
-  initApp();
+initApp();
 }
 
-/* ===============================
-   GLOBAL EXPORTS (CONTROLLED)
-=============================== */
-window.loadSection = loadSection;
+// ===============================
+// GLOBAL EXPORTS
+// ===============================
 window.nextGrade = nextGrade;
 window.previousGrade = previousGrade;
-
-})();
+window.loadSection = loadSection;
