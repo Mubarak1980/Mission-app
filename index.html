@@ -1,162 +1,129 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8" />
+<!DOCTYPE html>  <html lang="en">  
+<head>  
+<meta charset="UTF-8" />  <meta name="viewport"  
+content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 
-<meta name="viewport"
-    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-
-<title>Mission App</title>
-
-<link rel="stylesheet" href="./styles.css" />
-
-<!-- PWA MANIFEST -->
-<link rel="manifest" href="./manifest.json">
-
-<!-- ICONS -->
-<link rel="icon" href="./icon-192.png" />
-<link rel="apple-touch-icon" href="./icon-192.png" />
-
-<meta name="theme-color" content="#0b0f14" />
-<meta name="mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="apple-mobile-web-app-title" content="Mission App" />
-
-</head>
-
-<body>
-
-<button id="installBtn" style="
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    padding: 12px 16px;
-    border: none;
-    background: #00d4ff;
-    color: black;
-    font-weight: bold;
-    border-radius: 10px;
-    display: none;
-    z-index: 9999;
+<title>Mission App</title>  <link rel="stylesheet" href="./styles.css" />  <!-- PWA MANIFEST -->  <link rel="manifest" href="./manifest.json">  <!-- ICONS -->  <link rel="icon" href="./icon-192.png" />  
+<link rel="apple-touch-icon" href="./icon-192.png" />  <meta name="theme-color" content="#0b0f14" />  
+<meta name="mobile-web-app-capable" content="yes" />  
+<meta name="apple-mobile-web-app-capable" content="yes" />  
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />  
+<meta name="apple-mobile-web-app-title" content="Mission App" />  </head>  <body>  <button id="installBtn" style="  
+position: fixed;  
+bottom: 20px;  
+right: 20px;  
+padding: 12px 16px;  
+border: none;  
+background: #00d4ff;  
+color: black;  
+font-weight: bold;  
+border-radius: 10px;  
+display: none;  
+z-index: 9999;  
 ">
 Install App
 </button>
 
-<div id="splash-screen">
-    <div class="splash-content">
-        <h1>📘 Mission App</h1>
-        <p>Loading...</p>
-        <div class="loader"></div>
-    </div>
+<div id="splash-screen">  
+    <div class="splash-content">  
+        <h1>📘 Mission App</h1>  
+        <p>Loading...</p>  
+        <div class="loader"></div>  
+    </div>  
+</div>  <div id="app" style="display:none;">  
+    <h1>TIME</h1>  <div class="section-buttons">  
+    <button onclick="loadSection('study', currentGrade)">Study Tracker</button>  
+    <button onclick="loadSection('timetable')">Weekly Timetable</button>  
+    <button onclick="loadSection('dashboard')">Dashboard</button>  
+    <button onclick="loadSection('top-student')">Top Student Mode</button>  
+    <button onclick="loadSection('sunnah')">Sunnah Tracker</button>  
+</div>  
+
+<div id="grade-progress-bar"></div>  
+<div id="main-content"></div>  
+
+<div id="grade-nav">  
+    <button onclick="previousGrade()" id="prev-btn">Previous</button>  
+    <button onclick="nextGrade()" id="next-btn">Next</button>  
 </div>
 
-<div id="app" style="display:none;">
-    <h1>TIME</h1>
-
-    <div class="section-buttons">
-        <button onclick="loadSection('study', currentGrade)">Study Tracker</button>
-        <button onclick="loadSection('timetable')">Weekly Timetable</button>
-        <button onclick="loadSection('dashboard')">Dashboard</button>
-        <button onclick="loadSection('top-student')">Top Student Mode</button>
-        <button onclick="loadSection('sunnah')">Sunnah Tracker</button>
-    </div>
-
-    <div id="grade-progress-bar"></div>
-    <div id="main-content"></div>
-
-    <div id="grade-nav">
-        <button onclick="previousGrade()" id="prev-btn">Previous</button>
-        <button onclick="nextGrade()" id="next-btn">Next</button>
-    </div>
-</div>
-
-<script src="./Sunnah-tracker.js"></script>
-<script src="./Study-tracker.js"></script>
-<script src="./weekly-timetable.js"></script>
-<script src="./dashboard.js"></script>
-<script src="./top-student-mode.js"></script>
-<script src="./main.js"></script>
-
-<script>
-let deferredPrompt = null;
-
-/* =========================
-   INSTALL DETECTION (STABLE)
-========================= */
-window.addEventListener("beforeinstallprompt", (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-
-    console.log("✅ PWA install available");
-
-    const btn = document.getElementById("installBtn");
-    if (btn) btn.style.display = "block";
-});
-
-/* INSTALL CLICK */
-document.getElementById("installBtn")?.addEventListener("click", async () => {
-    if (!deferredPrompt) {
-        alert("Install not ready yet. Try refreshing Chrome.");
-        return;
-    }
-
-    deferredPrompt.prompt();
-
-    const result = await deferredPrompt.userChoice;
-    console.log("Install result:", result.outcome);
-
-    deferredPrompt = null;
-
-    const btn = document.getElementById("installBtn");
-    if (btn) btn.style.display = "none";
-});
-
-/* INSTALLED EVENT */
-window.addEventListener("appinstalled", () => {
-    console.log("App installed successfully");
-
-    deferredPrompt = null;
-
-    const btn = document.getElementById("installBtn");
-    if (btn) btn.style.display = "none";
-});
-
-/* =========================
-   SERVICE WORKER (CHROME SAFE)
-========================= */
-if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => {
-        navigator.serviceWorker.register("./service-worker.js", {
-            scope: "./"
-        })
-        .then(reg => {
-            console.log("SW registered:", reg.scope);
-            reg.update();
-        })
-        .catch(console.error);
-    });
-
-    navigator.serviceWorker.addEventListener("controllerchange", () => {
-        window.location.reload();
-    });
-}
-
-/* =========================
-   SPLASH SCREEN
-========================= */
-window.addEventListener("DOMContentLoaded", () => {
-    const splash = document.getElementById("splash-screen");
-    const app = document.getElementById("app");
-
-    if (app) app.style.display = "block";
-
-    setTimeout(() => {
-        splash?.classList.add("hide");
-        setTimeout(() => splash?.remove(), 150);
-    }, 250);
-});
-</script>
-
-</body>
-</html>
+</div>  <script src="./Sunnah-tracker.js"></script>  <script src="./Study-tracker.js"></script>  <script src="./weekly-timetable.js"></script>  <script src="./dashboard.js"></script>  <script src="./top-student-mode.js"></script>  <script src="./main.js"></script>  <script>  
+let deferredPrompt = null;  
+  
+/* =========================  
+   INSTALL DETECTION (STABLE)  
+========================= */  
+window.addEventListener("beforeinstallprompt", (e) => {  
+    e.preventDefault();  
+    deferredPrompt = e;  
+  
+    console.log("✅ PWA install available");  
+  
+    const btn = document.getElementById("installBtn");  
+    if (btn) btn.style.display = "block";  
+});  
+  
+/* INSTALL CLICK */  
+document.getElementById("installBtn")?.addEventListener("click", async () => {  
+    if (!deferredPrompt) {  
+        alert("Install not ready yet. Try refreshing Chrome.");  
+        return;  
+    }  
+  
+    deferredPrompt.prompt();  
+  
+    const result = await deferredPrompt.userChoice;  
+    console.log("Install result:", result.outcome);  
+  
+    deferredPrompt = null;  
+  
+    const btn = document.getElementById("installBtn");  
+    if (btn) btn.style.display = "none";  
+});  
+  
+/* INSTALLED EVENT */  
+window.addEventListener("appinstalled", () => {  
+    console.log("App installed successfully");  
+  
+    deferredPrompt = null;  
+  
+    const btn = document.getElementById("installBtn");  
+    if (btn) btn.style.display = "none";  
+});  
+  
+/* =========================  
+   SERVICE WORKER (CHROME SAFE)  
+========================= */  
+if ("serviceWorker" in navigator) {  
+    window.addEventListener("load", () => {  
+        navigator.serviceWorker.register("./service-worker.js", {  
+            scope: "./"  
+        })  
+        .then(reg => {  
+            console.log("SW registered:", reg.scope);  
+            reg.update();  
+        })  
+        .catch(console.error);  
+    });  
+  
+    navigator.serviceWorker.addEventListener("controllerchange", () => {  
+        window.location.reload();  
+    });  
+}  
+  
+/* =========================  
+   SPLASH SCREEN  
+========================= */  
+window.addEventListener("DOMContentLoaded", () => {  
+    const splash = document.getElementById("splash-screen");  
+    const app = document.getElementById("app");  
+  
+    if (app) app.style.display = "block";  
+  
+    setTimeout(() => {  
+        splash?.classList.add("hide");  
+        setTimeout(() => splash?.remove(), 150);  
+    }, 250);  
+});  
+</script>  </body>  
+                                                                                                                                         </html>
