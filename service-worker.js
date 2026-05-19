@@ -1,6 +1,9 @@
-const CACHE_NAME = "mission-cache-v183";
-const BASE = "/Mission-app/";
+const CACHE_NAME = "mission-cache-v184";
 
+// 🔥 AUTO BASE (works anywhere: local, GitHub, server)
+const BASE = self.location.pathname.replace("service-worker.js", "");
+
+// Core files
 const APP_SHELL = [
   BASE,
   BASE + "index.html",
@@ -11,40 +14,31 @@ const APP_SHELL = [
   BASE + "dashboard.js",
   BASE + "weekly-timetable.js",
   BASE + "top-student-mode.js",
+  BASE + "manifest.json",
   BASE + "icon-192.png",
-  BASE + "icon-512.png",
-  BASE + "manifest.json"
+  BASE + "icon-512.png"
 ];
 
 // =========================
-// INSTALL
+// INSTALL (FAST + SAFE)
 // =========================
 self.addEventListener("install", (event) => {
-  self.skipWaiting(); // 🔥 move earlier for faster activation
+  self.skipWaiting();
 
   event.waitUntil(
-    (async () => {
-      const cache = await caches.open(CACHE_NAME);
-
-      await Promise.allSettled(
-        APP_SHELL.map(async (file) => {
-          try {
-            const res = await fetch(file, { cache: "reload" });
-
-            if (res && res.ok) {
-              await cache.put(file, res.clone());
-            }
-          } catch (e) {
-            // silent fail (offline safe)
-          }
-        })
-      );
-    })()
+    caches.open(CACHE_NAME).then((cache) =>
+      cache.addAll(APP_SHELL).catch(() => {
+        // fallback if some files fail
+        return Promise.allSettled(
+          APP_SHELL.map((file) => cache.add(file))
+        );
+      })
+    )
   );
 });
 
 // =========================
-// ACTIVATE
+// ACTIVATE (CLEAN + STABLE)
 // =========================
 self.addEventListener("activate", (event) => {
   event.waitUntil(
@@ -52,77 +46,83 @@ self.addEventListener("activate", (event) => {
       const keys = await caches.keys();
 
       await Promise.all(
-        keys.map((k) => {
-          if (k !== CACHE_NAME) return caches.delete(k);
+        keys.map((key) => {
+          if (key !== CACHE_NAME) return caches.delete(key);
         })
       );
 
       await self.clients.claim();
-
-      // 🔥 force refresh clients so new SW takes control immediately
-      const clients = await self.clients.matchAll({ type: "window" });
-      clients.forEach((client) => {
-        if (client.url && "navigate" in client) {
-          client.navigate(client.url);
-        }
-      });
     })()
   );
 });
 
 // =========================
-// FETCH (SMART STRATEGY)
+// FETCH STRATEGIES
 // =========================
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 
-  const url = new URL(event.request.url);
+  const req = event.request;
+  const url = new URL(req.url);
 
+  // Ignore external requests
   if (url.origin !== location.origin) return;
 
   // =========================
-  // NAVIGATION (APP SHELL FIX)
+  // NAVIGATION → NETWORK FIRST
   // =========================
-  if (event.request.mode === "navigate") {
+  if (req.mode === "navigate") {
     event.respondWith(
-      (async () => {
-        try {
-          const network = await fetch(event.request);
-          if (network && network.ok) return network;
-        } catch (e) {}
-
-        const cached = await caches.match(BASE + "index.html");
-        return cached || caches.match(BASE);
-      })()
+      fetch(req)
+        .then((res) => {
+          return res;
+        })
+        .catch(() => caches.match(BASE + "index.html"))
     );
     return;
   }
 
   // =========================
-  // CACHE FIRST + NETWORK UPDATE
+  // STATIC FILES → CACHE FIRST
+  // =========================
+  if (
+    req.destination === "style" ||
+    req.destination === "script" ||
+    req.destination === "image"
+  ) {
+    event.respondWith(
+      caches.match(req).then((cached) => {
+        return (
+          cached ||
+          fetch(req).then((res) => {
+            return caches.open(CACHE_NAME).then((cache) => {
+              cache.put(req, res.clone());
+              return res;
+            });
+          })
+        );
+      })
+    );
+    return;
+  }
+
+  // =========================
+  // DEFAULT → NETWORK FALLBACK CACHE
   // =========================
   event.respondWith(
-    (async () => {
-      const cached = await caches.match(event.request);
-
-      try {
-        const network = await fetch(event.request);
-
-        if (network && network.status === 200) {
-          const cache = await caches.open(CACHE_NAME);
-          cache.put(event.request, network.clone());
-        }
-
-        return network;
-      } catch (e) {
-        return cached;
-      }
-    })()
+    fetch(req)
+      .then((res) => {
+        return caches.open(CACHE_NAME).then((cache) => {
+          cache.put(req, res.clone());
+          return res;
+        });
+      })
+      .catch(() => caches.match(req))
   );
 });
 
 // =========================
-// UPDATE CONTROL
+// MANUAL UPDATE CONTROL
 // =========================
 self.addEventListener("message", (event) => {
   if (event.data?.type === "SKIP_WAITING") {
