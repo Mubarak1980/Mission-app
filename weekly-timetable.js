@@ -1,6 +1,10 @@
+// ===============================
+// WEEKLY TIMETABLE (STABLE VERSION)
+// ===============================
+
 function loadWeeklyTimetable() {
 
-  const pages = window.maxPagesByGrade;
+  const pages = window.maxPagesByGrade || {};
 
   const gradeDays = {
     9: 17,
@@ -13,12 +17,12 @@ function loadWeeklyTimetable() {
   if (!container) return;
 
   // ===============================
-  // 🧠 SAFE STATE HANDLING
+  // SAFE STATE
   // ===============================
   const today = new Date();
   const todayStr = today.toISOString().split("T")[0];
 
-  let state = {};
+  let state;
 
   try {
     state = JSON.parse(localStorage.getItem("studyState") || "{}");
@@ -31,8 +35,10 @@ function loadWeeklyTimetable() {
     state.missedDays = 0;
   }
 
-  const daysBetween = (a, b) =>
-    Math.floor((new Date(b) - new Date(a)) / (1000 * 60 * 60 * 24));
+  const daysBetween = (a, b) => {
+    const diff = new Date(b).getTime() - new Date(a).getTime();
+    return Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)));
+  };
 
   const missed = daysBetween(state.lastVisit || todayStr, todayStr);
 
@@ -80,12 +86,22 @@ function loadWeeklyTimetable() {
   `;
 
   // ===============================
-  // SAFE TABLE LOGIC
+  // TABLE LOGIC (SAFE)
   // ===============================
   [9, 10, 11, 12].forEach(g => {
 
-    const d = pages?.[g];
-    if (!d) return;
+    const d = pages[g];
+
+    // FIX: don't break entire table if missing
+    if (!d) {
+      html += `
+        <tr>
+          <td><b>${g}</b></td>
+          <td colspan="8" style="color:red;">No data available</td>
+        </tr>
+      `;
+      return;
+    }
 
     const days = gradeDays[g] || 0;
 
@@ -93,11 +109,20 @@ function loadWeeklyTimetable() {
     const physics = Number(d.Physics) || 0;
     const chemistry = Number(d.Chemistry) || 0;
     const biology = Number(d.Biology) || 0;
-    const englishRaw = Number(d.English) || 0;
+    const english = Number(d.English) || 0;
 
-    const total = math + physics + chemistry + biology + englishRaw;
+    const total = math + physics + chemistry + biology + english;
 
-    if (total === 0) return;
+    if (total === 0) {
+      html += `
+        <tr>
+          <td><b>${g}</b></td>
+          <td>${days}</td>
+          <td colspan="7">No subject data</td>
+        </tr>
+      `;
+      return;
+    }
 
     const mathP = Math.round((math / total) * DAILY_TARGET);
     const physicsP = Math.round((physics / total) * DAILY_TARGET);
@@ -107,7 +132,6 @@ function loadWeeklyTimetable() {
     let englishP =
       DAILY_TARGET - (mathP + physicsP + chemistryP + biologyP);
 
-    // FIX: prevent negative or unrealistic values
     if (englishP < 0) englishP = 0;
 
     html += `
@@ -132,4 +156,9 @@ function loadWeeklyTimetable() {
   `;
 
   container.innerHTML = html;
-                         }
+}
+
+// ===============================
+// EXPORT (IMPORTANT FIX)
+// ===============================
+window.loadWeeklyTimetable = loadWeeklyTimetable;
