@@ -149,3 +149,5 @@ if (el) {
 
 window.loadStudySection = loadStudySection;
 window.updateGradeSummary = updateGradeSummary;
+
+These does working when i click
