@@ -6,6 +6,40 @@
 "use strict";
 
 /* ===============================
+   MAX PAGES DATA (CRITICAL FIX)
+=============================== */
+window.maxPagesByGrade = {
+  9: {
+    Math: 363,
+    Physics: 174,
+    Chemistry: 175,
+    Biology: 164,
+    English: 223
+  },
+  10: {
+    Math: 385,
+    Physics: 249,
+    Chemistry: 298,
+    Biology: 174,
+    English: 316
+  },
+  11: {
+    Math: 479,
+    Physics: 329,
+    Chemistry: 330,
+    Biology: 284,
+    English: 283
+  },
+  12: {
+    Math: 416,
+    Physics: 177,
+    Chemistry: 287,
+    Biology: 354,
+    English: 263
+  }
+};
+
+/* ===============================
    CONSTANTS
 =============================== */
 const GRADES = [9, 10, 11, 12];
@@ -304,13 +338,12 @@ if (document.readyState === "loading") {
 }
 
 /* ===============================
-   GLOBAL EXPORTS (IMPORTANT FIX)
+   GLOBAL EXPORTS
 =============================== */
 window.loadSection = loadSection;
 window.nextGrade = nextGrade;
 window.previousGrade = previousGrade;
 
-// 🔥 CRITICAL FIX FOR YOUR OTHER FILES
 window.UI = UI;
 window.getCurrentGradeSafe = () => UI.currentGrade || 9;
 
