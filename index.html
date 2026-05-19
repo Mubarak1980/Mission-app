@@ -49,7 +49,7 @@ Install App
     <h1>TIME</h1>
 
     <div class="section-buttons">
-        <button onclick="loadSection('study', getCurrentGrade())">Study Tracker</button>
+        <button onclick="loadSection('study', getCurrentGradeSafe())">Study Tracker</button>
         <button onclick="loadSection('timetable')">Weekly Timetable</button>
         <button onclick="loadSection('dashboard')">Dashboard</button>
         <button onclick="loadSection('top-student')">Top Student Mode</button>
@@ -65,7 +65,7 @@ Install App
     </div>
 </div>
 
-<!-- SCRIPTS (ORDER FIXED) -->
+<!-- SCRIPTS -->
 <script src="./main.js"></script>
 <script src="./Study-tracker.js"></script>
 <script src="./weekly-timetable.js"></script>
@@ -76,9 +76,9 @@ Install App
 <script>
 let deferredPrompt = null;
 
-/* SAFE GRADE STATE */
-function getCurrentGrade() {
-    return window.currentGrade || 9;
+/* SAFE GRADE */
+function getCurrentGradeSafe() {
+    return window.UI?.currentGrade || 9;
 }
 
 /* INSTALL */
@@ -90,13 +90,13 @@ window.addEventListener("beforeinstallprompt", (e) => {
     if (btn) btn.style.display = "block";
 });
 
+/* BOOT */
 window.addEventListener("DOMContentLoaded", () => {
 
     const installBtn = document.getElementById("installBtn");
 
     if (installBtn) {
         installBtn.addEventListener("click", async () => {
-
             if (!deferredPrompt) return;
 
             deferredPrompt.prompt();
@@ -107,7 +107,7 @@ window.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    /* SAFE SPLASH CONTROL */
+    /* SAFE SPLASH */
     const splash = document.getElementById("splash-screen");
     const app = document.getElementById("app");
 
@@ -120,10 +120,8 @@ window.addEventListener("DOMContentLoaded", () => {
 
                 if (app) app.style.display = "block";
 
-                // 🔥 IMPORTANT: ensure app initializes AFTER everything loads
-                if (typeof window.initApp === "function") {
-                    window.initApp();
-                }
+                // ❌ REMOVED initApp CALL (was broken)
+                // main.js already auto-initializes safely
 
             }, 200);
         }
