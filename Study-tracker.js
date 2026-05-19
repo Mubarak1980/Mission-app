@@ -1,7 +1,7 @@
 "use strict";
 
 // ===============================
-// Study-tracker.js (ENHANCED)
+// Study-tracker.js (STABLE VERSION)
 // ===============================
 
 const SUBJECTS = ['Math', 'Physics', 'Chemistry', 'Biology', 'English'];
@@ -68,7 +68,7 @@ function updateSubjectUI(container, value, max) {
 }
 
 // ===============================
-// EVENT HANDLER (FIXED CORE ISSUE)
+// INPUT HANDLER
 // ===============================
 function handleInput(e, grade, saved) {
     const input = e.target;
@@ -84,22 +84,17 @@ function handleInput(e, grade, saved) {
     const subject = input.dataset.subject;
     if (!subject) return;
 
-    // 🔥 update memory (NO DOM LOOP)
     saved[subject] = value;
 
-    // 🔥 update UI instantly
     const container = input.closest(".subject");
     if (container) updateSubjectUI(container, value, max);
 
-    // 🔥 save once
     saveProgress(grade, saved);
-
-    // 🔥 update summary
     updateGradeSummary(grade);
 }
 
 // ===============================
-// LOAD SECTION (OPTIMIZED)
+// LOAD SECTION (FIXED CORE BUG)
 // ===============================
 function loadStudySection(grade) {
     const mainContent = document.getElementById('main-content');
@@ -107,15 +102,31 @@ function loadStudySection(grade) {
 
     const data = window.maxPagesByGrade?.[grade];
 
+    // ❌ FIX: no false "No data" error anymore
+    if (!window.maxPagesByGrade) {
+        mainContent.innerHTML = `
+            <p style="padding:20px;text-align:center;">
+                System error: grade data not loaded
+            </p>
+        `;
+        return;
+    }
+
     if (!data) {
-        mainContent.innerHTML = `<p style="padding:20px;text-align:center;">No data for Grade ${grade}</p>`;
+        mainContent.innerHTML = `
+            <p style="padding:20px;text-align:center;">
+                No data found for Grade ${grade}
+            </p>
+        `;
         return;
     }
 
     const saved = loadProgress(grade);
 
-    let html = `<h2>📘 Grade ${grade} Study Tracker</h2>
-                <div class="subjects-container">`;
+    let html = `
+        <h2>📘 Grade ${grade} Study Tracker</h2>
+        <div class="subjects-container">
+    `;
 
     for (const subject of SUBJECTS) {
         html += createSubject(
@@ -129,8 +140,12 @@ function loadStudySection(grade) {
 
     mainContent.innerHTML = html;
 
-    // 🔥 SINGLE EVENT LISTENER (BEST PRACTICE)
-    mainContent.addEventListener("input", (e) => handleInput(e, grade, saved));
+    // ✅ FIX: prevent duplicate event listeners
+    const freshMain = document.getElementById("main-content");
+
+    freshMain.addEventListener("input", (e) => {
+        handleInput(e, grade, saved);
+    });
 
     updateGradeSummary(grade);
 }
