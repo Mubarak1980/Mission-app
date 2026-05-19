@@ -1,155 +1,126 @@
+"use strict";
+
 // =====================================================
-// 📊 DASHBOARD (STABLE VERSION)
+// 📊 DASHBOARD (FIXED + CONSISTENT)
 // =====================================================
 
 function loadDashboard() {
 
-try {
+  try {
 
-window.currentSection = 'dashboard';  
+    window.currentSection = "dashboard";
 
-if (typeof updateNavButtons === "function") {  
-  updateNavButtons();  
-}  
+    const main = document.getElementById("main-content");
+    if (!main) return;
 
-if (typeof nav !== "undefined" && nav) {  
-  nav.style.display = 'none';  
-}  
+    if (!window.maxPagesByGrade) {
+      main.innerHTML = `<p style="color:red;">Error: grade data not loaded</p>`;
+      return;
+    }
 
-const subjects = ['Math', 'Physics', 'Chemistry', 'Biology', 'English'];  
-const grades = [9, 10, 11, 12];  
+    const subjects = ["Math", "Physics", "Chemistry", "Biology", "English"];
+    const grades = [9, 10, 11, 12];
 
-const main = document.getElementById('main-content');  
-if (!main) return;  
+    // ===============================
+    // SAFE LOCAL PROGRESS
+    // ===============================
+    const loadProgressSafe = (grade) => {
+      try {
+        return JSON.parse(localStorage.getItem(`grade_${grade}_progress`) || "{}");
+      } catch {
+        return {};
+      }
+    };
 
-if (!window.maxPagesByGrade) {  
-  main.innerHTML = `<p>Error: grade data not loaded</p>`;  
-  return;  
-}  
+    // ===============================
+    // BUILD SUBJECT CARDS
+    // ===============================
+    let html = `
+      <h2>📊 Dashboard: Overall Subject Progress</h2>
+      <div class="dashboard-container">
+    `;
 
-// ===============================  
-// SAFE LOAD PROGRESS  
-// ===============================  
-const safeLoadProgress = (grade) => {  
-  try {  
-    if (typeof loadProgress === "function") {  
-      return loadProgress(grade) || {};  
-    }  
-    return JSON.parse(localStorage.getItem(`grade_${grade}_progress`) || "{}");  
-  } catch {  
-    return {};  
-  }  
-};  
+    subjects.forEach(subject => {
 
-// ===============================  
-// BUILD HTML  
-// ===============================  
-let html = `  
-  <h2>📊 Dashboard: Overall Subject Progress</h2>  
-  <div class="dashboard-container">  
-`;  
+      let totalPercent = 0;
+      let count = 0;
 
-// ===============================  
-// SUBJECT PROGRESS  
-// ===============================  
-subjects.forEach(subject => {  
+      grades.forEach(grade => {
 
-  let totalPercent = 0;  
-  let count = 0;  
+        const saved = loadProgressSafe(grade);
+        const maxPages = window.maxPagesByGrade?.[grade]?.[subject] || 0;
+        const done = Number(saved?.[subject]) || 0;
 
-  grades.forEach(grade => {  
+        if (maxPages > 0) {
+          totalPercent += (done / maxPages) * 100;
+          count++;
+        }
+      });
 
-    const saved = safeLoadProgress(grade);  
+      const avg = count ? Math.round(totalPercent / count) : 0;
 
-    const pagesRead = Number(saved?.[subject]) || 0;  
-    const maxPages = Number(window.maxPagesByGrade?.[grade]?.[subject]) || 0;  
+      html += `
+        <div class="dashboard-subject">
+          <h3>${subject}</h3>
+          <progress value="${avg}" max="100"></progress>
+          <p>${avg}% progress</p>
+        </div>
+      `;
+    });
 
-    if (maxPages > 0) {  
-      totalPercent += (pagesRead / maxPages) * 100;  
-      count++;  
-    }  
-  });  
+    html += `</div>`;
 
-  const avgPercent = count ? Math.round(totalPercent / count) : 0;  
+    // ===============================
+    // CYCLE INFO (FIXED)
+    // ===============================
+    if (typeof getCycleState === "function") {
 
-  html += `  
-    <div class="dashboard-subject">  
-      <h3>${subject}</h3>  
-      <progress value="${avgPercent}" max="100"></progress>  
-      <p>${avgPercent}% progress in ${subject}</p>  
-    </div>  
-  `;  
-});  
+      const cycle = getCycleState();
 
-html += `</div>`;  
+      html += `
+        <div class="delay-section">
+          <h2>⏱️ Cycle Info</h2>
+          <p>📅 Day: ${cycle.cycleDay}/90</p>
+          <p>📉 Remaining: ${cycle.remainingDays}</p>
+        </div>
+      `;
+    }
 
-// ===============================  
-// CYCLE INFO  
-// ===============================  
-if (typeof getSystemSnapshot === "function") {  
-  const system = getSystemSnapshot();  
+    // ===============================
+    // SMART ENGINE (FIXED TO MATCH MAIN.JS)
+    // ===============================
+    if (typeof getSmartCycle === "function") {
 
-  if (system && system.time) {  
-    html += `  
-      <div class="delay-section">  
-        <h2>⏱️ Cycle Info</h2>  
-        <p>📅 Day: ${system.time.cycleDay}/90</p>  
-      </div>  
-    `;  
-  }  
-}  
+      const smart = getSmartCycle();
 
-// ===============================  
-// SMART CYCLE  
-// ===============================  
-if (typeof getSmartCycle === "function") {  
+      html += `
+        <div class="smart-cycle-section">
+          <h2>🧠 Smart Study Engine</h2>
 
-  const smart = getSmartCycle();  
+          <p>📊 Expected Pages: ${smart.expectedPages}</p>
+          <p>📚 Actual Pages: ${smart.actualPages}</p>
+          <p>⚖️ Gap: ${smart.gap}</p>
 
-  if (smart && smart.expected !== undefined) {  
+          <hr/>
 
-    const actual = Number(smart.actual) || 0;  
-    const expected = Number(smart.expected) || 0;  
+          <p>🚀 Catch-up/day: ${smart.catchUpPerDay}</p>
+          <p>📈 Daily Target: ${smart.dailyTarget}</p>
+          <p>🔥 Intensity: <b>${smart.intensity}</b></p>
+        </div>
+      `;
+    }
 
-    const progressRate =  
-      expected > 0  
-        ? ((actual / expected) * 100).toFixed(1)  
-        : 0;  
+    // ===============================
+    // RENDER
+    // ===============================
+    main.innerHTML = html;
 
-    html += `  
-      <div class="smart-cycle-section">  
-        <h2>🧠 Smart Study Engine</h2>  
+    const bar = document.getElementById("grade-progress-bar");
+    if (bar) bar.innerHTML = "";
 
-        <p>📊 Expected : ${expected}</p>  
-        <p>📚 Progress: ${actual}</p>  
-        <p>⚖️ Difference (Gap): ${smart.gap ?? 0}</p>  
-        <p>📈 Progress Rate: ${progressRate}%</p>  
-
-        <hr/>  
-
-        <p>🚀 Catch-up Plan: ${smart.catchUpPerDay ?? 0} pages/day</p>  
-        <p>🛡️ Safe Limit: ${smart.dailyLimit?.target ?? 0} pages/day</p>  
-
-        <p>  
-          ⚠️ Burnout Risk:  
-          <b>${smart.dailyLimit?.warning ? "HIGH" : "SAFE"}</b>  
-        </p>  
-      </div>  
-    `;  
-  }  
-}  
-
-// ===============================  
-// FINAL RENDER  
-// ===============================  
-main.innerHTML = html;  
-
-const bar = document.getElementById('grade-progress-bar');  
-if (bar) bar.innerHTML = '';
-
-} catch (err) {
-console.error("Dashboard crash:", err);
-}
+  } catch (err) {
+    console.error("Dashboard crash:", err);
+  }
 }
 
 window.loadDashboard = loadDashboard;
