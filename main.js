@@ -1,12 +1,12 @@
 // ===============================
-// MAIN ENGINE (FINAL STABLE VERSION - COMPLETE)
+// MAIN ENGINE (FINAL STABLE VERSION - FIXED)
 // ===============================
 
 (() => {
 "use strict";
 
 /* ===============================
-   MAX PAGES DATA (CRITICAL FIX)
+   MAX PAGES DATA
 =============================== */
 window.maxPagesByGrade = window.maxPagesByGrade || {
   9: { Math: 363, Physics: 174, Chemistry: 175, Biology: 164, English: 223 },
@@ -25,7 +25,7 @@ const TOTAL_DAYS = 90;
 const TOTAL_PAGES = 5705;
 
 /* ===============================
-   STORAGE UTILITIES
+   STORAGE
 =============================== */
 const Storage = {
   get(key, fallback) {
@@ -36,7 +36,6 @@ const Storage = {
       return fallback;
     }
   },
-
   set(key, value) {
     try {
       localStorage.setItem(key, JSON.stringify(value));
@@ -45,7 +44,7 @@ const Storage = {
 };
 
 /* ===============================
-   DATE UTIL
+   DATE
 =============================== */
 function todayISO() {
   const d = new Date();
@@ -130,7 +129,7 @@ function getDelayStatus() {
 }
 
 /* ===============================
-   SMART CYCLE (COMPLETE)
+   SMART CYCLE (FIXED)
 =============================== */
 function getSmartCycle() {
   const cycle = getDelayStatus();
@@ -195,7 +194,7 @@ const UI = {
 };
 
 /* ===============================
-   NAV CONTROLLER
+   NAV
 =============================== */
 const Nav = {
   init() {
@@ -218,26 +217,14 @@ const Nav = {
 };
 
 /* ===============================
-   SAFE MODULE CALL
+   SAFE CALL
 =============================== */
-function safeCall(fnName, fallbackText) {
-  const fn = window[fnName];
-
-  if (typeof fn !== "function") {
+function safeCall(fnName, msg) {
+  if (typeof window[fnName] !== "function") {
     const main = document.getElementById("main-content");
-
-    if (main) {
-      main.innerHTML = `
-        <p style="padding:20px;text-align:center;color:red;">
-          ${fallbackText}
-        </p>
-      `;
-    }
-
-    console.warn("Missing module:", fnName);
+    if (main) main.innerHTML = `<p style="padding:20px;color:red">${msg}</p>`;
     return false;
   }
-
   return true;
 }
 
@@ -246,7 +233,7 @@ function safeCall(fnName, fallbackText) {
 =============================== */
 const SectionMap = {
   study: () => {
-    if (!safeCall("loadStudySection", "Study Tracker not loaded")) return;
+    if (!safeCall("loadStudySection", "Study not loaded")) return;
     window.loadStudySection(UI.currentGrade);
   },
 
@@ -261,12 +248,12 @@ const SectionMap = {
   },
 
   "top-student": () => {
-    if (!safeCall("loadTopStudentMode", "Top Student Mode not loaded")) return;
+    if (!safeCall("loadTopStudentMode", "Top Student not loaded")) return;
     window.loadTopStudentMode();
   },
 
   sunnah: () => {
-    if (!safeCall("loadSunnahTracker", "Sunnah Tracker not loaded")) return;
+    if (!safeCall("loadSunnahTracker", "Sunnah not loaded")) return;
     window.loadSunnahTracker();
   }
 };
@@ -283,8 +270,7 @@ function loadSection(type, grade) {
   UI.save();
   Nav.update();
 
-  const fn = SectionMap[type];
-  if (typeof fn === "function") fn();
+  if (SectionMap[type]) SectionMap[type]();
 }
 
 /* ===============================
@@ -303,7 +289,7 @@ function previousGrade() {
 }
 
 /* ===============================
-   INIT APP
+   INIT
 =============================== */
 let initialized = false;
 
@@ -315,7 +301,7 @@ function initApp() {
   Nav.init();
   getCycleState();
 
-  console.log("✅ Mission App Initialized");
+  console.log("✅ Mission App Ready");
 
   requestAnimationFrame(() => {
     loadSection(UI.currentSection, UI.currentGrade);
@@ -332,8 +318,8 @@ if (document.readyState === "loading") {
 }
 
 /* ===============================
-   GLOBAL EXPORTS
-/* GLOBAL EXPORTS */
+   GLOBAL EXPORTS (IMPORTANT FIX)
+=============================== */
 window.loadSection = loadSection;
 window.nextGrade = nextGrade;
 window.previousGrade = previousGrade;
@@ -341,12 +327,9 @@ window.previousGrade = previousGrade;
 window.UI = UI;
 window.getCurrentGradeSafe = () => UI.currentGrade || 9;
 
-// ✅ ADD THIS BELOW
 window.getSmartCycle = getSmartCycle;
 window.getCycleState = getCycleState;
 window.getExpectedProgress = getExpectedProgress;
 window.getActualProgress = getActualProgress;
 
-})();
-
-})();
+})();   // ✅ ONLY ONE CLOSING BRACKET
