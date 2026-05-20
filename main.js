@@ -118,10 +118,21 @@ function getDelayStatus() {
 
   let status = "🟢 ON TRACK";
 
-  // IMPROVED LOGIC (more realistic)
-  if (gap < -300) status = "🔴 CRITICAL";
-  else if (gap < -100) status = "🟡 BEHIND";
-  else if (gap >= 0) status = "🟢 ON TRACK";
+  if (gap >= 200) {
+    status = "🟢 AHEAD 🚀";
+  } 
+  else if (gap >= 0) {
+    status = "🟢 ON TRACK";
+  } 
+  else if (gap >= -100) {
+    status = "🟡 SLIGHTLY BEHIND";
+  } 
+  else if (gap >= -300) {
+    status = "🟠 BEHIND";
+  } 
+  else {
+    status = "🔴 CRITICAL";
+  }
 
   return {
     ...expected,
