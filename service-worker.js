@@ -2,7 +2,7 @@
 // SERVICE WORKER (FINAL - CHROME FRIENDLY)
 // =========================
 
-const CACHE_NAME = "mission-cache-v1";
+const CACHE_NAME = "mission-cache-v2";
 
 // ✅ Always match actual deployed scope (GitHub Pages safe)
 const BASE = self.registration.scope;
