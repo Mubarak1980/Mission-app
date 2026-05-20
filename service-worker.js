@@ -2,7 +2,7 @@
 // SERVICE WORKER (PRODUCTION SAFE)
 // =========================
 
-const CACHE_NAME = "mission-cache-v212";
+const CACHE_NAME = "mission-cache-v213";
 
 // Use scope correctly
 const BASE = self.registration.scope;
