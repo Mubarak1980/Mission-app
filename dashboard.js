@@ -71,7 +71,7 @@ function loadDashboard() {
     html += `</div>`;
 
     // ===============================
-    // CYCLE INFO (FIXED)
+    // CYCLE INFO
     // ===============================
     if (typeof getCycleState === "function") {
 
@@ -87,7 +87,7 @@ function loadDashboard() {
     }
 
     // ===============================
-    // SMART ENGINE (FIXED TO MATCH MAIN.JS)
+    // SMART ENGINE (FULL FIXED DISPLAY)
     // ===============================
     if (typeof getSmartCycle === "function") {
 
@@ -103,9 +103,14 @@ function loadDashboard() {
 
           <hr/>
 
-          <p>🚀 Catch-up/day: ${smart.catchUpPerDay}</p>
-          <p>📈 Daily Target: ${smart.dailyTarget}</p>
-          <p>🔥 Intensity: <b>${smart.intensity}</b></p>
+          <p>📉 Remaining Days: ${smart.remainingDays}</p>
+          <p>🚀 Catch-up Per Day: ${smart.catchUpPerDay}</p>
+          <p>📈 Daily Target: ${smart.dailyTarget} pages</p>
+
+          <p>⚡ Intensity: <b>${smart.intensity}</b></p>
+          <p>🔥 Status: <b>${smart.pressure}</b></p>
+
+          <p>📌 Base Target: ${smart.baseTarget} pages/day</p>
         </div>
       `;
     }
