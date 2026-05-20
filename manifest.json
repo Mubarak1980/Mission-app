@@ -5,16 +5,14 @@
 
   "start_url": "/Mission-app/index.html",
   "scope": "/Mission-app/",
+  "id": "/Mission-app/",
 
   "display": "standalone",
-  "display_override": ["window-controls-overlay", "standalone"],
 
   "background_color": "#0b0f14",
   "theme_color": "#0b0f14",
 
   "orientation": "portrait-primary",
-
-  "id": "/Mission-app/",
 
   "icons": [
     {
