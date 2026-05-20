@@ -1,5 +1,5 @@
 // ===============================
-// MAIN ENGINE (FINAL STABLE VERSION)
+// MAIN ENGINE (FINAL STABLE VERSION - COMPLETE)
 // ===============================
 
 (() => {
@@ -8,35 +8,11 @@
 /* ===============================
    MAX PAGES DATA (CRITICAL FIX)
 =============================== */
-window.maxPagesByGrade = {
-  9: {
-    Math: 363,
-    Physics: 174,
-    Chemistry: 175,
-    Biology: 164,
-    English: 223
-  },
-  10: {
-    Math: 385,
-    Physics: 249,
-    Chemistry: 298,
-    Biology: 174,
-    English: 316
-  },
-  11: {
-    Math: 479,
-    Physics: 329,
-    Chemistry: 330,
-    Biology: 284,
-    English: 283
-  },
-  12: {
-    Math: 416,
-    Physics: 177,
-    Chemistry: 287,
-    Biology: 354,
-    English: 263
-  }
+window.maxPagesByGrade = window.maxPagesByGrade || {
+  9: { Math: 363, Physics: 174, Chemistry: 175, Biology: 164, English: 223 },
+  10: { Math: 385, Physics: 249, Chemistry: 298, Biology: 174, English: 316 },
+  11: { Math: 479, Physics: 329, Chemistry: 330, Biology: 284, English: 283 },
+  12: { Math: 416, Physics: 177, Chemistry: 287, Biology: 354, English: 263 }
 };
 
 /* ===============================
@@ -154,7 +130,7 @@ function getDelayStatus() {
 }
 
 /* ===============================
-   SMART CYCLE (FINAL UPGRADED VERSION)
+   SMART CYCLE (COMPLETE)
 =============================== */
 function getSmartCycle() {
   const cycle = getDelayStatus();
@@ -175,7 +151,6 @@ function getSmartCycle() {
   target = Math.min(Math.max(target, 25), 85);
 
   let intensity = "SAFE";
-
   if (target > 75) intensity = "HIGH";
   else if (target > 60) intensity = "MODERATE";
 
@@ -328,7 +303,7 @@ function previousGrade() {
 }
 
 /* ===============================
-   INIT
+   INIT APP
 =============================== */
 let initialized = false;
 
