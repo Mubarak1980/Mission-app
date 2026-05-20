@@ -2,7 +2,7 @@
 // SERVICE WORKER (CHROME STABLE FINAL)
 // =========================
 
-const CACHE_NAME = "mission-cache-v11";
+const CACHE_NAME = "mission-cache-v12";
 
 // ✅ FIX: lock base path (do NOT use scope dynamically)
 const BASE = "/Mission-app/";
