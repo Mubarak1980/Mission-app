@@ -1,13 +1,6 @@
-// =========================
-// SERVICE WORKER (FINAL - CHROME FRIENDLY)
-// =========================
-
-const CACHE_NAME = "mission-cache-v3";
-
-// ✅ Always match actual deployed scope (GitHub Pages safe)
+const CACHE_NAME = "mission-cache-v4";
 const BASE = self.registration.scope;
 
-// ✅ App shell (core files)
 const APP_SHELL = [
   BASE,
   BASE + "index.html",
@@ -23,9 +16,6 @@ const APP_SHELL = [
   BASE + "icon-512.png"
 ];
 
-// =========================
-// INSTALL
-// =========================
 self.addEventListener("install", (event) => {
   event.waitUntil(
     (async () => {
@@ -35,112 +25,68 @@ self.addEventListener("install", (event) => {
         APP_SHELL.map(async (file) => {
           try {
             const res = await fetch(file, { cache: "reload" });
-
-            if (res && res.ok) {
-              await cache.put(file, res.clone());
-            }
-          } catch (e) {
-            // silent fail (safe)
-          }
+            if (res && res.ok) await cache.put(file, res.clone());
+          } catch {}
         })
       );
 
-      // ✅ Proper lifecycle control
       await self.skipWaiting();
     })()
   );
 });
 
-// =========================
-// ACTIVATE
-// =========================
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     (async () => {
       const keys = await caches.keys();
 
       await Promise.all(
-        keys.map((key) => {
-          if (key !== CACHE_NAME) {
-            return caches.delete(key);
-          }
-        })
+        keys.map((key) => key !== CACHE_NAME && caches.delete(key))
       );
 
-      // ✅ Take control immediately
       await self.clients.claim();
     })()
   );
 });
 
-// =========================
-// FETCH (PWA SAFE STRATEGY)
-// =========================
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 
   const url = new URL(event.request.url);
-
-  // ✅ Only handle same-origin
   if (url.origin !== location.origin) return;
 
-  // =========================
-  // NAVIGATION (CRITICAL FOR INSTALL)
-  // =========================
   if (event.request.mode === "navigate") {
     event.respondWith(
       (async () => {
         try {
           const network = await fetch(event.request);
+          if (network.ok) return network;
+        } catch {}
 
-          if (network && network.ok) {
-            return network;
-          }
-        } catch (e) {
-          // ignore
-        }
-
-        // ✅ Always fallback to index (required for installability)
-        const cached = await caches.match(BASE + "index.html");
-
-        return (
-          cached ||
-          new Response(
-            "<h1>Offline</h1>",
-            { headers: { "Content-Type": "text/html" } }
-          )
-        );
+        return caches.match(BASE + "index.html");
       })()
     );
     return;
   }
 
-  // =========================
-  // STATIC FILES (CACHE FIRST + UPDATE)
-  // =========================
   event.respondWith(
     (async () => {
       const cached = await caches.match(event.request);
 
       try {
         const network = await fetch(event.request);
-
-        if (network && network.ok) {
+        if (network.ok) {
           const cache = await caches.open(CACHE_NAME);
           cache.put(event.request, network.clone());
         }
-
-        return network || cached;
-      } catch (e) {
+        return network;
+      } catch {
         return cached;
       }
     })()
   );
 });
 
-// =========================
-// FORCE UPDATE CONTROL
-// =========================
 self.addEventListener("message", (event) => {
   if (event.data?.type === "SKIP_WAITING") {
     self.skipWaiting();
