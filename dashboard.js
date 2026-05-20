@@ -1,14 +1,12 @@
 "use strict";
 
 // =====================================================
-// 📊 DASHBOARD (FIXED + CONSISTENT)
+// 📊 DASHBOARD (FULLY SYNCED WITH MAIN.JS)
 // =====================================================
 
 function loadDashboard() {
 
   try {
-
-    window.currentSection = "dashboard";
 
     const main = document.getElementById("main-content");
     if (!main) return;
@@ -22,9 +20,9 @@ function loadDashboard() {
     const grades = [9, 10, 11, 12];
 
     // ===============================
-    // SAFE LOCAL PROGRESS
+    // SAFE LOCAL PROGRESS (MATCH MAIN.JS FORMAT)
     // ===============================
-    const loadProgressSafe = (grade) => {
+    const loadProgress = (grade) => {
       try {
         return JSON.parse(localStorage.getItem(`grade_${grade}_progress`) || "{}");
       } catch {
@@ -33,7 +31,7 @@ function loadDashboard() {
     };
 
     // ===============================
-    // BUILD SUBJECT CARDS
+    // BUILD SUBJECT PROGRESS
     // ===============================
     let html = `
       <h2>📊 Dashboard: Overall Subject Progress</h2>
@@ -47,7 +45,7 @@ function loadDashboard() {
 
       grades.forEach(grade => {
 
-        const saved = loadProgressSafe(grade);
+        const saved = loadProgress(grade);
         const maxPages = window.maxPagesByGrade?.[grade]?.[subject] || 0;
         const done = Number(saved?.[subject]) || 0;
 
@@ -71,7 +69,7 @@ function loadDashboard() {
     html += `</div>`;
 
     // ===============================
-    // CYCLE INFO
+    // CYCLE INFO (FROM MAIN.JS ONLY)
     // ===============================
     if (typeof getCycleState === "function") {
 
@@ -87,30 +85,43 @@ function loadDashboard() {
     }
 
     // ===============================
-    // SMART ENGINE (FULL FIXED DISPLAY)
+    // SMART CYCLE (SAFE + SYNCED)
     // ===============================
     if (typeof getSmartCycle === "function") {
 
       const smart = getSmartCycle();
 
+      // SAFETY WRAPPER (PREVENT BLANK UI)
+      const safe = {
+        expectedPages: smart?.expectedPages ?? 0,
+        actualPages: smart?.actualPages ?? 0,
+        gap: smart?.gap ?? 0,
+        remainingDays: smart?.remainingDays ?? 0,
+        catchUpPerDay: smart?.catchUpPerDay ?? 0,
+        dailyTarget: smart?.dailyTarget ?? 0,
+        intensity: smart?.intensity ?? "SAFE",
+        pressure: smart?.pressure ?? "ON_TRACK",
+        baseTarget: smart?.baseTarget ?? 0
+      };
+
       html += `
         <div class="smart-cycle-section">
           <h2>🧠 Smart Study Engine</h2>
 
-          <p>📊 Expected Pages: ${smart.expectedPages}</p>
-          <p>📚 Actual Pages: ${smart.actualPages}</p>
-          <p>⚖️ Gap: ${smart.gap}</p>
+          <p>📊 Expected Pages: ${safe.expectedPages}</p>
+          <p>📚 Actual Pages: ${safe.actualPages}</p>
+          <p>⚖️ Gap: ${safe.gap}</p>
 
           <hr/>
 
-          <p>📉 Remaining Days: ${smart.remainingDays}</p>
-          <p>🚀 Catch-up Per Day: ${smart.catchUpPerDay}</p>
-          <p>📈 Daily Target: ${smart.dailyTarget} pages</p>
+          <p>📉 Remaining Days: ${safe.remainingDays}</p>
+          <p>🚀 Catch-up Per Day: ${safe.catchUpPerDay}</p>
+          <p>📈 Daily Target: ${safe.dailyTarget} pages</p>
 
-          <p>⚡ Intensity: <b>${smart.intensity}</b></p>
-          <p>🔥 Status: <b>${smart.pressure}</b></p>
+          <p>⚡ Intensity: <b>${safe.intensity}</b></p>
+          <p>🔥 Status: <b>${safe.pressure}</b></p>
 
-          <p>📌 Base Target: ${smart.baseTarget} pages/day</p>
+          <p>📌 Base Target: ${safe.baseTarget} pages/day</p>
         </div>
       `;
     }
