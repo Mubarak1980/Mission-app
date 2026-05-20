@@ -333,12 +333,20 @@ if (document.readyState === "loading") {
 
 /* ===============================
    GLOBAL EXPORTS
-=============================== */
+/* GLOBAL EXPORTS */
 window.loadSection = loadSection;
 window.nextGrade = nextGrade;
 window.previousGrade = previousGrade;
 
 window.UI = UI;
 window.getCurrentGradeSafe = () => UI.currentGrade || 9;
+
+// ✅ ADD THIS BELOW
+window.getSmartCycle = getSmartCycle;
+window.getCycleState = getCycleState;
+window.getExpectedProgress = getExpectedProgress;
+window.getActualProgress = getActualProgress;
+
+})();
 
 })();
