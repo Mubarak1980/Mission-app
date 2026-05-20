@@ -84,47 +84,48 @@ function loadDashboard() {
       `;
     }
 
+    
     // ===============================
-    // SMART CYCLE (SAFE + SYNCED)
-    // ===============================
-    if (typeof getSmartCycle === "function") {
+// SMART CYCLE (ROBUST VERSION)
+// ===============================
+if (typeof window.getSmartCycle === "function") {
 
-      const smart = getSmartCycle();
+  const smart = window.getSmartCycle();
 
-      // SAFETY WRAPPER (PREVENT BLANK UI)
-      const safe = {
-        expectedPages: smart?.expectedPages ?? 0,
-        actualPages: smart?.actualPages ?? 0,
-        gap: smart?.gap ?? 0,
-        remainingDays: smart?.remainingDays ?? 0,
-        catchUpPerDay: smart?.catchUpPerDay ?? 0,
-        dailyTarget: smart?.dailyTarget ?? 0,
-        intensity: smart?.intensity ?? "SAFE",
-        pressure: smart?.pressure ?? "ON_TRACK",
-        baseTarget: smart?.baseTarget ?? 0
-      };
+  // HARD SAFETY NORMALIZATION (IMPORTANT)
+  const safe = {
+    expectedPages: Number(smart?.expectedPages ?? 0),
+    actualPages: Number(smart?.actualPages ?? 0),
+    gap: Number(smart?.gap ?? 0),
+    remainingDays: Number(smart?.remainingDays ?? 0),
+    catchUpPerDay: Number(smart?.catchUpPerDay ?? 0),
+    dailyTarget: Number(smart?.dailyTarget ?? 0),
+    intensity: smart?.intensity ?? "SAFE",
+    pressure: smart?.pressure ?? "ON_TRACK",
+    baseTarget: Number(smart?.baseTarget ?? 0)
+  };
 
-      html += `
-        <div class="smart-cycle-section">
-          <h2>🧠 Smart Study Engine</h2>
+  html += `
+    <div class="smart-cycle-section">
+      <h2>🧠 Smart Study Engine</h2>
 
-          <p>📊 Expected Pages: ${safe.expectedPages}</p>
-          <p>📚 Actual Pages: ${safe.actualPages}</p>
-          <p>⚖️ Gap: ${safe.gap}</p>
+      <p>📊 Expected Pages: ${safe.expectedPages}</p>
+      <p>📚 Actual Pages: ${safe.actualPages}</p>
+      <p>⚖️ Gap: ${safe.gap}</p>
 
-          <hr/>
+      <hr/>
 
-          <p>📉 Remaining Days: ${safe.remainingDays}</p>
-          <p>🚀 Catch-up Per Day: ${safe.catchUpPerDay}</p>
-          <p>📈 Daily Target: ${safe.dailyTarget} pages</p>
+      <p>📉 Remaining Days: ${safe.remainingDays}</p>
+      <p>🚀 Catch-up Per Day: ${safe.catchUpPerDay}</p>
+      <p>📈 Daily Target: ${safe.dailyTarget} pages</p>
 
-          <p>⚡ Intensity: <b>${safe.intensity}</b></p>
-          <p>🔥 Status: <b>${safe.pressure}</b></p>
+      <p>⚡ Intensity: <b>${safe.intensity}</b></p>
+      <p>🔥 Status: <b>${safe.pressure}</b></p>
 
-          <p>📌 Base Target: ${safe.baseTarget} pages/day</p>
-        </div>
-      `;
-    }
+      <p>📌 Base Target: ${safe.baseTarget}</p>
+    </div>
+  `;
+}
 
     // ===============================
     // RENDER
