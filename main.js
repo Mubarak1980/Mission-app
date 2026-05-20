@@ -1,5 +1,5 @@
 // ===============================
-// MAIN ENGINE (FINAL STABLE VERSION - FIXED)
+// MAIN ENGINE (IMPROVED STABLE VERSION)
 // ===============================
 
 (() => {
@@ -36,6 +36,7 @@ const Storage = {
       return fallback;
     }
   },
+
   set(key, value) {
     try {
       localStorage.setItem(key, JSON.stringify(value));
@@ -44,7 +45,7 @@ const Storage = {
 };
 
 /* ===============================
-   DATE
+   DATE UTIL
 =============================== */
 function todayISO() {
   const d = new Date();
@@ -63,11 +64,10 @@ function getCycleState() {
   const start = new Date(state.startDate);
   const now = new Date(today);
 
-  const diffDays =
-    Math.floor(
-      (Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) -
-       Date.UTC(start.getFullYear(), start.getMonth(), start.getDate())) / 86400000
-    );
+  const diffDays = Math.floor(
+    (Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) -
+     Date.UTC(start.getFullYear(), start.getMonth(), start.getDate())) / 86400000
+  );
 
   const cycleDay = Math.min(Math.max(1, diffDays + 1), TOTAL_DAYS);
 
@@ -117,8 +117,11 @@ function getDelayStatus() {
   const gap = actual - expected.expectedPages;
 
   let status = "🟢 ON TRACK";
-  if (gap < 0 && gap >= -200) status = "🟡 SLIGHTLY BEHIND";
-  if (gap < -200) status = "🔴 CRITICAL";
+
+  // IMPROVED LOGIC (more realistic)
+  if (gap < -300) status = "🔴 CRITICAL";
+  else if (gap < -100) status = "🟡 BEHIND";
+  else if (gap >= 0) status = "🟢 ON TRACK";
 
   return {
     ...expected,
@@ -129,41 +132,45 @@ function getDelayStatus() {
 }
 
 /* ===============================
-   SMART CYCLE (FIXED)
+   SMART CYCLE (IMPROVED CORE LOGIC)
 =============================== */
 function getSmartCycle() {
   const cycle = getDelayStatus();
 
   const remainingDays = Math.max(1, TOTAL_DAYS - cycle.cycleDay);
-  const gap = cycle.gap || 0;
-
-  let catchUp = 0;
-
-  if (gap < 0) {
-    catchUp = Math.ceil(Math.abs(gap) / remainingDays);
-    catchUp = Math.min(catchUp, 60);
-  }
+  const gap = cycle.gap;
 
   const baseTarget = TOTAL_PAGES / TOTAL_DAYS;
 
-  let target = baseTarget + catchUp;
-  target = Math.min(Math.max(target, 25), 85);
+  // safer catch-up logic
+  let catchUpPerDay = 0;
+
+  if (gap < -50) {
+    catchUpPerDay = Math.ceil(Math.abs(gap) / remainingDays);
+  }
+
+  // cap extreme overload (important fix)
+  catchUpPerDay = Math.min(catchUpPerDay, 50);
+
+  let dailyTarget = baseTarget + catchUpPerDay;
+
+  // safe bounds (prevents unrealistic numbers)
+  dailyTarget = Math.max(25, Math.min(dailyTarget, 90));
 
   let intensity = "SAFE";
-  if (target > 75) intensity = "HIGH";
-  else if (target > 60) intensity = "MODERATE";
+  if (dailyTarget > 75) intensity = "HIGH";
+  else if (dailyTarget > 60) intensity = "MODERATE";
 
-  const pressure =
-    gap < -500 ? "CRITICAL" :
-    gap < -200 ? "HIGH" :
-    gap < 0 ? "LOW_BACKLOG" :
-    "ON_TRACK";
+  let pressure = "ON_TRACK";
+  if (gap < -500) pressure = "CRITICAL";
+  else if (gap < -200) pressure = "HIGH";
+  else if (gap < -50) pressure = "LOW_BACKLOG";
 
   return {
     ...cycle,
-    catchUpPerDay: catchUp,
     remainingDays,
-    dailyTarget: Math.round(target),
+    catchUpPerDay,
+    dailyTarget: Math.round(dailyTarget),
     intensity,
     baseTarget: Math.round(baseTarget),
     pressure
@@ -222,7 +229,9 @@ const Nav = {
 function safeCall(fnName, msg) {
   if (typeof window[fnName] !== "function") {
     const main = document.getElementById("main-content");
-    if (main) main.innerHTML = `<p style="padding:20px;color:red">${msg}</p>`;
+    if (main) {
+      main.innerHTML = `<p style="padding:20px;color:red">${msg}</p>`;
+    }
     return false;
   }
   return true;
@@ -270,7 +279,7 @@ function loadSection(type, grade) {
   UI.save();
   Nav.update();
 
-  if (SectionMap[type]) SectionMap[type]();
+  SectionMap[type]?.();
 }
 
 /* ===============================
@@ -318,13 +327,14 @@ if (document.readyState === "loading") {
 }
 
 /* ===============================
-   GLOBAL EXPORTS (IMPORTANT FIX)
+   EXPORTS
 =============================== */
 window.loadSection = loadSection;
 window.nextGrade = nextGrade;
 window.previousGrade = previousGrade;
 
 window.UI = UI;
+
 window.getCurrentGradeSafe = () => UI.currentGrade || 9;
 
 window.getSmartCycle = getSmartCycle;
@@ -332,4 +342,4 @@ window.getCycleState = getCycleState;
 window.getExpectedProgress = getExpectedProgress;
 window.getActualProgress = getActualProgress;
 
-})();   // ✅ ONLY ONE CLOSING BRACKET
+})();
