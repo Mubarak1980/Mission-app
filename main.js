@@ -1,5 +1,5 @@
 // ===============================
-// MAIN ENGINE (IMPROVED STABLE VERSION)
+// MAIN ENGINE (FINAL IMPROVED VERSION)
 // ===============================
 
 (() => {
@@ -108,7 +108,7 @@ function getActualProgress() {
 }
 
 /* ===============================
-   STATUS ENGINE
+   STATUS ENGINE (FIXED LOGIC)
 =============================== */
 function getDelayStatus() {
   const expected = getExpectedProgress();
@@ -116,23 +116,13 @@ function getDelayStatus() {
 
   const gap = actual - expected.expectedPages;
 
-  let status = "🟢 ON TRACK";
+  let status;
 
-  if (gap >= 200) {
-    status = "🟢 AHEAD 🚀";
-  } 
-  else if (gap >= 0) {
-    status = "🟢 ON TRACK";
-  } 
-  else if (gap >= -100) {
-    status = "🟡 SLIGHTLY BEHIND";
-  } 
-  else if (gap >= -300) {
-    status = "🟠 BEHIND";
-  } 
-  else {
-    status = "🔴 CRITICAL";
-  }
+  if (gap >= 300) status = "🟢 AHEAD 🚀";
+  else if (gap >= 0) status = "🟢 ON TRACK";
+  else if (gap >= -150) status = "🟡 SLIGHTLY BEHIND";
+  else if (gap >= -400) status = "🟠 BEHIND";
+  else status = "🔴 CRITICAL";
 
   return {
     ...expected,
@@ -143,7 +133,7 @@ function getDelayStatus() {
 }
 
 /* ===============================
-   SMART CYCLE (IMPROVED CORE LOGIC)
+   SMART CYCLE (IMPROVED CORE)
 =============================== */
 function getSmartCycle() {
   const cycle = getDelayStatus();
@@ -153,19 +143,19 @@ function getSmartCycle() {
 
   const baseTarget = TOTAL_PAGES / TOTAL_DAYS;
 
-  // safer catch-up logic
+  // 🔥 improved catch-up logic (less aggressive, more realistic)
   let catchUpPerDay = 0;
 
   if (gap < -50) {
     catchUpPerDay = Math.ceil(Math.abs(gap) / remainingDays);
   }
 
-  // cap extreme overload (important fix)
-  catchUpPerDay = Math.min(catchUpPerDay, 50);
+  // prevent unrealistic overload
+  catchUpPerDay = Math.min(catchUpPerDay, 40);
 
   let dailyTarget = baseTarget + catchUpPerDay;
 
-  // safe bounds (prevents unrealistic numbers)
+  // safe limits
   dailyTarget = Math.max(25, Math.min(dailyTarget, 90));
 
   let intensity = "SAFE";
@@ -174,7 +164,7 @@ function getSmartCycle() {
 
   let pressure = "ON_TRACK";
   if (gap < -500) pressure = "CRITICAL";
-  else if (gap < -200) pressure = "HIGH";
+  else if (gap < -250) pressure = "HIGH";
   else if (gap < -50) pressure = "LOW_BACKLOG";
 
   return {
