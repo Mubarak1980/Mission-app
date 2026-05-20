@@ -1,13 +1,13 @@
 // =========================
-// SERVICE WORKER (PRODUCTION SAFE)
+// SERVICE WORKER (FINAL - CHROME FRIENDLY)
 // =========================
 
-const CACHE_NAME = "mission-cache-v217";
+const CACHE_NAME = "mission-cache-v1";
 
-// Use scope correctly
+// ✅ Always match actual deployed scope (GitHub Pages safe)
 const BASE = self.registration.scope;
 
-// Normalize app paths safely
+// ✅ App shell (core files)
 const APP_SHELL = [
   BASE,
   BASE + "index.html",
@@ -18,107 +18,128 @@ const APP_SHELL = [
   BASE + "dashboard.js",
   BASE + "weekly-timetable.js",
   BASE + "top-student-mode.js",
+  BASE + "manifest.json",
   BASE + "icon-192.png",
-  BASE + "icon-512.png",
-  BASE + "manifest.json"
+  BASE + "icon-512.png"
 ];
 
 // =========================
 // INSTALL
 // =========================
 self.addEventListener("install", (event) => {
-  self.skipWaiting();
+  event.waitUntil(
+    (async () => {
+      const cache = await caches.open(CACHE_NAME);
 
-  event.waitUntil((async () => {
-    const cache = await caches.open(CACHE_NAME);
+      await Promise.allSettled(
+        APP_SHELL.map(async (file) => {
+          try {
+            const res = await fetch(file, { cache: "reload" });
 
-    await Promise.allSettled(
-      APP_SHELL.map(async (file) => {
-        try {
-          const res = await fetch(file, { cache: "reload" });
-          if (res && res.ok) {
-            await cache.put(file, res.clone());
+            if (res && res.ok) {
+              await cache.put(file, res.clone());
+            }
+          } catch (e) {
+            // silent fail (safe)
           }
-        } catch (e) {
-          // silent fail
-        }
-      })
-    );
-  })());
+        })
+      );
+
+      // ✅ Proper lifecycle control
+      await self.skipWaiting();
+    })()
+  );
 });
 
 // =========================
 // ACTIVATE
 // =========================
 self.addEventListener("activate", (event) => {
-  event.waitUntil((async () => {
-    const keys = await caches.keys();
+  event.waitUntil(
+    (async () => {
+      const keys = await caches.keys();
 
-    await Promise.all(
-      keys.map((k) => {
-        if (k !== CACHE_NAME) return caches.delete(k);
-      })
-    );
+      await Promise.all(
+        keys.map((key) => {
+          if (key !== CACHE_NAME) {
+            return caches.delete(key);
+          }
+        })
+      );
 
-    await self.clients.claim();
-  })());
+      // ✅ Take control immediately
+      await self.clients.claim();
+    })()
+  );
 });
 
 // =========================
-// FETCH STRATEGY (SAFE SPA)
+// FETCH (PWA SAFE STRATEGY)
 // =========================
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 
   const url = new URL(event.request.url);
 
+  // ✅ Only handle same-origin
   if (url.origin !== location.origin) return;
 
   // =========================
-  // NAVIGATION (FIXED)
+  // NAVIGATION (CRITICAL FOR INSTALL)
   // =========================
   if (event.request.mode === "navigate") {
-    event.respondWith((async () => {
-      try {
-        const network = await fetch(event.request);
-        if (network && network.ok) return network;
-      } catch (e) {}
+    event.respondWith(
+      (async () => {
+        try {
+          const network = await fetch(event.request);
 
-      // FIX: always use scope-based index fallback
-      const cached = await caches.match(BASE + "index.html");
+          if (network && network.ok) {
+            return network;
+          }
+        } catch (e) {
+          // ignore
+        }
 
-      return cached || new Response(
-        `<!DOCTYPE html><html><body><h3>Offline</h3></body></html>`,
-        { headers: { "Content-Type": "text/html" } }
-      );
-    })());
+        // ✅ Always fallback to index (required for installability)
+        const cached = await caches.match(BASE + "index.html");
 
+        return (
+          cached ||
+          new Response(
+            "<h1>Offline</h1>",
+            { headers: { "Content-Type": "text/html" } }
+          )
+        );
+      })()
+    );
     return;
   }
 
   // =========================
-  // CACHE FIRST + UPDATE
+  // STATIC FILES (CACHE FIRST + UPDATE)
   // =========================
-  event.respondWith((async () => {
-    const cached = await caches.match(event.request);
+  event.respondWith(
+    (async () => {
+      const cached = await caches.match(event.request);
 
-    try {
-      const network = await fetch(event.request);
+      try {
+        const network = await fetch(event.request);
 
-      if (network && network.status === 200) {
-        const cache = await caches.open(CACHE_NAME);
-        cache.put(event.request, network.clone());
+        if (network && network.ok) {
+          const cache = await caches.open(CACHE_NAME);
+          cache.put(event.request, network.clone());
+        }
+
+        return network || cached;
+      } catch (e) {
+        return cached;
       }
-
-      return network;
-    } catch (e) {
-      return cached;
-    }
-  })());
+    })()
+  );
 });
 
 // =========================
-// UPDATE CONTROL
+// FORCE UPDATE CONTROL
 // =========================
 self.addEventListener("message", (event) => {
   if (event.data?.type === "SKIP_WAITING") {
