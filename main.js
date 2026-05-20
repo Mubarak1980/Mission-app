@@ -154,26 +154,45 @@ function getDelayStatus() {
 }
 
 /* ===============================
-   SMART CYCLE
+   SMART CYCLE (FINAL UPGRADED VERSION)
 =============================== */
 function getSmartCycle() {
   const cycle = getDelayStatus();
 
   const remainingDays = Math.max(1, TOTAL_DAYS - cycle.cycleDay);
-  const catchUp =
-    cycle.gap < 0
-      ? Math.min(Math.ceil(Math.abs(cycle.gap) / remainingDays), 60)
-      : 0;
+  const gap = cycle.gap || 0;
 
-  let target = (TOTAL_PAGES / TOTAL_DAYS) + catchUp;
+  let catchUp = 0;
+
+  if (gap < 0) {
+    catchUp = Math.ceil(Math.abs(gap) / remainingDays);
+    catchUp = Math.min(catchUp, 60);
+  }
+
+  const baseTarget = TOTAL_PAGES / TOTAL_DAYS;
+
+  let target = baseTarget + catchUp;
   target = Math.min(Math.max(target, 25), 85);
+
+  let intensity = "SAFE";
+
+  if (target > 75) intensity = "HIGH";
+  else if (target > 60) intensity = "MODERATE";
+
+  const pressure =
+    gap < -500 ? "CRITICAL" :
+    gap < -200 ? "HIGH" :
+    gap < 0 ? "LOW_BACKLOG" :
+    "ON_TRACK";
 
   return {
     ...cycle,
     catchUpPerDay: catchUp,
     remainingDays,
     dailyTarget: Math.round(target),
-    intensity: target <= 70 ? "SAFE" : "HIGH"
+    intensity,
+    baseTarget: Math.round(baseTarget),
+    pressure
   };
 }
 
