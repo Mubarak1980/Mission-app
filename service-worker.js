@@ -1,5 +1,11 @@
-const CACHE_NAME = "mission-cache-v4";
-const BASE = self.registration.scope;
+// =========================
+// SERVICE WORKER (CHROME STABLE FINAL)
+// =========================
+
+const CACHE_NAME = "mission-cache-v5";
+
+// ✅ FIX: lock base path (do NOT use scope dynamically)
+const BASE = "/Mission-app/";
 
 const APP_SHELL = [
   BASE,
@@ -16,7 +22,12 @@ const APP_SHELL = [
   BASE + "icon-512.png"
 ];
 
+// =========================
+// INSTALL
+// =========================
 self.addEventListener("install", (event) => {
+  self.skipWaiting();
+
   event.waitUntil(
     (async () => {
       const cache = await caches.open(CACHE_NAME);
@@ -25,23 +36,30 @@ self.addEventListener("install", (event) => {
         APP_SHELL.map(async (file) => {
           try {
             const res = await fetch(file, { cache: "reload" });
-            if (res && res.ok) await cache.put(file, res.clone());
-          } catch {}
+            if (res && res.ok) {
+              await cache.put(file, res.clone());
+            }
+          } catch (e) {}
         })
       );
-
-      await self.skipWaiting();
     })()
   );
 });
 
+// =========================
+// ACTIVATE
+// =========================
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     (async () => {
       const keys = await caches.keys();
 
       await Promise.all(
-        keys.map((key) => key !== CACHE_NAME && caches.delete(key))
+        keys.map((key) => {
+          if (key !== CACHE_NAME) {
+            return caches.delete(key);
+          }
+        })
       );
 
       await self.clients.claim();
@@ -49,18 +67,25 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+// =========================
+// FETCH (PWA SAFE)
+// =========================
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 
   const url = new URL(event.request.url);
+
   if (url.origin !== location.origin) return;
 
+  // =========================
+  // NAVIGATION FIX (CRITICAL)
+  // =========================
   if (event.request.mode === "navigate") {
     event.respondWith(
       (async () => {
         try {
           const network = await fetch(event.request);
-          if (network.ok) return network;
+          if (network && network.ok) return network;
         } catch {}
 
         return caches.match(BASE + "index.html");
@@ -69,16 +94,21 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  // =========================
+  // CACHE STRATEGY
+  // =========================
   event.respondWith(
     (async () => {
       const cached = await caches.match(event.request);
 
       try {
         const network = await fetch(event.request);
-        if (network.ok) {
+
+        if (network && network.ok) {
           const cache = await caches.open(CACHE_NAME);
           cache.put(event.request, network.clone());
         }
+
         return network;
       } catch {
         return cached;
@@ -87,6 +117,9 @@ self.addEventListener("fetch", (event) => {
   );
 });
 
+// =========================
+// FORCE UPDATE
+// =========================
 self.addEventListener("message", (event) => {
   if (event.data?.type === "SKIP_WAITING") {
     self.skipWaiting();
