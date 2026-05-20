@@ -19,6 +19,7 @@ content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable
 
 <body>
 
+<!-- INSTALL BUTTON -->
 <button id="installBtn" style="
 position: fixed;
 bottom: 20px;
@@ -69,29 +70,47 @@ Install App
 <!-- SCRIPTS (CORRECT ORDER) -->
 <!-- ========================= -->
 
-<!-- ✅ DATA FIRST -->
 <script src="./data.js"></script>
 
-<!-- ✅ MODULES -->
 <script src="./Study-tracker.js"></script>
 <script src="./weekly-timetable.js"></script>
 <script src="./dashboard.js"></script>
 <script src="./top-student-mode.js"></script>
 <script src="./Sunnah-tracker.js"></script>
 
-<!-- ✅ MAIN LAST -->
 <script src="./main.js"></script>
 
+<!-- ========================= -->
+<!-- PWA + INSTALL LOGIC -->
+<!-- ========================= -->
 <script>
 let deferredPrompt = null;
 
-/* SAFE GRADE */
+/* =========================
+   ✅ DETECT INSTALLED MODE
+========================= */
+function isRunningStandalone() {
+    return (
+        window.matchMedia('(display-mode: standalone)').matches ||
+        window.navigator.standalone === true
+    );
+}
+
+/* =========================
+   SAFE GRADE
+========================= */
 function getCurrentGradeSafe() {
     return window.UI?.currentGrade || 9;
 }
 
-/* INSTALL */
+/* =========================
+   INSTALL PROMPT DETECTION
+========================= */
 window.addEventListener("beforeinstallprompt", (e) => {
+
+    // 🔥 Prevent showing if already installed
+    if (isRunningStandalone()) return;
+
     e.preventDefault();
     deferredPrompt = e;
 
@@ -99,22 +118,46 @@ window.addEventListener("beforeinstallprompt", (e) => {
     if (btn) btn.style.display = "block";
 });
 
-/* BOOT */
+/* =========================
+   INSTALL BUTTON SETUP
+========================= */
+function setupInstallButton() {
+    const installBtn = document.getElementById("installBtn");
+    if (!installBtn) return;
+
+    installBtn.addEventListener("click", async () => {
+        if (!deferredPrompt) return;
+
+        deferredPrompt.prompt();
+        await deferredPrompt.userChoice;
+
+        deferredPrompt = null;
+        installBtn.style.display = "none";
+    });
+}
+
+/* =========================
+   AFTER INSTALL
+========================= */
+window.addEventListener("appinstalled", () => {
+    deferredPrompt = null;
+
+    const btn = document.getElementById("installBtn");
+    if (btn) btn.style.display = "none";
+});
+
+/* =========================
+   BOOT
+========================= */
 window.addEventListener("DOMContentLoaded", () => {
 
-    const installBtn = document.getElementById("installBtn");
-
-    if (installBtn) {
-        installBtn.addEventListener("click", async () => {
-            if (!deferredPrompt) return;
-
-            deferredPrompt.prompt();
-            await deferredPrompt.userChoice;
-
-            deferredPrompt = null;
-            installBtn.style.display = "none";
-        });
+    // 🔥 Hide install button if already installed
+    if (isRunningStandalone()) {
+        const btn = document.getElementById("installBtn");
+        if (btn) btn.style.display = "none";
     }
+
+    setupInstallButton();
 
     const splash = document.getElementById("splash-screen");
     const app = document.getElementById("app");
@@ -125,15 +168,15 @@ window.addEventListener("DOMContentLoaded", () => {
 
             setTimeout(() => {
                 splash.remove();
-
                 if (app) app.style.display = "block";
-
             }, 200);
         }
     }, 500);
 });
 
-/* SERVICE WORKER */
+/* =========================
+   SERVICE WORKER
+========================= */
 if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
         navigator.serviceWorker.register("./service-worker.js")
@@ -148,4 +191,4 @@ if ("serviceWorker" in navigator) {
 </script>
 
 </body>
-</html>
+    </html>
