@@ -5,7 +5,7 @@
 "use strict";
 
 // Increment this version string whenever you change your HTML, CSS, or JS files
-const CACHE_NAME = "mission-cache-v17";
+const CACHE_NAME = "mission-cache-v18";
 
 // ==========================================
 // STATIC APP SHELL (Cleaned for subfolders)
@@ -21,8 +21,7 @@ const APP_SHELL = [
   "weekly-timetable.js",
   "top-student-mode.js",
   "manifest.json",
-  "icon-192.png",
- // Ensure this file is uploaded to your main branch
+  "icon-192.png"
 ];
 
 // ==========================================
