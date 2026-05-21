@@ -99,13 +99,8 @@ Install App
     <div id="main-content"></div>
 
     <div id="grade-nav">
-        <button onclick="previousGrade()" id="prev-btn">
-            Previous
-        </button>
-
-        <button onclick="nextGrade()" id="next-btn">
-            Next
-        </button>
+        <button onclick="previousGrade()" id="prev-btn">Previous</button>
+        <button onclick="nextGrade()" id="next-btn">Next</button>
     </div>
 
 </div>
@@ -125,16 +120,15 @@ Install App
 <script src="./main.js"></script>
 
 <!-- ========================= -->
-<!-- PWA + INSTALL LOGIC -->
+<!-- PWA + INSTALL LOGIC (IMPROVED) -->
 <!-- ========================= -->
 <script>
-
 "use strict";
 
 let deferredPrompt = null;
 
 /* =========================
-   DETECT STANDALONE MODE
+   DETECT STANDALONE
 ========================= */
 function isRunningStandalone() {
     return (
@@ -155,21 +149,16 @@ function getCurrentGradeSafe() {
 ========================= */
 window.addEventListener("beforeinstallprompt", (e) => {
 
-    // Prevent mini-infobar
     e.preventDefault();
 
-    // Already installed
     if (isRunningStandalone()) return;
 
     deferredPrompt = e;
 
     const btn = document.getElementById("installBtn");
+    if (btn) btn.style.display = "block";
 
-    if (btn) {
-        btn.style.display = "block";
-    }
-
-    console.log("✅ Install prompt ready");
+    console.log("✅ PWA install prompt ready");
 });
 
 /* =========================
@@ -178,13 +167,12 @@ window.addEventListener("beforeinstallprompt", (e) => {
 function setupInstallButton() {
 
     const installBtn = document.getElementById("installBtn");
-
     if (!installBtn) return;
 
     installBtn.addEventListener("click", async () => {
 
         if (!deferredPrompt) {
-            alert("Install not available yet. Use the app for a little longer.");
+            alert("Install will appear after a few seconds of usage.");
             return;
         }
 
@@ -192,40 +180,35 @@ function setupInstallButton() {
 
         const choice = await deferredPrompt.userChoice;
 
-        console.log("Install choice:", choice.outcome);
+        console.log("Install result:", choice.outcome);
 
         deferredPrompt = null;
-
         installBtn.style.display = "none";
     });
 }
 
 /* =========================
-   AFTER INSTALL
+   INSTALLED EVENT
 ========================= */
 window.addEventListener("appinstalled", () => {
 
-    console.log("✅ Mission App Installed");
+    console.log("✅ App installed");
 
     deferredPrompt = null;
 
     const btn = document.getElementById("installBtn");
-
-    if (btn) {
-        btn.style.display = "none";
-    }
+    if (btn) btn.style.display = "none";
 });
 
 /* =========================
-   APP BOOT
+   BOOT
 ========================= */
 window.addEventListener("DOMContentLoaded", () => {
 
-    const installBtn = document.getElementById("installBtn");
+    const btn = document.getElementById("installBtn");
 
-    // Hide button if installed
-    if (isRunningStandalone() && installBtn) {
-        installBtn.style.display = "none";
+    if (isRunningStandalone() && btn) {
+        btn.style.display = "none";
     }
 
     setupInstallButton();
@@ -236,17 +219,11 @@ window.addEventListener("DOMContentLoaded", () => {
     setTimeout(() => {
 
         if (splash) {
-
             splash.classList.add("hide");
 
             setTimeout(() => {
-
                 splash.remove();
-
-                if (app) {
-                    app.style.display = "block";
-                }
-
+                if (app) app.style.display = "block";
             }, 250);
         }
 
@@ -254,25 +231,24 @@ window.addEventListener("DOMContentLoaded", () => {
 });
 
 /* =========================
-   SERVICE WORKER
+   SERVICE WORKER (FIXED)
 ========================= */
 if ("serviceWorker" in navigator) {
 
     window.addEventListener("load", async () => {
 
         try {
+            const reg = await navigator.serviceWorker.register("./service-worker.js", {
+                scope: "./"
+            });
 
-            const reg = await navigator.serviceWorker.register("./service-worker.js");
-
-            console.log("✅ Service Worker Registered", reg);
+            console.log("✅ SW registered:", reg.scope);
 
         } catch (err) {
-
-            console.error("❌ Service Worker Failed:", err);
+            console.error("❌ SW failed:", err);
         }
     });
 }
-
 </script>
 
 </body>
