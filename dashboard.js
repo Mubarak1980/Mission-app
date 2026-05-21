@@ -1,18 +1,16 @@
 "use strict";
 
 // =====================================================
-// 📊 DASHBOARD (FULLY SYNCED WITH MAIN.JS)
+// 📊 DASHBOARD (WEIGHTED PROGRESS FIXED)
 // =====================================================
 
 function loadDashboard() {
-
   try {
-
     const main = document.getElementById("main-content");
     if (!main) return;
 
     if (!window.maxPagesByGrade) {
-      main.innerHTML = `<p style="color:red;">Error: grade data not loaded</p>`;
+      main.innerHTML = `<p style="color:red; text-align:center; padding:20px;">Error: grade data not loaded</p>`;
       return;
     }
 
@@ -20,7 +18,7 @@ function loadDashboard() {
     const grades = [9, 10, 11, 12];
 
     // ===============================
-    // SAFE LOCAL PROGRESS (MATCH MAIN.JS FORMAT)
+    // SAFE LOCAL PROGRESS
     // ===============================
     const loadProgress = (grade) => {
       try {
@@ -31,7 +29,7 @@ function loadDashboard() {
     };
 
     // ===============================
-    // BUILD SUBJECT PROGRESS
+    // BUILD SUBJECT PROGRESS (TRUE CALCULATIONS)
     // ===============================
     let html = `
       <h2>📊 Dashboard: Overall Subject Progress</h2>
@@ -39,29 +37,26 @@ function loadDashboard() {
     `;
 
     subjects.forEach(subject => {
-
-      let totalPercent = 0;
-      let count = 0;
+      let totalAbsoluteDone = 0;
+      let totalAbsoluteMax = 0;
 
       grades.forEach(grade => {
-
         const saved = loadProgress(grade);
-        const maxPages = window.maxPagesByGrade?.[grade]?.[subject] || 0;
-        const done = Number(saved?.[subject]) || 0;
+        const maxPages = Number(window.maxPagesByGrade?.[grade]?.[subject]) || 0;
+        const done = Math.min(Number(saved?.[subject]) || 0, maxPages);
 
-        if (maxPages > 0) {
-          totalPercent += (done / maxPages) * 100;
-          count++;
-        }
+        totalAbsoluteDone += done;
+        totalAbsoluteMax += maxPages;
       });
 
-      const avg = count ? Math.round(totalPercent / count) : 0;
+      // Calculate mathematically accurate weighted percentage progress
+      const accurateAvg = totalAbsoluteMax ? Math.round((totalAbsoluteDone / totalAbsoluteMax) * 100) : 0;
 
       html += `
         <div class="dashboard-subject">
           <h3>${subject}</h3>
-          <progress value="${avg}" max="100"></progress>
-          <p>${avg}% progress</p>
+          <progress value="${accurateAvg}" max="100"></progress>
+          <p>${accurateAvg}% progress <span style="font-size:0.85em; color:#888;">(${totalAbsoluteDone}/${totalAbsoluteMax} pages)</span></p>
         </div>
       `;
     });
@@ -72,9 +67,7 @@ function loadDashboard() {
     // CYCLE INFO (FROM MAIN.JS ONLY)
     // ===============================
     if (typeof getCycleState === "function") {
-
       const cycle = getCycleState();
-
       html += `
         <div class="delay-section">
           <h2>⏱️ Cycle Info</h2>
@@ -84,54 +77,53 @@ function loadDashboard() {
       `;
     }
 
-    
     // ===============================
-// SMART CYCLE (ROBUST VERSION)
-// ===============================
-if (typeof window.getSmartCycle === "function") {
+    // SMART CYCLE (ROBUST VERSION)
+    // ===============================
+    if (typeof window.getSmartCycle === "function") {
+      const smart = window.getSmartCycle();
 
-  const smart = window.getSmartCycle();
+      // HARD SAFETY NORMALIZATION (IMPORTANT)
+      const safe = {
+        expectedPages: Number(smart?.expectedPages ?? 0),
+        actualPages: Number(smart?.actualPages ?? 0),
+        gap: Number(smart?.gap ?? 0),
+        remainingDays: Number(smart?.remainingDays ?? 0),
+        catchUpPerDay: Number(smart?.catchUpPerDay ?? 0),
+        dailyTarget: Number(smart?.dailyTarget ?? 0),
+        intensity: smart?.intensity ?? "SAFE",
+        pressure: smart?.pressure ?? "ON_TRACK",
+        baseTarget: Number(smart?.baseTarget ?? 0)
+      };
 
-  // HARD SAFETY NORMALIZATION (IMPORTANT)
-  const safe = {
-    expectedPages: Number(smart?.expectedPages ?? 0),
-    actualPages: Number(smart?.actualPages ?? 0),
-    gap: Number(smart?.gap ?? 0),
-    remainingDays: Number(smart?.remainingDays ?? 0),
-    catchUpPerDay: Number(smart?.catchUpPerDay ?? 0),
-    dailyTarget: Number(smart?.dailyTarget ?? 0),
-    intensity: smart?.intensity ?? "SAFE",
-    pressure: smart?.pressure ?? "ON_TRACK",
-    baseTarget: Number(smart?.baseTarget ?? 0)
-  };
+      html += `
+        <div class="smart-cycle-section">
+          <h2>🧠 Smart Study Engine</h2>
 
-  html += `
-    <div class="smart-cycle-section">
-      <h2>🧠 Smart Study Engine</h2>
+          <p>📊 Expected Pages: ${safe.expectedPages}</p>
+          <p>📚 Actual Pages: ${safe.actualPages}</p>
+          <p>⚖️ Gap: ${safe.gap}</p>
 
-      <p>📊 Expected Pages: ${safe.expectedPages}</p>
-      <p>📚 Actual Pages: ${safe.actualPages}</p>
-      <p>⚖️ Gap: ${safe.gap}</p>
+          <hr style="border:0; border-top:1px solid #222; margin:12px 0;"/>
 
-      <hr/>
+          <p>📉 Remaining Days: ${safe.remainingDays}</p>
+          <p>🚀 Catch-up Per Day: ${safe.catchUpPerDay}</p>
+          <p>📈 Daily Target: <b style="color:#00d4ff;">${safe.dailyTarget}</b> pages</p>
 
-      <p>📉 Remaining Days: ${safe.remainingDays}</p>
-      <p>🚀 Catch-up Per Day: ${safe.catchUpPerDay}</p>
-      <p>📈 Daily Target: ${safe.dailyTarget} pages</p>
+          <p>⚡ Intensity: <b style="color: ${safe.intensity === 'CRITICAL' ? '#ff4d4d' : '#00d4ff'}">${safe.intensity}</b></p>
+          <p>🔥 Status: <b>${safe.pressure}</b></p>
 
-      <p>⚡ Intensity: <b>${safe.intensity}</b></p>
-      <p>🔥 Status: <b>${safe.pressure}</b></p>
-
-      <p>📌 Base Target: ${safe.baseTarget}</p>
-    </div>
-  `;
-}
+          <p>📌 Base Target: ${safe.baseTarget}</p>
+        </div>
+      `;
+    }
 
     // ===============================
     // RENDER
     // ===============================
     main.innerHTML = html;
 
+    // Clean up top sub-grade wrapper values upon dashboard focus
     const bar = document.getElementById("grade-progress-bar");
     if (bar) bar.innerHTML = "";
 
@@ -141,3 +133,4 @@ if (typeof window.getSmartCycle === "function") {
 }
 
 window.loadDashboard = loadDashboard;
+        
