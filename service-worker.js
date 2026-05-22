@@ -8,7 +8,7 @@
 const BASE_PATH = self.registration?.scope || "./";
 
 // Increment this version string whenever you change files
-const CACHE_NAME = "mission-cache-v26";
+const CACHE_NAME = "mission-cache-v27";
 
 // ==========================================
 // STATIC APP SHELL
@@ -38,7 +38,7 @@ function toAbsolute(url) {
 // INSTALLATION
 // ==========================================
 self.addEventListener("install", (event) => {
-  self.skipWaiting();
+  self.skipWaiting(); // Activate worker immediately
 
   event.waitUntil(
     (async () => {
@@ -74,6 +74,11 @@ self.addEventListener("activate", (event) => {
       );
 
       await self.clients.claim();
+      // Notify clients that service worker is active and ready
+      const clients = await self.clients.matchAll({ type: 'window' });
+      for (const client of clients) {
+        client.postMessage({ type: 'SW_ACTIVATED' });
+      }
     })()
   );
 });
@@ -113,10 +118,11 @@ self.addEventListener("fetch", (event) => {
 });
 
 // ==========================================
-// MESSAGE HANDLER
+// MESSAGE HANDLER - For update notifications
 // ==========================================
 self.addEventListener("message", (event) => {
   if (event.data?.type === "SKIP_WAITING") {
     self.skipWaiting();
   }
+  // Optional: handle other message types here
 });
