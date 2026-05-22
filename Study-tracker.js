@@ -96,15 +96,17 @@ function updateSubjectUI(container, value, max) {
 
     const progressBar = container.querySelector("progress");
     const text = container.querySelector("p");
+    const input = container.querySelector("input");
+
+    const safeMax = Number(input?.dataset.maxpages) || max || 0;
 
     if (progressBar) {
         progressBar.value = safeValue;
+        progressBar.max = safeMax;
     }
 
     if (text) {
-        const maxPages = Number(container.querySelector("input")?.dataset.maxpages) || 0;
-
-        text.textContent = `${percent}% complete (${safeValue}/${maxPages} pages)`;
+        text.textContent = `${percent}% complete (${safeValue}/${safeMax} pages)`;
     }
 
     container.classList.toggle(
@@ -126,9 +128,7 @@ function handleInput(e, grade, saved) {
 
     const subject = input.dataset.subject;
 
-    const max = Number(
-        input.dataset.maxpages
-    ) || 0;
+    const max = Number(input.dataset.maxpages) || 0;
 
     let value = Math.max(
         0,
@@ -141,7 +141,6 @@ function handleInput(e, grade, saved) {
 
     if (!subject) return;
 
-    // ✅ ONLY SAVE CURRENT SUBJECT
     saved[subject] = value;
 
     const container = input.closest(".subject");
@@ -168,16 +167,10 @@ function loadStudySection(grade) {
     if (!window.maxPagesByGrade) {
 
         mainContent.innerHTML = `
-            <p style="
-                padding:20px;
-                text-align:center;
-                color:red;
-            ">
-                System error:
-                maxPagesByGrade is not loaded
+            <p style="padding:20px;text-align:center;color:red;">
+                System error: maxPagesByGrade is not loaded
             </p>
         `;
-
         return;
     }
 
@@ -186,14 +179,10 @@ function loadStudySection(grade) {
     if (!data) {
 
         mainContent.innerHTML = `
-            <p style="
-                padding:20px;
-                text-align:center;
-            ">
+            <p style="padding:20px;text-align:center;">
                 No data found for Grade ${grade}
             </p>
         `;
-
         return;
     }
 
@@ -201,7 +190,6 @@ function loadStudySection(grade) {
 
     let html = `
         <h2>📘 Grade ${grade} Study Tracker</h2>
-
         <div class="subjects-container">
     `;
 
@@ -216,14 +204,8 @@ function loadStudySection(grade) {
 
     html += `</div>`;
 
-    // ===============================
-    // RENDER
-    // ===============================
     mainContent.innerHTML = html;
 
-    // ===============================
-    // FIXED EVENT LISTENER
-    // ===============================
     mainContent.oninput = (e) => {
         handleInput(e, grade, saved);
     };
@@ -238,8 +220,7 @@ function updateGradeSummary(grade) {
 
     const saved = loadProgress(grade);
 
-    const data =
-        window.maxPagesByGrade?.[grade];
+    const data = window.maxPagesByGrade?.[grade];
 
     if (!data) return;
 
@@ -248,8 +229,7 @@ function updateGradeSummary(grade) {
 
     for (const subject of SUBJECTS) {
 
-        const max =
-            Number(data[subject]) || 0;
+        const max = Number(data[subject]) || 0;
 
         const done = Math.min(
             Number(saved[subject]) || 0,
@@ -261,29 +241,18 @@ function updateGradeSummary(grade) {
     }
 
     const percent = totalPages
-        ? Math.round(
-            (totalDone / totalPages) * 100
-        )
+        ? Math.round((totalDone / totalPages) * 100)
         : 0;
 
-    const el =
-        document.getElementById(
-            "grade-progress-bar"
-        );
+    const el = document.getElementById("grade-progress-bar");
 
     if (el) {
-
         el.innerHTML = `
             <label>
-                📘 Grade ${grade}
-                Overall Progress:
-                ${percent}%
+                📘 Grade ${grade} Overall Progress: ${percent}%
             </label>
 
-            <progress
-                value="${percent}"
-                max="100">
-            </progress>
+            <progress value="${percent}" max="100"></progress>
         `;
     }
 }
