@@ -3,96 +3,221 @@
 <head>
     <meta charset="UTF-8" />
 
-    <meta name="viewport"
-    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <!-- ==========================================
+         MOBILE + PWA VIEWPORT
+    =========================================== -->
+    <meta
+        name="viewport"
+        content="width=device-width,
+        initial-scale=1.0,
+        maximum-scale=1.0,
+        user-scalable=no,
+        viewport-fit=cover"
+    />
 
     <title>Mission App</title>
 
-    <link rel="manifest" href="manifest.json">
+    <!-- ==========================================
+         PWA MANIFEST
+    =========================================== -->
+    <link rel="manifest" href="./manifest.json">
 
+    <!-- ==========================================
+         THEME
+    =========================================== -->
     <meta name="theme-color" content="#0b0f14" />
+    <meta name="background-color" content="#0b0f14" />
 
+    <!-- ==========================================
+         PWA / MOBILE SUPPORT
+    =========================================== -->
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Mission App">
 
-    <meta name="application-name" content="Mission App">
-    <meta name="format-detection" content="telephone=no">
+    <meta
+        name="apple-mobile-web-app-status-bar-style"
+        content="black-translucent"
+    >
 
-    <link rel="icon" href="icon-192.png" />
-    <link rel="apple-touch-icon" href="icon-192.png" />
+    <meta
+        name="apple-mobile-web-app-title"
+        content="Mission App"
+    >
 
-    <link rel="stylesheet" href="styles.css" />
+    <meta
+        name="application-name"
+        content="Mission App"
+    >
+
+    <meta
+        name="format-detection"
+        content="telephone=no"
+    >
+
+    <!-- ==========================================
+         ICONS
+    =========================================== -->
+    <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png" />
+
+    <link
+        rel="apple-touch-icon"
+        href="./icon-192.png"
+    />
+
+    <!-- ==========================================
+         STYLES
+    =========================================== -->
+    <link rel="stylesheet" href="./styles.css" />
 </head>
 
 <body>
 
-<button id="installBtn" style="
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    padding: 12px 16px;
-    border: none;
-    background: #00d4ff;
-    color: black;
-    font-weight: bold;
-    border-radius: 10px;
-    display: none;
-    z-index: 9999;
-    cursor: pointer;
-">
-    Install App
+<!-- ==========================================
+     INSTALL BUTTON
+========================================== -->
+<button
+    id="installBtn"
+    aria-label="Install Mission App"
+    style="
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        padding: 12px 16px;
+        border: none;
+        background: #00d4ff;
+        color: black;
+        font-weight: bold;
+        border-radius: 10px;
+        display: none;
+        z-index: 9999;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+    "
+>
+    📲 Install App
 </button>
 
+<!-- ==========================================
+     SPLASH SCREEN
+========================================== -->
 <div id="splash-screen">
+
     <div class="splash-content">
+
         <h1>📘 Mission App</h1>
+
         <p>Loading...</p>
+
         <div class="loader"></div>
+
     </div>
+
 </div>
 
+<!-- ==========================================
+     APP ROOT
+========================================== -->
 <div id="app" style="display:none;">
 
     <h1>TIME</h1>
 
+    <!-- ==========================================
+         SECTION NAVIGATION
+    =========================================== -->
     <div class="section-buttons">
-        <button onclick="loadSection('study', getCurrentGradeSafe())">Study Tracker</button>
-        <button onclick="loadSection('timetable')">Weekly Timetable</button>
-        <button onclick="loadSection('dashboard')">Dashboard</button>
-        <button onclick="loadSection('top-student')">Top Student Mode</button>
-        <button onclick="loadSection('sunnah')">Sunnah Tracker</button>
+
+        <button
+            onclick="loadSection('study', getCurrentGradeSafe())"
+        >
+            Study Tracker
+        </button>
+
+        <button
+            onclick="loadSection('timetable')"
+        >
+            Weekly Timetable
+        </button>
+
+        <button
+            onclick="loadSection('dashboard')"
+        >
+            Dashboard
+        </button>
+
+        <button
+            onclick="loadSection('top-student')"
+        >
+            Top Student Mode
+        </button>
+
+        <button
+            onclick="loadSection('sunnah')"
+        >
+            Sunnah Tracker
+        </button>
+
     </div>
 
+    <!-- ==========================================
+         GRADE PROGRESS
+    =========================================== -->
     <div id="grade-progress-bar"></div>
 
-    <div id="main-content"></div>
+    <!-- ==========================================
+         MAIN CONTENT
+    =========================================== -->
+    <main id="main-content"></main>
 
+    <!-- ==========================================
+         GRADE NAVIGATION
+    =========================================== -->
     <div id="grade-nav">
-        <button onclick="previousGrade()" id="prev-btn">Previous</button>
-        <button onclick="nextGrade()" id="next-btn">Next</button>
+
+        <button
+            onclick="previousGrade()"
+            id="prev-btn"
+        >
+            Previous
+        </button>
+
+        <button
+            onclick="nextGrade()"
+            id="next-btn"
+        >
+            Next
+        </button>
+
     </div>
 
 </div>
 
-<script src="data.js" defer></script>
-<script src="Study-tracker.js" defer></script>
-<script src="weekly-timetable.js" defer></script>
-<script src="dashboard.js" defer></script>
-<script src="top-student-mode.js" defer></script>
-<script src="Sunnah-tracker.js" defer></script>
-<script src="main.js" defer></script>
+<!-- ==========================================
+     SCRIPTS
+========================================== -->
+<script src="./data.js" defer></script>
+<script src="./Study-tracker.js" defer></script>
+<script src="./weekly-timetable.js" defer></script>
+<script src="./dashboard.js" defer></script>
+<script src="./top-student-mode.js" defer></script>
+<script src="./Sunnah-tracker.js" defer></script>
+<script src="./main.js" defer></script>
 
+<!-- ==========================================
+     PWA + INSTALL ENGINE
+========================================== -->
 <script>
 "use strict";
 
+/* ==========================================
+   GLOBAL INSTALL PROMPT
+========================================== */
 let deferredPrompt = null;
 
 /* ==========================================
-   STANDALONE DETECTION (IMPROVED)
+   STANDALONE DETECTION
 ========================================== */
 function isRunningStandalone() {
+
     return (
         window.matchMedia("(display-mode: standalone)").matches ||
         window.navigator.standalone === true ||
@@ -101,26 +226,53 @@ function isRunningStandalone() {
 }
 
 /* ==========================================
-   SAFE GRADE
+   SAFE CURRENT GRADE
 ========================================== */
 function getCurrentGradeSafe() {
+
     return window.UI?.currentGrade || 9;
+}
+
+/* ==========================================
+   INSTALL BUTTON
+========================================== */
+function showInstallButton() {
+
+    const btn = document.getElementById("installBtn");
+
+    if (!btn) return;
+
+    if (isRunningStandalone()) {
+        btn.style.display = "none";
+        return;
+    }
+
+    btn.style.display = "block";
+}
+
+function hideInstallButton() {
+
+    const btn = document.getElementById("installBtn");
+
+    if (!btn) return;
+
+    btn.style.display = "none";
 }
 
 /* ==========================================
    BEFORE INSTALL PROMPT
 ========================================== */
 window.addEventListener("beforeinstallprompt", (e) => {
+
     e.preventDefault();
 
     if (isRunningStandalone()) return;
 
     deferredPrompt = e;
 
-    const btn = document.getElementById("installBtn");
-    if (btn) btn.style.display = "block";
+    showInstallButton();
 
-    console.log("✅ PWA install prompt captured");
+    console.log("✅ PWA install prompt ready");
 });
 
 /* ==========================================
@@ -128,102 +280,188 @@ window.addEventListener("beforeinstallprompt", (e) => {
 ========================================== */
 function setupInstallButton() {
 
-    const installBtn = document.getElementById("installBtn");
+    const installBtn =
+        document.getElementById("installBtn");
+
     if (!installBtn) return;
 
     installBtn.addEventListener("click", async () => {
 
-        if (!deferredPrompt) {
-            alert("Install not ready yet. Keep the app open.");
-            return;
-        }
-
-        deferredPrompt.prompt();
-
-        const choice = await deferredPrompt.userChoice;
-
-        console.log("Install result:", choice.outcome);
-
-        deferredPrompt = null;
-        installBtn.style.display = "none";
-    });
-}
-
-/* ==========================================
-   APP INSTALLED EVENT
-========================================== */
-window.addEventListener("appinstalled", () => {
-    deferredPrompt = null;
-
-    const btn = document.getElementById("installBtn");
-    if (btn) btn.style.display = "none";
-
-    console.log("App installed successfully");
-});
-
-/* ==========================================
-   BOOTSTRAP
-========================================== */
-window.addEventListener("DOMContentLoaded", () => {
-
-    const installBtn = document.getElementById("installBtn");
-
-    if (isRunningStandalone() && installBtn) {
-        installBtn.style.display = "none";
-    }
-
-    setupInstallButton();
-
-    const splash = document.getElementById("splash-screen");
-    const app = document.getElementById("app");
-
-    setTimeout(() => {
-        if (splash) {
-            splash.classList.add("hide");
-
-            setTimeout(() => {
-                splash.remove();
-                if (app) app.style.display = "block";
-            }, 250);
-        }
-    }, 500);
-});
-
-/* ==========================================
-   SERVICE WORKER (IMPROVED ONLY)
-========================================== */
-if ("serviceWorker" in navigator) {
-
-    window.addEventListener("load", async () => {
-
         try {
 
-            const reg = await navigator.serviceWorker.register(
-                "./service-worker.js",
-                { scope: "./" }
+            if (!deferredPrompt) {
+
+                alert(
+                    "Install option is not ready yet. Please keep the app open for a moment."
+                );
+
+                return;
+            }
+
+            deferredPrompt.prompt();
+
+            const result =
+                await deferredPrompt.userChoice;
+
+            console.log(
+                "📲 Install result:",
+                result.outcome
             );
 
-            console.log("SW registered:", reg.scope);
+            deferredPrompt = null;
 
-            // safer update checking
-            setInterval(() => {
-                reg.update();
-            }, 60 * 60 * 1000);
+            hideInstallButton();
 
         } catch (err) {
-            console.error("SW failed:", err);
+
+            console.error(
+                "Install failed:",
+                err
+            );
         }
     });
-
-    let refreshing = false;
-
-    navigator.serviceWorker.addEventListener("controllerchange", () => {
-        if (refreshing) return;
-        refreshing = true;
-        window.location.reload();
-    });
 }
+
+/* ==========================================
+   APP INSTALLED
+========================================== */
+window.addEventListener("appinstalled", () => {
+
+    console.log("✅ Mission App installed");
+
+    deferredPrompt = null;
+
+    hideInstallButton();
+});
+
+/* ==========================================
+   SPLASH SCREEN
+========================================== */
+function hideSplashScreen() {
+
+    const splash =
+        document.getElementById("splash-screen");
+
+    const app =
+        document.getElementById("app");
+
+    if (!splash || !app) return;
+
+    splash.classList.add("hide");
+
+    setTimeout(() => {
+
+        splash.remove();
+
+        app.style.display = "block";
+
+    }, 250);
+}
+
+/* ==========================================
+   SERVICE WORKER
+========================================== */
+async function registerServiceWorker() {
+
+    if (!("serviceWorker" in navigator)) {
+        console.warn("⚠️ Service Worker unsupported");
+        return;
+    }
+
+    try {
+
+        const registration =
+            await navigator.serviceWorker.register(
+                "./service-worker.js",
+                {
+                    scope: "./"
+                }
+            );
+
+        console.log(
+            "✅ Service Worker registered:",
+            registration.scope
+        );
+
+        /* ==========================================
+           PERIODIC UPDATE CHECK
+        =========================================== */
+        setInterval(() => {
+
+            registration.update();
+
+        }, 60 * 60 * 1000);
+
+    } catch (err) {
+
+        console.error(
+            "❌ Service Worker registration failed:",
+            err
+        );
+    }
+}
+
+/* ==========================================
+   AUTO REFRESH ON SW UPDATE
+========================================== */
+let refreshing = false;
+
+if ("serviceWorker" in navigator) {
+
+    navigator.serviceWorker.addEventListener(
+        "controllerchange",
+        () => {
+
+            if (refreshing) return;
+
+            refreshing = true;
+
+            window.location.reload();
+        }
+    );
+}
+
+/* ==========================================
+   CONNECTION MONITOR
+========================================== */
+window.addEventListener("online", () => {
+    console.log("🌐 Back online");
+});
+
+window.addEventListener("offline", () => {
+    console.log("📴 Offline mode");
+});
+
+/* ==========================================
+   DOM READY
+========================================== */
+window.addEventListener("DOMContentLoaded", async () => {
+
+    try {
+
+        if (isRunningStandalone()) {
+            hideInstallButton();
+        }
+
+        setupInstallButton();
+
+        await registerServiceWorker();
+
+        setTimeout(() => {
+            hideSplashScreen();
+        }, 500);
+
+        console.log("✅ UI Bootstrap complete");
+
+    } catch (err) {
+
+        console.error(
+            "🔥 Bootstrap crash:",
+            err
+        );
+    }
+});
 </script>
 
 </body>
-</html>
+    </html>
