@@ -2,16 +2,21 @@
   "name": "Mission App",
   "short_name": "Mission",
   "description": "Mission App - Smart study tracking system",
-  "id": "./",
-  "start_url": "./index.html",
-  "scope": "./",
+
+  "id": "/Mission-app/",
+  "start_url": "/Mission-app/",
+  "scope": "/Mission-app/",
+
   "display": "standalone",
   "display_override": ["standalone", "fullscreen", "minimal-ui"],
+
   "orientation": "portrait-primary",
   "background_color": "#0b0f14",
   "theme_color": "#0b0f14",
+
   "categories": ["education", "productivity"],
   "prefer_related_applications": false,
+
   "icons": [
     {
       "src": "icon-192.png",
