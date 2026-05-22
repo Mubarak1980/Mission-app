@@ -5,7 +5,7 @@
 "use strict";
 
 // Increment this version string whenever you change your HTML, CSS, or JS files
-const CACHE_NAME = "mission-cache-v20";
+const CACHE_NAME = "mission-cache-v21";
 
 // ==========================================
 // STATIC APP SHELL (Cleaned for subfolders)
