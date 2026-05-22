@@ -8,7 +8,7 @@
 const BASE_PATH = self.registration?.scope || "./";
 
 // Increment this version string whenever you change files
-const CACHE_NAME = "mission-cache-v25";
+const CACHE_NAME = "mission-cache-v26";
 
 // ==========================================
 // STATIC APP SHELL
