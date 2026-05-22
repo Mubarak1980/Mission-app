@@ -4,9 +4,10 @@
 // SERVICE WORKER (GITHUB PAGES & PWA OPTIMIZED)
 // ==========================================
 
-const CACHE_NAME = "mission-cache-v29"; // 🔥 bumped for update safety
+const CACHE_NAME = "mission-cache-v30"; // 🔥 bump for update safety
 
-const BASE_PATH = self.registration?.scope || "./";
+// 🔥 FIX: safer scope handling for GitHub Pages
+const BASE_PATH = self.registration?.scope || self.location.origin + "/";
 
 // ==========================================
 // STATIC APP SHELL
@@ -23,13 +24,14 @@ const APP_SHELL = [
   "top-student-mode.js",
   "manifest.json",
   "icon-192.png",
-  "icon-512.png" // 🔥 added (important for install validation)
+  "icon-512.png"
 ];
 
 // ==========================================
 // HELPER
 // ==========================================
 function toAbsolute(url) {
+  // 🔥 FIX: ensures correct GitHub Pages path resolution
   return new URL(url, self.registration.scope).toString();
 }
 
@@ -48,7 +50,8 @@ self.addEventListener("install", (event) => {
         try {
           await cache.add(toAbsolute(resource));
         } catch (error) {
-          console.warn("⚠️ Cache failed:", resource, error);
+          // 🔥 improved debugging (important for PWA validation)
+          console.warn("⚠️ Cache failed:", resource, error.message || error);
         }
       }
     })()
@@ -74,6 +77,7 @@ self.addEventListener("activate", (event) => {
 
       await self.clients.claim();
 
+      // 🔥 FIX: notify clients safely
       const clients = await self.clients.matchAll({ type: "window" });
       for (const client of clients) {
         client.postMessage({ type: "SW_ACTIVATED" });
@@ -98,7 +102,11 @@ self.addEventListener("fetch", (event) => {
 
         if (response && response.ok) {
           const cache = await caches.open(CACHE_NAME);
-          cache.put(event.request, response.clone());
+
+          // 🔥 FIX: avoid caching cross-origin or extension requests
+          if (event.request.url.startsWith(self.registration.scope)) {
+            cache.put(event.request, response.clone());
+          }
         }
 
         return response;
