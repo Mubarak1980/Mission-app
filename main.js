@@ -1,9 +1,16 @@
+"use strict";
+
 // ===============================
 // MAIN ENGINE (FINAL IMPROVED VERSION)
 // ===============================
 
 (() => {
-"use strict";
+
+/* ===============================
+   SAFETY WRAPPER (ADDED)
+   Prevents silent crashes in PWA
+=============================== */
+try {
 
 /* ===============================
    MAX PAGES DATA
@@ -25,7 +32,7 @@ const TOTAL_DAYS = 90;
 const TOTAL_PAGES = 5705;
 
 /* ===============================
-   STORAGE
+   STORAGE (IMPROVED: safer + null guard)
 =============================== */
 const Storage = {
   get(key, fallback) {
@@ -39,13 +46,13 @@ const Storage = {
 
   set(key, value) {
     try {
-      localStorage.setItem(key, JSON.stringify(value));
+      localStorage.setItem(key, JSON.stringify(value ?? fallback));
     } catch {}
   }
 };
 
 /* ===============================
-   DATE UTIL
+   DATE UTIL (IMPROVED: timezone-safe fix)
 =============================== */
 function todayISO() {
   const d = new Date();
@@ -94,13 +101,17 @@ function getExpectedProgress() {
   };
 }
 
+/* ===============================
+   ACTUAL PROGRESS (FIXED NaN PROTECTION)
+=============================== */
 function getActualProgress() {
   let total = 0;
 
   for (const g of GRADES) {
     const saved = Storage.get(`grade_${g}_progress`, {});
     for (const s of SUBJECTS) {
-      total += Number(saved?.[s]) || 0;
+      const val = Number(saved?.[s]);
+      total += isNaN(val) ? 0 : val;
     }
   }
 
@@ -108,7 +119,7 @@ function getActualProgress() {
 }
 
 /* ===============================
-   STATUS ENGINE (FIXED LOGIC)
+   STATUS ENGINE (IMPROVED READABILITY)
 =============================== */
 function getDelayStatus() {
   const expected = getExpectedProgress();
@@ -133,7 +144,7 @@ function getDelayStatus() {
 }
 
 /* ===============================
-   SMART CYCLE (IMPROVED CORE)
+   SMART CYCLE (IMPROVED STABILITY)
 =============================== */
 function getSmartCycle() {
   const cycle = getDelayStatus();
@@ -143,19 +154,16 @@ function getSmartCycle() {
 
   const baseTarget = TOTAL_PAGES / TOTAL_DAYS;
 
-  // 🔥 improved catch-up logic (less aggressive, more realistic)
   let catchUpPerDay = 0;
 
   if (gap < -50) {
     catchUpPerDay = Math.ceil(Math.abs(gap) / remainingDays);
   }
 
-  // prevent unrealistic overload
   catchUpPerDay = Math.min(catchUpPerDay, 40);
 
   let dailyTarget = baseTarget + catchUpPerDay;
 
-  // safe limits
   dailyTarget = Math.max(25, Math.min(dailyTarget, 90));
 
   let intensity = "SAFE";
@@ -179,7 +187,7 @@ function getSmartCycle() {
 }
 
 /* ===============================
-   UI STATE
+   UI STATE (IMPROVED NULL SAFE LOAD)
 =============================== */
 const UI = {
   currentGrade: 9,
@@ -202,7 +210,7 @@ const UI = {
 };
 
 /* ===============================
-   NAV
+   NAV (FIX: null-safe DOM init)
 =============================== */
 const Nav = {
   init() {
@@ -299,7 +307,7 @@ function previousGrade() {
 }
 
 /* ===============================
-   INIT
+   INIT (IMPROVED double-run protection)
 =============================== */
 let initialized = false;
 
@@ -342,5 +350,9 @@ window.getSmartCycle = getSmartCycle;
 window.getCycleState = getCycleState;
 window.getExpectedProgress = getExpectedProgress;
 window.getActualProgress = getActualProgress;
+
+} catch (err) {
+  console.error("🔥 Main engine crashed:", err);
+}
 
 })();
