@@ -3,7 +3,7 @@
   "short_name": "Mission",
   "description": "Mission App - Smart study tracking system",
   "id": ".",
-  "start_url": "index.html",
+  "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
