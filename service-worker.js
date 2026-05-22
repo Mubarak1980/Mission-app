@@ -1,14 +1,17 @@
+"use strict";
+
 // ==========================================
 // SERVICE WORKER (GITHUB PAGES & PWA OPTIMIZED)
 // ==========================================
 
-"use strict";
+// FIX: ensure scope-safe path resolution on GitHub Pages
+const BASE_PATH = self.registration?.scope || "./";
 
-// Increment this version string whenever you change your HTML, CSS, or JS files
+// Increment this version string whenever you change files
 const CACHE_NAME = "mission-cache-v24";
 
 // ==========================================
-// STATIC APP SHELL (Cleaned for subfolders)
+// STATIC APP SHELL
 // ==========================================
 const APP_SHELL = [
   "index.html",
@@ -25,7 +28,14 @@ const APP_SHELL = [
 ];
 
 // ==========================================
-// SERVICE WORKER INSTALLATION
+// HELPER: normalize paths for GitHub Pages
+// ==========================================
+function toAbsolute(url) {
+  return new URL(url, self.registration.scope).toString();
+}
+
+// ==========================================
+// INSTALLATION
 // ==========================================
 self.addEventListener("install", (event) => {
   self.skipWaiting();
@@ -34,13 +44,12 @@ self.addEventListener("install", (event) => {
     (async () => {
       const cache = await caches.open(CACHE_NAME);
       console.log("📦 Pre-caching application shell...");
-      
-      // Resilient caching loop so a missing icon doesn't crash the entire installation
+
       for (const resource of APP_SHELL) {
         try {
-          await cache.add(resource);
+          await cache.add(toAbsolute(resource));
         } catch (error) {
-          console.warn(`⚠️ Failed to cache asset: ${resource}. Check if file exists in repo.`, error);
+          console.warn("⚠️ Cache failed:", resource, error);
         }
       }
     })()
@@ -48,62 +57,63 @@ self.addEventListener("install", (event) => {
 });
 
 // ==========================================
-// LIFECYCLE ACTIVATION (CACHE PURGE)
+// ACTIVATION
 // ==========================================
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     (async () => {
       const keys = await caches.keys();
+
       await Promise.all(
         keys.map((key) => {
           if (key !== CACHE_NAME) {
-            console.log(`🧹 Deleting old cache: ${key}`);
+            console.log("🧹 Deleting old cache:", key);
             return caches.delete(key);
           }
         })
       );
+
       await self.clients.claim();
     })()
   );
 });
 
 // ==========================================
-// DYNAMIC NETWORK/CACHE STRATEGY
+// FETCH STRATEGY (IMPROVED SAFE OFFLINE)
 // ==========================================
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 
   event.respondWith(
     (async () => {
-      // 1. Check cache for matching resource
-      const cachedResponse = await caches.match(event.request);
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-
-      // 2. Fallback to network fetch if not cached
       try {
-        const networkResponse = await fetch(event.request);
+        // 1. CACHE FIRST
+        const cached = await caches.match(event.request);
+        if (cached) return cached;
 
-        if (networkResponse && networkResponse.ok) {
+        // 2. NETWORK
+        const response = await fetch(event.request);
+
+        if (response && response.ok) {
           const cache = await caches.open(CACHE_NAME);
-          // Safely store new assets dynamically as they are discovered
-          cache.put(event.request, networkResponse.clone());
+          cache.put(event.request, response.clone());
         }
 
-        return networkResponse;
+        return response;
+
       } catch (error) {
-        console.log("🌐 Network request failed, attempting offline fallback...", error);
-        
-        // 3. Complete offline structural fallback
-        return caches.match("index.html");
+        console.log("🌐 Offline fallback triggered");
+
+        // 3. FALLBACK
+        const fallback = await caches.match(toAbsolute("index.html"));
+        return fallback || new Response("Offline", { status: 200 });
       }
     })()
   );
 });
 
 // ==========================================
-// REVOLVING COMPATIBILITY LIFE CYCLE MESSAGES
+// MESSAGE HANDLER
 // ==========================================
 self.addEventListener("message", (event) => {
   if (event.data?.type === "SKIP_WAITING") {
