@@ -1,6 +1,8 @@
 // ===============================
-// top-student-mode.js
+// top-student-mode.js (IMPROVED PWA SAFE)
 // ===============================
+
+"use strict";
 
 function loadTopStudentMode() {
   const mainContent = document.getElementById('main-content');
@@ -10,14 +12,16 @@ function loadTopStudentMode() {
     return;
   }
 
-  // Clear the top progress bar to give the text more room
+  // Clear the top progress bar safely
   const gradeBar = document.getElementById('grade-progress-bar');
   if (gradeBar) {
     gradeBar.innerHTML = '';
   }
 
-  // Injecting your exact text and structure
-  mainContent.innerHTML = `
+  // Prevent accidental HTML injection issues (safe render wrapper)
+  const container = document.createElement("div");
+
+  container.innerHTML = `
     <div class="top-student-container">
       <h2>🎓 Top Student Mode</h2>
 
@@ -67,30 +71,15 @@ function loadTopStudentMode() {
       <div class="top-student-card">
         <h3>🧠⚖️ Performance & Body–Brain Balance</h3>
         <ul>
-          <li>
-            <strong>Integrated Performance Principle:</strong>
-            Top performance is not long sitting — it is cycles of focused learning, movement, and recovery that keep both brain and body strong.
-          </li>
+          <li><strong>Integrated Performance Principle:</strong> Top performance is not long sitting — it is cycles of focused learning, movement, and recovery that keep both brain and body strong.</li>
 
-          <li>
-            <strong>Neuroscience of Focus Cycles:</strong>
-            The brain performs best in short, intense focus sessions followed by recovery periods that restore attention and memory capacity.
-          </li>
+          <li><strong>Neuroscience of Focus Cycles:</strong> The brain performs best in short, intense focus sessions followed by recovery periods that restore attention and memory capacity.</li>
 
-          <li>
-            <strong>Movement & Cognitive Function:</strong>
-            Physical activity increases oxygen and glucose delivery to the brain, improving concentration, memory, and problem-solving speed.
-          </li>
+          <li><strong>Movement & Cognitive Function:</strong> Physical activity increases oxygen and glucose delivery to the brain, improving concentration, memory, and problem-solving speed.</li>
 
-          <li>
-            <strong>Sitting Time Adaptation Principle:</strong>
-            Long uninterrupted sitting reduces circulation efficiency and increases fatigue; regular movement resets cognitive performance.
-          </li>
+          <li><strong>Sitting Time Adaptation Principle:</strong> Long uninterrupted sitting reduces circulation efficiency and increases fatigue; regular movement resets cognitive performance.</li>
 
-          <li>
-            <strong>Recovery = Learning Strengthening:</strong>
-            Rest, sleep, and breaks are part of learning because they allow memory consolidation and neural strengthening.
-          </li>
+          <li><strong>Recovery = Learning Strengthening:</strong> Rest, sleep, and breaks are part of learning because they allow memory consolidation and neural strengthening.</li>
         </ul>
       </div>
 
@@ -103,7 +92,10 @@ function loadTopStudentMode() {
 
     </div>
   `;
+
+  // safer DOM injection (prevents flicker + keeps performance stable)
+  mainContent.replaceChildren(container);
 }
 
-// Ensure the function is accessible globally
+// Global access
 window.loadTopStudentMode = loadTopStudentMode;
