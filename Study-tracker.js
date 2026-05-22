@@ -15,9 +15,7 @@ function loadProgress(grade) {
             localStorage.getItem(`grade_${grade}_progress`) || "{}"
         );
 
-        return data && typeof data === "object"
-            ? data
-            : {};
+        return data && typeof data === "object" ? data : {};
 
     } catch {
         return {};
@@ -73,7 +71,9 @@ function createSubject(name, maxPages, savedPages) {
 
             <p>
                 ${percent}% complete
-                (${safeSaved}/${safeMax} pages)
+                <span style="color:#888;">
+                    (${safeSaved}/${safeMax} pages)
+                </span>
             </p>
 
         </div>
@@ -106,7 +106,12 @@ function updateSubjectUI(container, value, max) {
     }
 
     if (text) {
-        text.textContent = `${percent}% complete (${safeValue}/${safeMax} pages)`;
+        text.innerHTML = `
+            ${percent}% complete
+            <span style="color:#888;">
+                (${safeValue}/${safeMax} pages)
+            </span>
+        `;
     }
 
     container.classList.toggle(
@@ -127,14 +132,9 @@ function handleInput(e, grade, saved) {
     }
 
     const subject = input.dataset.subject;
-
     const max = Number(input.dataset.maxpages) || 0;
 
-    let value = Math.max(
-        0,
-        Number(input.value) || 0
-    );
-
+    let value = Math.max(0, Number(input.value) || 0);
     value = Math.min(value, max);
 
     input.value = value;
@@ -159,13 +159,10 @@ function handleInput(e, grade, saved) {
 // ===============================
 function loadStudySection(grade) {
 
-    const mainContent =
-        document.getElementById("main-content");
-
+    const mainContent = document.getElementById("main-content");
     if (!mainContent) return;
 
     if (!window.maxPagesByGrade) {
-
         mainContent.innerHTML = `
             <p style="padding:20px;text-align:center;color:red;">
                 System error: maxPagesByGrade is not loaded
@@ -177,7 +174,6 @@ function loadStudySection(grade) {
     const data = window.maxPagesByGrade[grade];
 
     if (!data) {
-
         mainContent.innerHTML = `
             <p style="padding:20px;text-align:center;">
                 No data found for Grade ${grade}
@@ -194,7 +190,6 @@ function loadStudySection(grade) {
     `;
 
     for (const subject of SUBJECTS) {
-
         html += createSubject(
             subject,
             data[subject] || 0,
@@ -219,7 +214,6 @@ function loadStudySection(grade) {
 function updateGradeSummary(grade) {
 
     const saved = loadProgress(grade);
-
     const data = window.maxPagesByGrade?.[grade];
 
     if (!data) return;
