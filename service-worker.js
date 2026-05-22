@@ -4,7 +4,7 @@
 // SERVICE WORKER (GITHUB PAGES & PWA OPTIMIZED)
 // ==========================================
 
-const CACHE_NAME = "mission-cache-v38"; // 🔥 bump for update safety
+const CACHE_NAME = "mission-cache-v39"; // 🔥 bump for update safety
 
 // 🔥 FIX: safer scope handling for GitHub Pages
 const BASE_PATH = self.registration?.scope || self.location.origin + "/";
