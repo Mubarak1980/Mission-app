@@ -1,13 +1,10 @@
 "use strict";
 
 // ==========================================
-// SERVICE WORKER (GITHUB PAGES & PWA OPTIMIZED)
+// SERVICE WORKER (PWA STRUCTURAL REFACTOR V39)
 // ==========================================
 
-const CACHE_NAME = "mission-cache-v39"; // 🔥 bump for update safety
-
-// 🔥 FIX: safer scope handling for GitHub Pages
-const BASE_PATH = self.registration?.scope || self.location.origin + "/";
+const CACHE_NAME = "mission-cache-v40";
 
 // ==========================================
 // STATIC APP SHELL
@@ -23,16 +20,15 @@ const APP_SHELL = [
   "weekly-timetable.js",
   "top-student-mode.js",
   "manifest.json",
-  "icon-192.png",
-  "icon-512.png"
+  "icon-192.png" // Cleaned up to match your repository's exact files
 ];
 
 // ==========================================
-// HELPER
+// HELPER (DYNAMIC PATH SAFE RESOLUTION)
 // ==========================================
 function toAbsolute(url) {
-  // 🔥 FIX: ensures correct GitHub Pages path resolution
-  return new URL(url, self.registration.scope).toString();
+  // Use self.location.href to guarantee precise subfolder inheritance under GitHub Pages
+  return new URL(url, self.location.href).toString();
 }
 
 // ==========================================
@@ -46,12 +42,14 @@ self.addEventListener("install", (event) => {
       const cache = await caches.open(CACHE_NAME);
       console.log("📦 Pre-caching application shell...");
 
+      // Execute cache allocations sequentially to trace exact files
       for (const resource of APP_SHELL) {
+        const targetUrl = toAbsolute(resource);
         try {
-          await cache.add(toAbsolute(resource));
+          await cache.add(targetUrl);
+          console.log(`✅ Cached: ${resource}`);
         } catch (error) {
-          // 🔥 improved debugging (important for PWA validation)
-          console.warn("⚠️ Cache failed:", resource, error.message || error);
+          console.warn(`⚠️ Cache failed for asset: ${resource} [Resolved: ${targetUrl}] ->`, error.message || error);
         }
       }
     })()
@@ -77,7 +75,7 @@ self.addEventListener("activate", (event) => {
 
       await self.clients.claim();
 
-      // 🔥 FIX: notify clients safely
+      // Notify window frames safely
       const clients = await self.clients.matchAll({ type: "window" });
       for (const client of clients) {
         client.postMessage({ type: "SW_ACTIVATED" });
@@ -87,7 +85,7 @@ self.addEventListener("activate", (event) => {
 });
 
 // ==========================================
-// FETCH
+// FETCH STRATEGY
 // ==========================================
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
@@ -102,9 +100,11 @@ self.addEventListener("fetch", (event) => {
 
         if (response && response.ok) {
           const cache = await caches.open(CACHE_NAME);
+          const requestUrl = new URL(event.request.url);
+          const workerLocation = new URL(self.location.href);
 
-          // 🔥 FIX: avoid caching cross-origin or extension requests
-          if (event.request.url.startsWith(self.registration.scope)) {
+          // Restrict mapping exclusively to our subfolder space
+          if (requestUrl.origin === workerLocation.origin && requestUrl.pathname.startsWith(workerLocation.pathname.replace(/[^\/]*$/, ""))) {
             cache.put(event.request, response.clone());
           }
         }
@@ -113,10 +113,14 @@ self.addEventListener("fetch", (event) => {
       } catch (error) {
         console.log("🌐 Offline fallback triggered");
 
-        return (
-          (await caches.match(toAbsolute("index.html"))) ||
-          new Response("Offline", { status: 200 })
-        );
+        const fallbackTarget = toAbsolute("index.html");
+        const match = await caches.match(fallbackTarget);
+        if (match) return match;
+
+        return new Response("Offline Mode Active", {
+          status: 200,
+          headers: { "Content-Type": "text/plain" }
+        });
       }
     })()
   );
@@ -130,3 +134,4 @@ self.addEventListener("message", (event) => {
     self.skipWaiting();
   }
 });
+      
