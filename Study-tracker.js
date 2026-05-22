@@ -71,7 +71,10 @@ function createSubject(name, maxPages, savedPages) {
                 max="${safeMax}">
             </progress>
 
-            <p>${percent}% complete</p>
+            <p>
+                ${percent}% complete
+                (${safeSaved}/${safeMax} pages)
+            </p>
 
         </div>
     `;
@@ -99,7 +102,9 @@ function updateSubjectUI(container, value, max) {
     }
 
     if (text) {
-        text.textContent = `${percent}% complete`;
+        const maxPages = Number(container.querySelector("input")?.dataset.maxpages) || 0;
+
+        text.textContent = `${percent}% complete (${safeValue}/${maxPages} pages)`;
     }
 
     container.classList.toggle(
@@ -217,9 +222,7 @@ function loadStudySection(grade) {
     mainContent.innerHTML = html;
 
     // ===============================
-    // ✅ FIXED EVENT LISTENER
-    // IMPORTANT:
-    // Remove old listener problem
+    // FIXED EVENT LISTENER
     // ===============================
     mainContent.oninput = (e) => {
         handleInput(e, grade, saved);
