@@ -4,11 +4,9 @@
 // SERVICE WORKER (GITHUB PAGES & PWA OPTIMIZED)
 // ==========================================
 
-// FIX: ensure scope-safe path resolution on GitHub Pages
-const BASE_PATH = self.registration?.scope || "./";
+const CACHE_NAME = "mission-cache-v29"; // 🔥 bumped for update safety
 
-// Increment this version string whenever you change files
-const CACHE_NAME = "mission-cache-v28";
+const BASE_PATH = self.registration?.scope || "./";
 
 // ==========================================
 // STATIC APP SHELL
@@ -24,21 +22,22 @@ const APP_SHELL = [
   "weekly-timetable.js",
   "top-student-mode.js",
   "manifest.json",
-  "icon-192.png"
+  "icon-192.png",
+  "icon-512.png" // 🔥 added (important for install validation)
 ];
 
 // ==========================================
-// HELPER: normalize paths for GitHub Pages
+// HELPER
 // ==========================================
 function toAbsolute(url) {
   return new URL(url, self.registration.scope).toString();
 }
 
 // ==========================================
-// INSTALLATION
+// INSTALL
 // ==========================================
 self.addEventListener("install", (event) => {
-  self.skipWaiting(); // Activate worker immediately
+  self.skipWaiting();
 
   event.waitUntil(
     (async () => {
@@ -57,7 +56,7 @@ self.addEventListener("install", (event) => {
 });
 
 // ==========================================
-// ACTIVATION
+// ACTIVATE
 // ==========================================
 self.addEventListener("activate", (event) => {
   event.waitUntil(
@@ -74,17 +73,17 @@ self.addEventListener("activate", (event) => {
       );
 
       await self.clients.claim();
-      // Notify clients that service worker is active and ready
-      const clients = await self.clients.matchAll({ type: 'window' });
+
+      const clients = await self.clients.matchAll({ type: "window" });
       for (const client of clients) {
-        client.postMessage({ type: 'SW_ACTIVATED' });
+        client.postMessage({ type: "SW_ACTIVATED" });
       }
     })()
   );
 });
 
 // ==========================================
-// FETCH STRATEGY (IMPROVED SAFE OFFLINE)
+// FETCH
 // ==========================================
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
@@ -92,11 +91,9 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(
     (async () => {
       try {
-        // 1. CACHE FIRST
         const cached = await caches.match(event.request);
         if (cached) return cached;
 
-        // 2. NETWORK
         const response = await fetch(event.request);
 
         if (response && response.ok) {
@@ -105,24 +102,23 @@ self.addEventListener("fetch", (event) => {
         }
 
         return response;
-
       } catch (error) {
         console.log("🌐 Offline fallback triggered");
 
-        // 3. FALLBACK
-        const fallback = await caches.match(toAbsolute("index.html"));
-        return fallback || new Response("Offline", { status: 200 });
+        return (
+          (await caches.match(toAbsolute("index.html"))) ||
+          new Response("Offline", { status: 200 })
+        );
       }
     })()
   );
 });
 
 // ==========================================
-// MESSAGE HANDLER - For update notifications
+// MESSAGE
 // ==========================================
 self.addEventListener("message", (event) => {
   if (event.data?.type === "SKIP_WAITING") {
     self.skipWaiting();
   }
-  // Optional: handle other message types here
 });
