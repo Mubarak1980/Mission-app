@@ -2,24 +2,45 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+
+    <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+
     <title>Mission App</title>
 
+    <!-- ==========================================
+         PWA META
+    ========================================== -->
     <link rel="manifest" href="manifest.json">
+
     <meta name="theme-color" content="#0b0f14" />
-    
+
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Mission App">
 
+    <!-- ✅ IMPROVED PWA DISCOVERY -->
+    <meta name="application-name" content="Mission App">
+    <meta name="format-detection" content="telephone=no">
+
+    <!-- ==========================================
+         ICONS
+    ========================================== -->
     <link rel="icon" href="icon-192.png" />
     <link rel="apple-touch-icon" href="icon-192.png" />
+
+    <!-- ==========================================
+         STYLES
+    ========================================== -->
     <link rel="stylesheet" href="styles.css" />
 </head>
 
 <body>
 
+<!-- ==========================================
+     INSTALL BUTTON
+========================================== -->
 <button id="installBtn" style="
     position: fixed;
     bottom: 20px;
@@ -37,6 +58,9 @@
     Install App
 </button>
 
+<!-- ==========================================
+     SPLASH SCREEN
+========================================== -->
 <div id="splash-screen">
     <div class="splash-content">
         <h1>📘 Mission App</h1>
@@ -45,16 +69,33 @@
     </div>
 </div>
 
+<!-- ==========================================
+     APP
+========================================== -->
 <div id="app" style="display:none;">
 
     <h1>TIME</h1>
 
     <div class="section-buttons">
-        <button onclick="loadSection('study', getCurrentGradeSafe())">Study Tracker</button>
-        <button onclick="loadSection('timetable')">Weekly Timetable</button>
-        <button onclick="loadSection('dashboard')">Dashboard</button>
-        <button onclick="loadSection('top-student')">Top Student Mode</button>
-        <button onclick="loadSection('sunnah')">Sunnah Tracker</button>
+        <button onclick="loadSection('study', getCurrentGradeSafe())">
+            Study Tracker
+        </button>
+
+        <button onclick="loadSection('timetable')">
+            Weekly Timetable
+        </button>
+
+        <button onclick="loadSection('dashboard')">
+            Dashboard
+        </button>
+
+        <button onclick="loadSection('top-student')">
+            Top Student Mode
+        </button>
+
+        <button onclick="loadSection('sunnah')">
+            Sunnah Tracker
+        </button>
     </div>
 
     <div id="grade-progress-bar"></div>
@@ -62,12 +103,20 @@
     <div id="main-content"></div>
 
     <div id="grade-nav">
-        <button onclick="previousGrade()" id="prev-btn">Previous</button>
-        <button onclick="nextGrade()" id="next-btn">Next</button>
+        <button onclick="previousGrade()" id="prev-btn">
+            Previous
+        </button>
+
+        <button onclick="nextGrade()" id="next-btn">
+            Next
+        </button>
     </div>
 
 </div>
 
+<!-- ==========================================
+     APP SCRIPTS
+========================================== -->
 <script src="data.js" defer></script>
 <script src="Study-tracker.js" defer></script>
 <script src="weekly-timetable.js" defer></script>
@@ -76,6 +125,9 @@
 <script src="Sunnah-tracker.js" defer></script>
 <script src="main.js" defer></script>
 
+<!-- ==========================================
+     PWA + INSTALL LOGIC
+========================================== -->
 <script>
 "use strict";
 
@@ -103,13 +155,20 @@ function getCurrentGradeSafe() {
    BEFORE INSTALL PROMPT INTERCEPTION
 ========================================== */
 window.addEventListener("beforeinstallprompt", (e) => {
+
+    // ✅ Prevent automatic mini infobar
     e.preventDefault();
 
+    // ✅ Already installed
     if (isRunningStandalone()) return;
 
     deferredPrompt = e;
+
     const btn = document.getElementById("installBtn");
-    if (btn) btn.style.display = "block";
+
+    if (btn) {
+        btn.style.display = "block";
+    }
 
     console.log("✅ PWA install prompt captured");
 });
@@ -118,20 +177,34 @@ window.addEventListener("beforeinstallprompt", (e) => {
    INSTALL BUTTON INTERACTION LOGIC
 ========================================== */
 function setupInstallButton() {
+
     const installBtn = document.getElementById("installBtn");
+
     if (!installBtn) return;
 
     installBtn.addEventListener("click", async () => {
+
+        // ✅ Install prompt not ready yet
         if (!deferredPrompt) {
-            alert("Install not ready yet. Keep the app open for a few seconds.");
+
+            alert(
+                "Install not ready yet. Keep the app open for a few seconds."
+            );
+
             return;
         }
 
+        // ✅ Show browser install prompt
         deferredPrompt.prompt();
+
         const choice = await deferredPrompt.userChoice;
+
         console.log("Install result:", choice.outcome);
 
+        // ✅ Reset prompt
         deferredPrompt = null;
+
+        // ✅ Hide install button
         installBtn.style.display = "none";
     });
 }
@@ -140,18 +213,26 @@ function setupInstallButton() {
    SUCCESSFUL POST-INSTALL CLEANUP
 ========================================== */
 window.addEventListener("appinstalled", () => {
+
     console.log("✅ App installed successfully");
+
     deferredPrompt = null;
+
     const btn = document.getElementById("installBtn");
-    if (btn) btn.style.display = "none";
+
+    if (btn) {
+        btn.style.display = "none";
+    }
 });
 
 /* ==========================================
    APPLICATION INTERACTION BOOTSTRAP
 ========================================== */
 window.addEventListener("DOMContentLoaded", () => {
+
     const installBtn = document.getElementById("installBtn");
 
+    // ✅ Hide install button if already installed
     if (isRunningStandalone() && installBtn) {
         installBtn.style.display = "none";
     }
@@ -162,13 +243,22 @@ window.addEventListener("DOMContentLoaded", () => {
     const app = document.getElementById("app");
 
     setTimeout(() => {
+
         if (splash) {
+
             splash.classList.add("hide");
+
             setTimeout(() => {
+
                 splash.remove();
-                if (app) app.style.display = "block";
+
+                if (app) {
+                    app.style.display = "block";
+                }
+
             }, 250);
         }
+
     }, 500);
 });
 
@@ -176,18 +266,45 @@ window.addEventListener("DOMContentLoaded", () => {
    SERVICE WORKER REGISTRATION
 ========================================== */
 if ("serviceWorker" in navigator) {
+
     window.addEventListener("load", async () => {
+
         try {
-            const reg = await navigator.serviceWorker.register("service-worker.js", {
-                scope: "./"
-            });
-            console.log("✅ SW Registered successfully. Scope:", reg.scope);
+
+            // ✅ IMPROVED RELATIVE SW REGISTRATION
+            const reg = await navigator.serviceWorker.register(
+                "./service-worker.js",
+                {
+                    scope: "./"
+                }
+            );
+
+            console.log(
+                "✅ SW Registered successfully. Scope:",
+                reg.scope
+            );
+
+            // ✅ CHECK FOR UPDATES
+            reg.update();
+
         } catch (err) {
-            console.error("❌ SW Registration failed:", err);
+
+            console.error(
+                "❌ SW Registration failed:",
+                err
+            );
         }
     });
+
+    // ✅ AUTO RELOAD WHEN NEW SW ACTIVATES
+    navigator.serviceWorker.addEventListener(
+        "controllerchange",
+        () => {
+            window.location.reload();
+        }
+    );
 }
 </script>
 
 </body>
-</html>
+    </html>
