@@ -1,13 +1,11 @@
 "use strict";
 
-// ==========================================
-// SERVICE WORKER (ULTRA-STABLE PWA ENGINE V48)
-// ==========================================
+// ==========================================================
+// SERVICE WORKER (FINAL STRUCTURAL SUBFOLDER RECTIFICATION)
+// ==========================================================
 
+const CACHE_NAME = "mission-cache-v56";
 
-const CACHE_NAME = "mission-cache-v49";
-
-// Prefixed with the exact GitHub Pages subfolder to guarantee flawless caching
 const APP_SHELL = [
   "/Mission-app/index.html",
   "/Mission-app/styles.css",
@@ -22,7 +20,7 @@ const APP_SHELL = [
   "/Mission-app/icon-192.png"
 ];
 
-// Clean path resolution helper targeting the exact subfolder
+// Clean path resolution to match self.location.origin directly
 function toAbsolute(url) {
   return new URL(url, self.location.origin).toString();
 }
@@ -37,8 +35,6 @@ self.addEventListener("install", (event) => {
     caches.open(CACHE_NAME).then((cache) => {
       console.log("📦 SW: Pre-caching Core Application Shell Bundle...");
       
-      // Use Promise.allSettled to guarantee that one minor asset failing 
-      // does not crash the entire PWA install engine lifecycle
       return Promise.allSettled(
         APP_SHELL.map((resource) => {
           const absoluteUrl = toAbsolute(resource);
@@ -80,19 +76,15 @@ self.addEventListener("fetch", (event) => {
       if (cachedResponse) return cachedResponse;
 
       return fetch(event.request).then((networkResponse) => {
-        // Safe check: ensure we got a valid response back from the network
         if (!networkResponse || networkResponse.status !== 200) {
           return networkResponse;
         }
 
-        // Optimized Scope Bound Verification Engine
         const requestUrl = new URL(event.request.url);
         const workerUrl = new URL(self.location.href);
-        
-        // Remove file names to establish exact structural directory boundary path rule mappings
-        const workerDir = workerUrl.pathname.substring(0, workerUrl.pathname.lastIndexOf("/") + 1);
+        const workerDir = "/Mission-app/";
 
-        // Explicitly isolate caching to assets originating inside your repository folder
+        // Explicitly isolate caching to matching origins and directory subfolders
         if (requestUrl.origin === workerUrl.origin && requestUrl.pathname.startsWith(workerDir)) {
           const responseToCache = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => {
@@ -104,7 +96,7 @@ self.addEventListener("fetch", (event) => {
       }).catch((err) => {
         console.log("🌐 SW: Fetch fallback routing triggered ->", err);
 
-        // Serve index.html as fallback asset for missing app shell parts
+        // Fix: Ensure the string parsed into caches.match completely mirrors your APP_SHELL item
         if (event.request.mode === "navigate") {
           return caches.match(toAbsolute("/Mission-app/index.html"));
         }
@@ -126,4 +118,4 @@ self.addEventListener("message", (event) => {
     self.skipWaiting();
   }
 });
-                                                                                                 
+    
