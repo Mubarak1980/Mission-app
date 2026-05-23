@@ -325,11 +325,12 @@ async function registerServiceWorker() {
 
     try {
 
+        // Updated paths to match subfolder structure for proper installation alignment
         const registration =
             await navigator.serviceWorker.register(
-                "./service-worker.js",
+                "/Mission-app/service-worker.js",
                 {
-                    scope: "./"
+                    scope: "/Mission-app/"
                 }
             );
 
