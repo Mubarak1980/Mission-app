@@ -4,7 +4,7 @@
 // SERVICE WORKER (FINAL STRUCTURAL SUBFOLDER RECTIFICATION)
 // ==========================================================
 
-const CACHE_NAME = "mission-cache-v56";
+const CACHE_NAME = "mission-cache-v57";
 
 const APP_SHELL = [
   "/Mission-app/index.html",
