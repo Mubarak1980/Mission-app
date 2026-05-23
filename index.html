@@ -3,9 +3,6 @@
 <head>
     <meta charset="UTF-8" />
 
-    <!-- ==========================================
-         MOBILE + PWA VIEWPORT
-    =========================================== -->
     <meta
         name="viewport"
         content="width=device-width,
@@ -17,20 +14,11 @@
 
     <title>Mission App</title>
 
-    <!-- ==========================================
-         PWA MANIFEST
-    =========================================== -->
     <link rel="manifest" href="./manifest.json">
 
-    <!-- ==========================================
-         THEME
-    =========================================== -->
     <meta name="theme-color" content="#0b0f14" />
     <meta name="background-color" content="#0b0f14" />
 
-    <!-- ==========================================
-         PWA / MOBILE SUPPORT
-    =========================================== -->
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
 
@@ -54,9 +42,6 @@
         content="telephone=no"
     >
 
-    <!-- ==========================================
-         ICONS
-    =========================================== -->
     <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png" />
 
     <link
@@ -64,17 +49,11 @@
         href="./icon-192.png"
     />
 
-    <!-- ==========================================
-         STYLES
-    =========================================== -->
     <link rel="stylesheet" href="./styles.css" />
 </head>
 
 <body>
 
-<!-- ==========================================
-     INSTALL BUTTON
-========================================== -->
 <button
     id="installBtn"
     aria-label="Install Mission App"
@@ -92,14 +71,12 @@
         z-index: 9999;
         cursor: pointer;
         box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+        touch-action: manipulation;
     "
 >
     📲 Install App
 </button>
 
-<!-- ==========================================
-     SPLASH SCREEN
-========================================== -->
 <div id="splash-screen">
 
     <div class="splash-content">
@@ -114,16 +91,10 @@
 
 </div>
 
-<!-- ==========================================
-     APP ROOT
-========================================== -->
 <div id="app" style="display:none;">
 
     <h1>TIME</h1>
 
-    <!-- ==========================================
-         SECTION NAVIGATION
-    =========================================== -->
     <div class="section-buttons">
 
         <button
@@ -158,19 +129,10 @@
 
     </div>
 
-    <!-- ==========================================
-         GRADE PROGRESS
-    =========================================== -->
     <div id="grade-progress-bar"></div>
 
-    <!-- ==========================================
-         MAIN CONTENT
-    =========================================== -->
     <main id="main-content"></main>
 
-    <!-- ==========================================
-         GRADE NAVIGATION
-    =========================================== -->
     <div id="grade-nav">
 
         <button
@@ -191,9 +153,6 @@
 
 </div>
 
-<!-- ==========================================
-     SCRIPTS
-========================================== -->
 <script src="./data.js" defer></script>
 <script src="./Study-tracker.js" defer></script>
 <script src="./weekly-timetable.js" defer></script>
@@ -202,9 +161,6 @@
 <script src="./Sunnah-tracker.js" defer></script>
 <script src="./main.js" defer></script>
 
-<!-- ==========================================
-     PWA + INSTALL ENGINE
-========================================== -->
 <script>
 "use strict";
 
@@ -350,11 +306,10 @@ function hideSplashScreen() {
     splash.classList.add("hide");
 
     setTimeout(() => {
-
-        splash.remove();
-
+        if (splash.parentNode) {
+            splash.remove();
+        }
         app.style.display = "block";
-
     }, 250);
 }
 
@@ -387,9 +342,10 @@ async function registerServiceWorker() {
            PERIODIC UPDATE CHECK
         =========================================== */
         setInterval(() => {
-
-            registration.update();
-
+            // Check for updates safely only when a network link is available
+            if (navigator.onLine) {
+                registration.update().catch(() => console.log("SW update check skipped offline"));
+            }
         }, 60 * 60 * 1000);
 
     } catch (err) {
@@ -436,6 +392,36 @@ window.addEventListener("offline", () => {
    DOM READY
 ========================================== */
 window.addEventListener("DOMContentLoaded", async () => {
+
+    try {
+
+        if (isRunningStandalone()) {
+            hideInstallButton();
+        }
+
+        setupInstallButton();
+
+        await registerServiceWorker();
+
+        setTimeout(() => {
+            hideSplashScreen();
+        }, 500);
+
+        console.log("✅ UI Bootstrap complete");
+
+    } catch (err) {
+
+        console.error(
+            "🔥 Bootstrap crash:",
+            err
+        );
+    }
+});
+</script>
+
+</body>
+</html>
+ow.addEventListener("DOMContentLoaded", async () => {
 
     try {
 
