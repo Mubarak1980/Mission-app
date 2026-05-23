@@ -1,10 +1,10 @@
 "use strict";
 
 // ==========================================
-// SERVICE WORKER (ULTRA-STABLE PWA ENGINE V42)
+// SERVICE WORKER (ULTRA-STABLE PWA ENGINE V47)
 // ==========================================
 
-const CACHE_NAME = "mission-cache-v47";
+const CACHE_NAME = "mission-cache-v48";
 
 const APP_SHELL = [
   "index.html",
@@ -78,7 +78,8 @@ self.addEventListener("fetch", (event) => {
       if (cachedResponse) return cachedResponse;
 
       return fetch(event.request).then((networkResponse) => {
-        if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== "basic") {
+        // Safe check: ensure we got a valid response back from the network
+        if (!networkResponse || networkResponse.status !== 200) {
           return networkResponse;
         }
 
@@ -89,6 +90,7 @@ self.addEventListener("fetch", (event) => {
         // Remove file names to establish exact structural directory boundary path rule mappings
         const workerDir = workerUrl.pathname.substring(0, workerUrl.pathname.lastIndexOf("/") + 1);
 
+        // Explicitly isolate caching to assets originating inside your repository folder
         if (requestUrl.origin === workerUrl.origin && requestUrl.pathname.startsWith(workerDir)) {
           const responseToCache = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => {
@@ -122,4 +124,4 @@ self.addEventListener("message", (event) => {
     self.skipWaiting();
   }
 });
-  
+          
