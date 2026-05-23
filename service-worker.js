@@ -4,7 +4,7 @@
 // SERVICE WORKER (ULTRA-STABLE PWA ENGINE V42)
 // ==========================================
 
-const CACHE_NAME = "mission-cache-v46";
+const CACHE_NAME = "mission-cache-v47";
 
 const APP_SHELL = [
   "index.html",
