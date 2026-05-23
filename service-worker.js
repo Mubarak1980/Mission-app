@@ -4,7 +4,7 @@
 // SERVICE WORKER (PWA STRUCTURAL REFACTOR V39)
 // ==========================================
 
-const CACHE_NAME = "mission-cache-v41";
+const CACHE_NAME = "mission-cache-v42";
 
 // ==========================================
 // STATIC APP SHELL
