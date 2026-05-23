@@ -1,6 +1,8 @@
-// ===============================
-// WEEKLY TIMETABLE (STABLE VERSION)
-// ===============================
+"use strict";
+
+// =====================================================
+// 📅 WEEKLY TIMETABLE (REPETITIVE HEADER STRIPPED)
+// =====================================================
 
 function loadWeeklyTimetable() {
 
@@ -16,9 +18,9 @@ function loadWeeklyTimetable() {
   const container = document.getElementById("main-content");
   if (!container) return;
 
-  // ===============================
-  // SAFE STATE
-  // ===============================
+  // ==========================================
+  // SAFE BACKGROUND STATE CALCULATION ENGINE
+  // ==========================================
   const today = new Date();
   const todayStr = today.toISOString().split("T")[0];
 
@@ -55,49 +57,41 @@ function loadWeeklyTimetable() {
   const BASE_TARGET = 64;
   const DAILY_TARGET = BASE_TARGET + ((state.missedDays || 0) * 8);
 
-  // ===============================
-  // UI START
-  // ===============================
+  // ===================================================
+  // UI START (REPETITIVE LABELS & HEADINGS TRUNCATED)
+  // ===================================================
   let html = `
-    <h2>📊 Smart 90-Day Study Plan</h2>
-
-    <div class="weekly-info">
-      <p>📅 Today: ${today.toDateString()}</p>
-      <p>🔥 Catch-up Level: ${state.missedDays || 0}</p>
-      <p>📈 Daily Target: ${DAILY_TARGET} pages</p>
-    </div>
-
-    <div class="weekly-table-wrapper">
-      <table class="weekly-table">
+    <div class="weekly-table-wrapper" style="overflow-x: auto; width: 100%; -webkit-overflow-scrolling: touch; margin-top: 15px;">
+      <table class="weekly-table" style="width: 100%; border-collapse: collapse; text-align: left; min-width: 600px;">
         <thead>
-          <tr>
-            <th>Grade</th>
-            <th>Days</th>
-            <th>Math</th>
-            <th>Physics</th>
-            <th>Chemistry</th>
-            <th>Biology</th>
-            <th>English</th>
-            <th>Total/Day</th>
-            <th>Total Pages</th>
+          <tr style="background-color: #00a8ff; color: #fff;">
+            <th style="padding: 12px 10px;">Grade</th>
+            <th style="padding: 12px 10px;">Days</th>
+            <th style="padding: 12px 10px;">Math</th>
+            <th style="padding: 12px 10px;">Physics</th>
+            <th style="padding: 12px 10px;">Chemistry</th>
+            <th style="padding: 12px 10px;">Biology</th>
+            <th style="padding: 12px 10px;">English</th>
+            <th style="padding: 12px 10px; background-color: #00d4ff; color: #000;">Total/Day</th>
+            <th style="padding: 12px 10px;">Total Pages</th>
           </tr>
         </thead>
         <tbody>
   `;
 
-  // ===============================
-  // TABLE LOGIC (SAFE)
-  // ===============================
+  // ==========================================
+  // TABLE DATA LOOPING
+  // ==========================================
   [9, 10, 11, 12].forEach(g => {
 
     const d = pages[g];
 
-    // FIX: don't break entire table if missing
+    // Safe protection layout if state fails loading
     if (!d) {
       html += `
-        <tr>
-          <td><b>${g}</b></td>
-          <td colspan="8" style="color:red;">No data available</td>
+        <tr style="border-bottom: 1px solid #222;">
+          <td style="padding: 10px;"><b>Grade ${g}</b></td>
+          <td colspan="8" style="color:#ff4d4d; padding: 10px; font-style: italic;">No data available</td>
         </tr>
       `;
       return;
@@ -115,36 +109,35 @@ function loadWeeklyTimetable() {
 
     if (total === 0) {
       html += `
-        <tr>
-          <td><b>${g}</b></td>
-          <td>${days}</td>
-          <td colspan="7">No subject data</td>
+        <tr style="border-bottom: 1px solid #222;">
+          <td style="padding: 10px;"><b>Grade ${g}</b></td>
+          <td style="padding: 10px;">${days}</td>
+          <td colspan="7" style="padding: 10px; color: #777;">No subject data available</td>
         </tr>
       `;
       return;
     }
 
+    // Proportional distribution math engine based on targets
     const mathP = Math.round((math / total) * DAILY_TARGET);
     const physicsP = Math.round((physics / total) * DAILY_TARGET);
     const chemistryP = Math.round((chemistry / total) * DAILY_TARGET);
     const biologyP = Math.round((biology / total) * DAILY_TARGET);
 
-    let englishP =
-      DAILY_TARGET - (mathP + physicsP + chemistryP + biologyP);
-
+    let englishP = DAILY_TARGET - (mathP + physicsP + chemistryP + biologyP);
     if (englishP < 0) englishP = 0;
 
     html += `
-      <tr>
-        <td><b>${g}</b></td>
-        <td>${days}</td>
-        <td>${mathP}</td>
-        <td>${physicsP}</td>
-        <td>${chemistryP}</td>
-        <td>${biologyP}</td>
-        <td>${englishP}</td>
-        <td><b>${DAILY_TARGET}</b></td>
-        <td><b>${total}</b></td>
+      <tr style="border-bottom: 1px solid #222;">
+        <td style="padding: 12px 10px; font-weight: bold; color: #00d4ff;">Grade ${g}</td>
+        <td style="padding: 12px 10px; color: #fff;">${days} days</td>
+        <td style="padding: 12px 10px; color: #ccc;">${mathP} p.</td>
+        <td style="padding: 12px 10px; color: #ccc;">${physicsP} p.</td>
+        <td style="padding: 12px 10px; color: #ccc;">${chemistryP} p.</td>
+        <td style="padding: 12px 10px; color: #ccc;">${biologyP} p.</td>
+        <td style="padding: 12px 10px; color: #ccc;">${englishP} p.</td>
+        <td style="padding: 12px 10px; font-weight: bold; color: #00d4ff; background-color: rgba(0, 212, 255, 0.05);">${DAILY_TARGET}</td>
+        <td style="padding: 12px 10px; font-weight: bold; color: #888;">${total}</td>
       </tr>
     `;
   });
@@ -156,9 +149,14 @@ function loadWeeklyTimetable() {
   `;
 
   container.innerHTML = html;
+
+  // Clean layout wrapper side effects safely if needed
+  const bar = document.getElementById("grade-progress-bar");
+  if (bar) bar.innerHTML = "";
 }
 
-// ===============================
-// EXPORT (IMPORTANT FIX)
-// ===============================
+// ==========================================
+// EXPORT
+// ==========================================
 window.loadWeeklyTimetable = loadWeeklyTimetable;
+    
