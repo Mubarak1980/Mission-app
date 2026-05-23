@@ -342,7 +342,6 @@ async function registerServiceWorker() {
            PERIODIC UPDATE CHECK
         =========================================== */
         setInterval(() => {
-            // Check for updates safely only when a network link is available
             if (navigator.onLine) {
                 registration.update().catch(() => console.log("SW update check skipped offline"));
             }
@@ -421,33 +420,3 @@ window.addEventListener("DOMContentLoaded", async () => {
 
 </body>
 </html>
-ow.addEventListener("DOMContentLoaded", async () => {
-
-    try {
-
-        if (isRunningStandalone()) {
-            hideInstallButton();
-        }
-
-        setupInstallButton();
-
-        await registerServiceWorker();
-
-        setTimeout(() => {
-            hideSplashScreen();
-        }, 500);
-
-        console.log("✅ UI Bootstrap complete");
-
-    } catch (err) {
-
-        console.error(
-            "🔥 Bootstrap crash:",
-            err
-        );
-    }
-});
-</script>
-
-</body>
-    </html>
