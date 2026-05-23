@@ -1,28 +1,30 @@
 "use strict";
 
 // ==========================================
-// SERVICE WORKER (ULTRA-STABLE PWA ENGINE V47)
+// SERVICE WORKER (ULTRA-STABLE PWA ENGINE V48)
 // ==========================================
 
-const CACHE_NAME = "mission-cache-v48";
 
+const CACHE_NAME = "mission-cache-v49";
+
+// Prefixed with the exact GitHub Pages subfolder to guarantee flawless caching
 const APP_SHELL = [
-  "index.html",
-  "styles.css",
-  "main.js",
-  "data.js",
-  "Study-tracker.js",
-  "Sunnah-tracker.js",
-  "dashboard.js",
-  "weekly-timetable.js",
-  "top-student-mode.js",
-  "manifest.json",
-  "icon-192.png"
+  "/Mission-app/index.html",
+  "/Mission-app/styles.css",
+  "/Mission-app/main.js",
+  "/Mission-app/data.js",
+  "/Mission-app/Study-tracker.js",
+  "/Mission-app/Sunnah-tracker.js",
+  "/Mission-app/dashboard.js",
+  "/Mission-app/weekly-timetable.js",
+  "/Mission-app/top-student-mode.js",
+  "/Mission-app/manifest.json",
+  "/Mission-app/icon-192.png"
 ];
 
 // Clean path resolution helper targeting the exact subfolder
 function toAbsolute(url) {
-  return new URL(url, self.location.href).toString();
+  return new URL(url, self.location.origin).toString();
 }
 
 // ==========================================
@@ -104,7 +106,7 @@ self.addEventListener("fetch", (event) => {
 
         // Serve index.html as fallback asset for missing app shell parts
         if (event.request.mode === "navigate") {
-          return caches.match(toAbsolute("index.html"));
+          return caches.match(toAbsolute("/Mission-app/index.html"));
         }
         
         return new Response("Offline Content Unavailable", {
@@ -124,4 +126,4 @@ self.addEventListener("message", (event) => {
     self.skipWaiting();
   }
 });
-          
+                                                                                                 
