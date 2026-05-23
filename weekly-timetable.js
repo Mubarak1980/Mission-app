@@ -1,8 +1,6 @@
-"use strict";
-
-// =====================================================
-// 📅 WEEKLY TIMETABLE (REPETITIVE HEADER STRIPPED)
-// =====================================================
+// ===============================
+// WEEKLY TIMETABLE (STABLE VERSION)
+// ===============================
 
 function loadWeeklyTimetable() {
 
@@ -19,7 +17,7 @@ function loadWeeklyTimetable() {
   if (!container) return;
 
   // ===============================
-  // SAFE STATE CALCULATION ENGINE
+  // SAFE STATE
   // ===============================
   const today = new Date();
   const todayStr = today.toISOString().split("T")[0];
@@ -57,41 +55,49 @@ function loadWeeklyTimetable() {
   const BASE_TARGET = 64;
   const DAILY_TARGET = BASE_TARGET + ((state.missedDays || 0) * 8);
 
-  // ===================================================
-  // UI START (REPETITIVE LABELS & HEADINGS TRUNCATED)
-  // ===================================================
+  // ===============================
+  // UI START
+  // ===============================
   let html = `
-    <div class="weekly-table-wrapper" style="overflow-x: auto; width: 100%; -webkit-overflow-scrolling: touch;">
-      <table class="weekly-table" style="width: 100%; border-collapse: collapse; text-align: left; min-width: 600px;">
+    <h2>📊 Smart 90-Day Study Plan</h2>
+
+    <div class="weekly-info">
+      <p>📅 Today: ${today.toDateString()}</p>
+      <p>🔥 Catch-up Level: ${state.missedDays || 0}</p>
+      <p>📈 Daily Target: ${DAILY_TARGET} pages</p>
+    </div>
+
+    <div class="weekly-table-wrapper">
+      <table class="weekly-table">
         <thead>
-          <tr style="background-color: #00a8ff; color: #fff;">
-            <th style="padding: 10px;">Grade</th>
-            <th style="padding: 10px;">Days</th>
-            <th style="padding: 10px;">Math</th>
-            <th style="padding: 10px;">Physics</th>
-            <th style="padding: 10px;">Chemistry</th>
-            <th style="padding: 10px;">Biology</th>
-            <th style="padding: 10px;">English</th>
-            <th style="padding: 10px;">Total/Day</th>
-            <th style="padding: 10px;">Total Pages</th>
+          <tr>
+            <th>Grade</th>
+            <th>Days</th>
+            <th>Math</th>
+            <th>Physics</th>
+            <th>Chemistry</th>
+            <th>Biology</th>
+            <th>English</th>
+            <th>Total/Day</th>
+            <th>Total Pages</th>
           </tr>
         </thead>
         <tbody>
   `;
 
   // ===============================
-  // TABLE LOGIC (UNTOUCHED)
+  // TABLE LOGIC (SAFE)
   // ===============================
   [9, 10, 11, 12].forEach(g => {
 
     const d = pages[g];
 
-    // Safe protection layout if state fails loading
+    // FIX: don't break entire table if missing
     if (!d) {
       html += `
-        <tr style="border-bottom: 1px solid #222;">
-          <td style="padding: 10px;"><b>${g}</b></td>
-          <td colspan="8" style="color:red; padding: 10px;">No data available</td>
+        <tr>
+          <td><b>${g}</b></td>
+          <td colspan="8" style="color:red;">No data available</td>
         </tr>
       `;
       return;
@@ -109,10 +115,10 @@ function loadWeeklyTimetable() {
 
     if (total === 0) {
       html += `
-        <tr style="border-bottom: 1px solid #222;">
-          <td style="padding: 10px;"><b>${g}</b></td>
-          <td style="padding: 10px;">${days}</td>
-          <td colspan="7" style="padding: 10px; color: #888;">No subject data</td>
+        <tr>
+          <td><b>${g}</b></td>
+          <td>${days}</td>
+          <td colspan="7">No subject data</td>
         </tr>
       `;
       return;
@@ -123,20 +129,22 @@ function loadWeeklyTimetable() {
     const chemistryP = Math.round((chemistry / total) * DAILY_TARGET);
     const biologyP = Math.round((biology / total) * DAILY_TARGET);
 
-    let englishP = DAILY_TARGET - (mathP + physicsP + chemistryP + biologyP);
+    let englishP =
+      DAILY_TARGET - (mathP + physicsP + chemistryP + biologyP);
+
     if (englishP < 0) englishP = 0;
 
     html += `
-      <tr style="border-bottom: 1px solid #222;">
-        <td style="padding: 10px; font-weight: bold; color: #00d4ff;">Grade ${g}</td>
-        <td style="padding: 10px; color: #fff;">${days} days</td>
-        <td style="padding: 10px;">${mathP} p.</td>
-        <td style="padding: 10px;">${physicsP} p.</td>
-        <td style="padding: 10px;">${chemistryP} p.</td>
-        <td style="padding: 10px;">${biologyP} p.</td>
-        <td style="padding: 10px;">${englishP} p.</td>
-        <td style="padding: 10px; font-weight: bold; color: #00d4ff;">${DAILY_TARGET}</td>
-        <td style="padding: 10px; font-weight: bold; color: #888;">${total}</td>
+      <tr>
+        <td><b>${g}</b></td>
+        <td>${days}</td>
+        <td>${mathP}</td>
+        <td>${physicsP}</td>
+        <td>${chemistryP}</td>
+        <td>${biologyP}</td>
+        <td>${englishP}</td>
+        <td><b>${DAILY_TARGET}</b></td>
+        <td><b>${total}</b></td>
       </tr>
     `;
   });
@@ -148,13 +156,9 @@ function loadWeeklyTimetable() {
   `;
 
   container.innerHTML = html;
-
-  // Clean persistent tracking layout wrappers
-  const bar = document.getElementById("grade-progress-bar");
-  if (bar) bar.innerHTML = "";
 }
 
 // ===============================
-// EXPORT
+// EXPORT (IMPORTANT FIX)
 // ===============================
 window.loadWeeklyTimetable = loadWeeklyTimetable;
