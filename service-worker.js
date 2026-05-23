@@ -1,14 +1,11 @@
 "use strict";
 
 // ==========================================
-// SERVICE WORKER (PWA STRUCTURAL REFACTOR V39)
+// SERVICE WORKER (ULTRA-STABLE PWA ENGINE V42)
 // ==========================================
 
-const CACHE_NAME = "mission-cache-v42";
+const CACHE_NAME = "mission-cache-v43";
 
-// ==========================================
-// STATIC APP SHELL
-// ==========================================
 const APP_SHELL = [
   "index.html",
   "styles.css",
@@ -20,118 +17,109 @@ const APP_SHELL = [
   "weekly-timetable.js",
   "top-student-mode.js",
   "manifest.json",
-  "icon-192.png" // Cleaned up to match your repository's exact files
+  "icon-192.png"
 ];
 
-// ==========================================
-// HELPER (DYNAMIC PATH SAFE RESOLUTION)
-// ==========================================
+// Clean path resolution helper targeting the exact subfolder
 function toAbsolute(url) {
-  // Use self.location.href to guarantee precise subfolder inheritance under GitHub Pages
   return new URL(url, self.location.href).toString();
 }
 
 // ==========================================
-// INSTALL
+// INSTALLATION (PRE-CACHE INSTANT SHELL)
 // ==========================================
 self.addEventListener("install", (event) => {
   self.skipWaiting();
 
   event.waitUntil(
-    (async () => {
-      const cache = await caches.open(CACHE_NAME);
-      console.log("📦 Pre-caching application shell...");
-
-      // Execute cache allocations sequentially to trace exact files
-      for (const resource of APP_SHELL) {
-        const targetUrl = toAbsolute(resource);
-        try {
-          await cache.add(targetUrl);
-          console.log(`✅ Cached: ${resource}`);
-        } catch (error) {
-          console.warn(`⚠️ Cache failed for asset: ${resource} [Resolved: ${targetUrl}] ->`, error.message || error);
-        }
-      }
-    })()
+    caches.open(CACHE_NAME).then((cache) => {
+      console.log("📦 SW: Pre-caching Core Application Shell Bundle...");
+      
+      // Use Promise.allSettled to guarantee that one minor asset failing 
+      // does not crash the entire PWA install engine lifecycle
+      return Promise.allSettled(
+        APP_SHELL.map((resource) => {
+          const absoluteUrl = toAbsolute(resource);
+          return cache.add(absoluteUrl)
+            .then(() => console.log(`✅ SW: Cached asset successfully: ${resource}`))
+            .catch((err) => console.warn(`⚠️ SW: Cache failed for asset: ${resource} [Resolved: ${absoluteUrl}] ->`, err));
+        })
+      );
+    })
   );
 });
 
 // ==========================================
-// ACTIVATE
+// ACTIVATION (CLEAN EXPIRED ENTRIES)
 // ==========================================
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    (async () => {
-      const keys = await caches.keys();
-
-      await Promise.all(
+    caches.keys().then((keys) => {
+      return Promise.all(
         keys.map((key) => {
           if (key !== CACHE_NAME) {
-            console.log("🧹 Deleting old cache:", key);
+            console.log("🧹 SW: Disposing old obsolete cache store:", key);
             return caches.delete(key);
           }
         })
       );
-
-      await self.clients.claim();
-
-      // Notify window frames safely
-      const clients = await self.clients.matchAll({ type: "window" });
-      for (const client of clients) {
-        client.postMessage({ type: "SW_ACTIVATED" });
-      }
-    })()
+    }).then(() => self.clients.claim())
   );
 });
 
 // ==========================================
-// FETCH STRATEGY
+// FETCH REVENUE STRATEGY (CACHE FIRST)
 // ==========================================
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 
   event.respondWith(
-    (async () => {
-      try {
-        const cached = await caches.match(event.request);
-        if (cached) return cached;
+    caches.match(event.request).then((cachedResponse) => {
+      if (cachedResponse) return cachedResponse;
 
-        const response = await fetch(event.request);
-
-        if (response && response.ok) {
-          const cache = await caches.open(CACHE_NAME);
-          const requestUrl = new URL(event.request.url);
-          const workerLocation = new URL(self.location.href);
-
-          // Restrict mapping exclusively to our subfolder space
-          if (requestUrl.origin === workerLocation.origin && requestUrl.pathname.startsWith(workerLocation.pathname.replace(/[^\/]*$/, ""))) {
-            cache.put(event.request, response.clone());
-          }
+      return fetch(event.request).then((networkResponse) => {
+        if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== "basic") {
+          return networkResponse;
         }
 
-        return response;
-      } catch (error) {
-        console.log("🌐 Offline fallback triggered");
+        // Optimized Scope Bound Verification Engine
+        const requestUrl = new URL(event.request.url);
+        const workerUrl = new URL(self.location.href);
+        
+        // Remove file names to establish exact structural directory boundary path rule mappings
+        const workerDir = workerUrl.pathname.substring(0, workerUrl.pathname.lastIndexOf("/") + 1);
 
-        const fallbackTarget = toAbsolute("index.html");
-        const match = await caches.match(fallbackTarget);
-        if (match) return match;
+        if (requestUrl.origin === workerUrl.origin && requestUrl.pathname.startsWith(workerDir)) {
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache);
+          });
+        }
 
-        return new Response("Offline Mode Active", {
-          status: 200,
+        return networkResponse;
+      }).catch((err) => {
+        console.log("🌐 SW: Fetch fallback routing triggered ->", err);
+
+        // Serve index.html as fallback asset for missing app shell parts
+        if (event.request.mode === "navigate") {
+          return caches.match(toAbsolute("index.html"));
+        }
+        
+        return new Response("Offline Content Unavailable", {
+          status: 503,
           headers: { "Content-Type": "text/plain" }
         });
-      }
-    })()
+      });
+    })
   );
 });
 
 // ==========================================
-// MESSAGE
+// INTER-PROCESS COMMUNICATION CORRIDOR
 // ==========================================
 self.addEventListener("message", (event) => {
   if (event.data?.type === "SKIP_WAITING") {
     self.skipWaiting();
   }
 });
-      
+  
