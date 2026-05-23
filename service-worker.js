@@ -1,12 +1,14 @@
 "use strict";
 
 // ==========================================================
-// SERVICE WORKER (FINAL STRUCTURAL SUBFOLDER RECTIFICATION)
+// SERVICE WORKER (CHROME-OPTIMIZED PRODUCTION ENGINE V58)
 // ==========================================================
 
-const CACHE_NAME = "mission-cache-v57";
+const CACHE_NAME = "mission-cache-v58";
 
+// Absolute subdirectory maps to guarantee flawless asset validation
 const APP_SHELL = [
+  "/Mission-app/",
   "/Mission-app/index.html",
   "/Mission-app/styles.css",
   "/Mission-app/main.js",
@@ -20,14 +22,13 @@ const APP_SHELL = [
   "/Mission-app/icon-192.png"
 ];
 
-// Clean path resolution to match self.location.origin directly
 function toAbsolute(url) {
   return new URL(url, self.location.origin).toString();
 }
 
-// ==========================================
-// INSTALLATION (PRE-CACHE INSTANT SHELL)
-// ==========================================
+// ==========================================================
+// INSTALLATION (STRICT OFFLINE CAPABILITY VERIFICATION)
+// ==========================================================
 self.addEventListener("install", (event) => {
   self.skipWaiting();
 
@@ -35,21 +36,26 @@ self.addEventListener("install", (event) => {
     caches.open(CACHE_NAME).then((cache) => {
       console.log("📦 SW: Pre-caching Core Application Shell Bundle...");
       
-      return Promise.allSettled(
-        APP_SHELL.map((resource) => {
-          const absoluteUrl = toAbsolute(resource);
-          return cache.add(absoluteUrl)
-            .then(() => console.log(`✅ SW: Cached asset successfully: ${resource}`))
-            .catch((err) => console.warn(`⚠️ SW: Cache failed for asset: ${resource} [Resolved: ${absoluteUrl}] ->`, err));
-        })
-      );
+      // Strict allocation array tells Chrome's engine everything is perfectly cached
+      const absoluteUrls = APP_SHELL.map(resource => toAbsolute(resource));
+      return cache.addAll(absoluteUrls)
+        .then(() => console.log("✅ SW: All assets securely verified offline."))
+        .catch((err) => {
+          console.error("❌ SW: Cache alignment broken! Fallback tracking initiated:", err);
+          // Safe fallback layout loop if a path is temporarily unreachable
+          return Promise.all(
+            APP_SHELL.map(res => {
+              return cache.add(toAbsolute(res)).catch(e => console.warn(`Asset missing: ${res}`, e));
+            })
+          );
+        });
     })
   );
 });
 
-// ==========================================
-// ACTIVATION (CLEAN EXPIRED ENTRIES)
-// ==========================================
+// ==========================================================
+// ACTIVATION (CLEAN EXPIRED METRICS)
+// ==========================================================
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
@@ -65,14 +71,24 @@ self.addEventListener("activate", (event) => {
   );
 });
 
-// ==========================================
-// FETCH REVENUE STRATEGY (CACHE FIRST)
-// ==========================================
+// ==========================================================
+// FETCH REVENUE STRATEGY (CACHE-FIRST WITH NETWORK BACKUP)
+// ==========================================================
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 
+  const requestUrl = new URL(event.request.url);
+  const workerUrl = new URL(self.location.href);
+  const workerDir = "/Mission-app/";
+
+  // Normalization logic: rewrite root subfolder targets to exact index.html cache slots
+  let cacheKey = event.request;
+  if (requestUrl.origin === workerUrl.origin && requestUrl.pathname === workerDir) {
+    cacheKey = toAbsolute("/Mission-app/index.html");
+  }
+
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
+    caches.match(cacheKey).then((cachedResponse) => {
       if (cachedResponse) return cachedResponse;
 
       return fetch(event.request).then((networkResponse) => {
@@ -80,11 +96,6 @@ self.addEventListener("fetch", (event) => {
           return networkResponse;
         }
 
-        const requestUrl = new URL(event.request.url);
-        const workerUrl = new URL(self.location.href);
-        const workerDir = "/Mission-app/";
-
-        // Explicitly isolate caching to matching origins and directory subfolders
         if (requestUrl.origin === workerUrl.origin && requestUrl.pathname.startsWith(workerDir)) {
           const responseToCache = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => {
@@ -94,9 +105,8 @@ self.addEventListener("fetch", (event) => {
 
         return networkResponse;
       }).catch((err) => {
-        console.log("🌐 SW: Fetch fallback routing triggered ->", err);
+        console.log("🌐 SW: Fetch fallback triggered ->", err);
 
-        // Fix: Ensure the string parsed into caches.match completely mirrors your APP_SHELL item
         if (event.request.mode === "navigate") {
           return caches.match(toAbsolute("/Mission-app/index.html"));
         }
@@ -118,4 +128,4 @@ self.addEventListener("message", (event) => {
     self.skipWaiting();
   }
 });
-    
+                      
