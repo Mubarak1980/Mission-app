@@ -1,7 +1,7 @@
 "use strict";
 
 // =====================================================
-// 🕌 SUNNAH TRACKER (1 PAGE PER DAY MODEL LOCKED)
+// 🕌 SUNNAH TRACKER (TIMEZONE-LOCALIZED & STATUS-FIXED)
 // =====================================================
 
 const totalQuranPages = 604;
@@ -20,7 +20,7 @@ function safeNumber(value, fallback = 0) {
 }
 
 // ===============================
-// DAYS CALCULATION (SAFE)
+// DAYS CALCULATION (LOCAL TIMEZONE SAFE)
 // ===============================
 function getDaysSinceStart(startDate) {
     try {
@@ -29,7 +29,7 @@ function getDaysSinceStart(startDate) {
 
         if (isNaN(start.getTime())) return 1;
 
-        // Strip hour metrics to evaluate pure calendar dates cleanly
+        // Strip hour metrics cleanly without relying on UTC strings
         today.setHours(0, 0, 0, 0);
         start.setHours(0, 0, 0, 0);
 
@@ -104,6 +104,23 @@ function cleanSunnahInputRouter(e) {
         juzPercentText.textContent = `${percentJuz}% (${newJuz}/${totalJuz} Juz)`;
     }
 
+    // Force a structural content re-evaluation to switch the status badge instantly
+    const saved = loadSunnahState();
+    const daysSinceStart = getDaysSinceStart(saved.startDate || new Date().toISOString().split("T")[0]);
+    const expectedPages = Math.min(daysSinceStart * TARGET_PAGES_PER_DAY, totalQuranPages);
+
+    let status = "🟢 On Track";
+    if (value < expectedPages) {
+        status = "🟠 Behind";
+    } else if (value > expectedPages + 2) {
+        status = "🚀 Ahead";
+    }
+
+    const statusEl = document.querySelector(".quran-progress p strong:nth-of-type(4)");
+    if (statusEl && statusEl.parentElement) {
+        statusEl.parentElement.innerHTML = `<strong>Status:</strong> ${status}`;
+    }
+
     saveSunnahProgress({
         pages: value,
         juz: newJuz
@@ -119,25 +136,28 @@ function loadSunnahTracker() {
 
     const saved = loadSunnahState();
 
-    // Seal the date instantly on first view so it doesn't shift forward tomorrow
+    // Fixed: Pull local calendar values directly to bypass UTC evening rollover bugs
     let startDate = saved.startDate;
     if (!startDate) {
-        startDate = new Date().toISOString().split("T")[0];
+        const d = new Date();
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        startDate = `${year}-${month}-${day}`;
         saveSunnahProgress({ startDate: startDate });
     }
 
     const pages = Math.min(Math.max(safeNumber(saved.pages), 0), totalQuranPages);
     const daysSinceStart = getDaysSinceStart(startDate);
 
-    // Dynamic Expected Target Model based on 1 page per day pace
     const expectedPages = Math.min(daysSinceStart * TARGET_PAGES_PER_DAY, totalQuranPages);
     const juz = Math.floor(pages / pagesPerJuz);
 
-    // Fair status buffer rules based on reading 1 page a day
+    // Fixed: Strict evaluation rules to align with a 1 page/day target profile
     let status = "🟢 On Track";
-    if (pages < expectedPages - 3) {
+    if (pages < expectedPages) {
         status = "🟠 Behind";
-    } else if (pages > expectedPages + 5) {
+    } else if (pages > expectedPages + 2) {
         status = "🚀 Ahead";
     }
 
@@ -180,7 +200,6 @@ function loadSunnahTracker() {
         </div>
     `;
 
-    // Unbind layout event duplicates to match your Study Tracker safety patterns
     container.removeEventListener("input", cleanSunnahInputRouter);
     container.addEventListener("input", cleanSunnahInputRouter);
 }
@@ -189,4 +208,4 @@ function loadSunnahTracker() {
 // EXPORT
 // ===============================
 window.loadSunnahTracker = loadSunnahTracker;
-                     
+        
