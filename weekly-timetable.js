@@ -1,7 +1,7 @@
 "use strict";
 
 // =====================================================
-// 📅 WEEKLY TIMETABLE (REPETITIVE HEADER STRIPPED)
+// 📅 WEEKLY TIMETABLE (TIMEZONE-SAFE PRODUCTION METRICS)
 // =====================================================
 
 function loadWeeklyTimetable() {
@@ -22,7 +22,12 @@ function loadWeeklyTimetable() {
   // SAFE BACKGROUND STATE CALCULATION ENGINE
   // ==========================================
   const today = new Date();
-  const todayStr = today.toISOString().split("T")[0];
+  
+  // Fixed: Pulls local calendar dates directly to stay aligned with EAT timezone rules
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  const todayStr = `${year}-${month}-${day}`;
 
   let state;
 
@@ -86,7 +91,6 @@ function loadWeeklyTimetable() {
 
     const d = pages[g];
 
-    // Safe protection layout if state fails loading
     if (!d) {
       html += `
         <tr style="border-bottom: 1px solid #222;">
@@ -118,7 +122,6 @@ function loadWeeklyTimetable() {
       return;
     }
 
-    // Proportional distribution math engine based on targets
     const mathP = Math.round((math / total) * DAILY_TARGET);
     const physicsP = Math.round((physics / total) * DAILY_TARGET);
     const chemistryP = Math.round((chemistry / total) * DAILY_TARGET);
@@ -150,7 +153,6 @@ function loadWeeklyTimetable() {
 
   container.innerHTML = html;
 
-  // Clean layout wrapper side effects safely if needed
   const bar = document.getElementById("grade-progress-bar");
   if (bar) bar.innerHTML = "";
 }
@@ -159,4 +161,4 @@ function loadWeeklyTimetable() {
 // EXPORT
 // ==========================================
 window.loadWeeklyTimetable = loadWeeklyTimetable;
-    
+                          
