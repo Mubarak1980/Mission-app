@@ -1,8 +1,8 @@
 "use strict";
 
-// ===============================
-// MAIN ENGINE (FINAL IMPROVED VERSION)
-// ===============================
+// =====================================================
+// 📘 MAIN ENGINE (CASE-ALIGNED & TIMEZONE-SAFE PRODUCTION VERSION)
+// =====================================================
 
 (() => {
 
@@ -14,7 +14,8 @@ try {
 /* ===============================
    MAX PAGES DATA
 =============================== */
-window.maxPagesByGrade = window.maxPagesByGrade || {
+// Refined: Ensuring object keys do not get overwritten if data.js loads late
+window.maxPagesByGrade = window.maxPagesByGrade && Object.keys(window.maxPagesByGrade).length ? window.maxPagesByGrade : {
   9: {
     Math: 363,
     Physics: 174,
@@ -105,21 +106,18 @@ const Storage = {
 };
 
 /* ===============================
-   DATE UTIL
+   DATE UTIL (LOCAL-SAFE TIMEZONE ADJUSTMENT)
 =============================== */
 function todayISO() {
 
   const d = new Date();
+  
+  // Fixed: Pulls local calendar dates directly to stop UTC rolling over early in East Africa Time
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
 
-  return new Date(
-    Date.UTC(
-      d.getFullYear(),
-      d.getMonth(),
-      d.getDate()
-    )
-  )
-    .toISOString()
-    .split("T")[0];
+  return `${year}-${month}-${day}`;
 }
 
 /* ===============================
@@ -781,3 +779,4 @@ window.isRunningStandalone =
 }
 
 })();
+   
