@@ -1,12 +1,12 @@
 "use strict";
 
 // =====================================================
-// 🕌 SUNNAH TRACKER (TIMEZONE-LOCALIZED & STATUS-FIXED)
+// 🕌 SUNNAH TRACKER (TIMEZONE-LOCALIZED & JUZ-FIXED)
 // =====================================================
 
 const totalQuranPages = 604;
 const pagesPerJuz = 20;
-const totalJuz = Math.ceil(totalQuranPages / pagesPerJuz);
+const totalJuz = 30; // 🔥 FIXED: Locked to exactly 30 Juz instead of rounding up to 31
 
 // 🎯 YOUR PACE: Exactly 1 page per day
 const TARGET_PAGES_PER_DAY = 1; 
@@ -80,7 +80,8 @@ function cleanSunnahInputRouter(e) {
     let value = safeNumber(input.value);
     value = Math.max(0, Math.min(value, totalQuranPages));
 
-    const newJuz = Math.floor(value / pagesPerJuz);
+    // 🔥 FIXED: Floor calculation capped at 30 so page 604 stays perfectly inside Juz 30
+    const newJuz = Math.min(Math.floor(value / pagesPerJuz), totalJuz);
     input.value = value;
 
     const pagesProgress = document.getElementById("quran-pages-progress");
@@ -151,7 +152,9 @@ function loadSunnahTracker() {
     const daysSinceStart = getDaysSinceStart(startDate);
 
     const expectedPages = Math.min(daysSinceStart * TARGET_PAGES_PER_DAY, totalQuranPages);
-    const juz = Math.floor(pages / pagesPerJuz);
+    
+    // 🔥 FIXED: Floor calculation capped at 30 so page 604 reads as Juz 30 loading initial states
+    const juz = Math.min(Math.floor(pages / pagesPerJuz), totalJuz);
 
     // Fixed: Strict evaluation rules to align with a 1 page/day target profile
     let status = "🟢 On Track";
@@ -208,4 +211,4 @@ function loadSunnahTracker() {
 // EXPORT
 // ===============================
 window.loadSunnahTracker = loadSunnahTracker;
-        
+    
