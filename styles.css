@@ -1,6 +1,6 @@
-/* ===============================
-   ROOT (DESIGN SYSTEM)
-=============================== */
+/* ==========================================================
+   🌐 GLOBAL DESIGN SYSTEM VARIABLES & ROOT
+   ========================================================== */
 :root {
   --bg: #0b0f14;
   --card: #121821;
@@ -9,220 +9,222 @@
   --primary-soft: rgba(0, 212, 255, 0.15);
   --text: #e6edf3;
   --muted: #8b949e;
+  --border-radius-main: 16px; /* Uniform curvature blueprint across all views */
+  --transition-speed: 0.2s;
 }
 
-/* ===============================
-   GLOBAL (FIX: PREVENT ICON FLASH)
-=============================== */
-html, body {
-  background: var(--bg); /* 🔥 FIX: removes white/icon flash on launch */
-}
-
-/* ===============================
-   GLOBAL
-=============================== */
+/* ==========================================================
+   ⚠️ GLOBAL CORRECTIONS (PREVENT FLASHES & OVERFLOWS)
+   ========================================================== */
 * {
   box-sizing: border-box;
 }
 
-body {
-  font-family: 'Segoe UI', Roboto, sans-serif;
+html, body {
+  background: var(--bg); /* Prevents default white/icon flash on native startup */
   margin: 0;
   padding: 12px;
-  background: var(--bg);
   color: var(--text);
+  font-family: 'Segoe UI', Roboto, -apple-system, sans-serif;
   -webkit-tap-highlight-color: transparent;
 }
 
-/* ===============================
-   TITLE
-=============================== */
-h1 {
-  text-align: center;
-  font-size: 22px;
-  margin-bottom: 16px;
-  color: var(--primary);
-  letter-spacing: 1px;
+#main-content {
+  width: 100%;
 }
 
-/* ===============================
-   SECTION BUTTONS
-=============================== */
-.section-buttons {
+/* ==========================================================
+   📱 NAVIGATION & TAB RUNNER MODULES
+   ========================================================== */
+.section-buttons, #grade-nav {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
   margin-bottom: 18px;
+  margin-top: 0;
 }
 
-.section-buttons button {
+.section-buttons button, #grade-nav button {
   flex: 1;
   min-width: 110px;
-  padding: 12px;
+  padding: 12px 14px;
   border-radius: 14px;
   border: 1px solid var(--border);
   background: var(--card);
   color: var(--text);
   font-weight: 600;
+  font-size: 0.9rem;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all var(--transition-speed) ease;
+  text-align: center;
 }
 
-.section-buttons button:hover {
+/* Unify specific active button layouts */
+.section-buttons button:hover, #grade-nav button:not(:disabled):hover {
   background: var(--primary-soft);
   border-color: var(--primary);
+  color: var(--primary);
 }
 
-.section-buttons button:active {
+.section-buttons button:active, #grade-nav button:not(:disabled):active {
   transform: scale(0.96);
 }
 
-/* ===============================
-   MAIN CONTENT
-=============================== */
-#main-content {
-  overflow-x: auto;
+/* Active tab state override rules */
+.section-buttons button.active, #grade-nav button.active {
+  background: linear-gradient(135deg, #007acc, var(--primary)) !important;
+  color: #ffffff !important;
+  border-color: var(--primary) !important;
+  box-shadow: 0 4px 12px rgba(0, 212, 255, 0.2);
 }
 
-/* ===============================
-   SUBJECT CARDS
-=============================== */
-.subjects-container {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
+#grade-nav button {
+  background: linear-gradient(135deg, #007acc, #00d4ff);
+  color: white;
+  border: none;
 }
 
-.subject {
+#grade-nav button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* ==========================================================
+   📦 UNIFORM SYSTEM CONTAINER CARDS (STUDY, SUNNAH, MODE)
+   ========================================================== */
+.subject, .quran-progress, .top-student-card, .dashboard-subject {
   background: var(--card);
-  border-radius: 16px;
-  padding: 14px;
+  border-radius: var(--border-radius-main);
+  padding: 16px;
   border: 1px solid var(--border);
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+  box-sizing: border-box;
+  margin-bottom: 14px;
+  transition: all var(--transition-speed) ease;
 }
 
-/* ===============================
-   SUBJECT TITLE
-=============================== */
-.subject h3 {
-  margin-bottom: 10px;
+/* Unified structural hover properties */
+.subject:hover, .quran-progress:hover, .top-student-card:hover, .dashboard-subject:hover {
+  border-color: var(--primary);
+  box-shadow: 0 6px 18px rgba(0, 212, 255, 0.15);
+}
+
+/* Heading Typography Synchronisation */
+h1 {
+  text-align: center;
+  font-size: 22px;
+  margin-top: 4px;
+  margin-bottom: 16px;
+  color: var(--primary);
+  letter-spacing: 1px;
+  font-weight: 700;
+}
+
+h2, h3, .subject h3, .dashboard-subject h3, .top-student-card h3 {
+  margin-top: 0;
+  margin-bottom: 12px;
   color: var(--primary);
   font-size: 17px;
+  font-weight: 600;
 }
 
-/* ===============================
-   INPUT
-=============================== */
-.subject input {
+/* ==========================================================
+   ✍️ FORMS & INPUT CONTROLS (GLOBALIZED SETS)
+   ========================================================== */
+label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+/* Target inputs across ALL views globally */
+input[type="number"], input[type="text"], .subject input, .quran-progress input {
   width: 100%;
-  padding: 10px;
+  padding: 12px;
   border-radius: 10px;
   border: 1px solid var(--border);
-  background: #0b0f14;
+  background: #05070a; /* Dark sleek inset appearance */
   color: var(--text);
-  margin-bottom: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  margin-top: 4px;
+  margin-bottom: 14px;
   outline: none;
-  transition: border 0.2s ease, box-shadow 0.2s ease;
+  box-sizing: border-box;
+  transition: border var(--transition-speed) ease, box-shadow var(--transition-speed) ease;
 }
 
-.subject input:focus {
+input[type="number"]:focus, input[type="text"]:focus {
   border-color: var(--primary);
   box-shadow: 0 0 0 2px var(--primary-soft);
 }
 
-/* ===============================
-   PROGRESS BAR
-=============================== */
+/* Unify structural read-only inputs */
+input[readonly] {
+  background: rgba(255, 255, 255, 0.02) !important;
+  color: var(--muted) !important;
+  border-style: dashed !important;
+  cursor: not-allowed;
+}
+
+/* ==========================================================
+   📊 PROGRESS ELEMENT NORMALIZATION KEYS
+   ========================================================== */
 progress {
+  display: block;
   width: 100%;
   height: 12px;
   border-radius: 10px;
   overflow: hidden;
   border: none;
+  background: #05070a;
+  margin-bottom: 6px;
 }
 
 progress::-webkit-progress-bar {
-  background: #0b0f14;
+  background: #05070a;
 }
 
 progress::-webkit-progress-value {
   background: linear-gradient(90deg, #00d4ff, #00ffa6);
+  border-radius: 10px;
 }
 
 progress::-moz-progress-bar {
   background: linear-gradient(90deg, #00d4ff, #00ffa6);
+  border-radius: 10px;
 }
 
-/* ===============================
-   SUBJECT TEXT
-=============================== */
-.subject p {
-  margin-top: 6px;
+/* Text elements underneath progress bars */
+.subject p, .quran-progress p, .dashboard-subject p {
+  margin-top: 4px;
+  margin-bottom: 0;
   font-size: 12px;
   color: var(--muted);
   text-align: right;
 }
 
-/* ===============================
-   NAV BUTTONS
-=============================== */
-#grade-nav {
-  display: flex;
-  gap: 10px;
-  margin-top: 18px;
-}
-
-#grade-nav button {
-  flex: 1;
-  padding: 12px;
-  border-radius: 14px;
-  border: none;
-  background: linear-gradient(135deg, #007acc, #00d4ff);
-  color: white;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-#grade-nav button:active {
-  transform: scale(0.96);
-}
-
-#grade-nav button:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-/* ===============================
-   SUMMARY BAR
-=============================== */
-#grade-progress-bar {
+/* ==========================================================
+   📅 IMMERSIVE TABLES & CARD DASHBOARD GRIDS
+   ========================================================== */
+.table-wrapper, .weekly-table-wrapper {
+  overflow-x: auto;
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid var(--border);
   margin-bottom: 14px;
-  text-align: center;
+  -webkit-overflow-scrolling: touch;
 }
 
-#grade-progress-bar label {
-  display: block;
-  margin-bottom: 6px;
-  font-size: 13px;
-  color: var(--muted);
-}
-
-/* ===============================
-   TABLE
-=============================== */
-table {
+table, .weekly-table {
   width: 100%;
   border-collapse: collapse;
   background: var(--card);
-  border-radius: 12px;
-  overflow: hidden;
   font-size: 13px;
-  min-width: 650px;
-}
-
-.table-wrapper {
-  overflow-x: auto;
+  min-width: 600px;
 }
 
 thead {
@@ -230,47 +232,34 @@ thead {
 }
 
 th {
-  padding: 10px;
-  color: white;
+  padding: 12px 10px;
+  color: #ffffff;
   font-weight: 600;
+  text-align: left;
 }
 
 td {
-  padding: 8px;
+  padding: 12px 10px;
   border-top: 1px solid var(--border);
   color: var(--text);
 }
 
 tr:nth-child(even) {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(255, 255, 255, 0.01);
 }
 
-/* ===============================
-   DASHBOARD
-=============================== */
+/* Dashboard dynamic grid distribution engine */
 .dashboard-container {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
-  margin-top: 18px;
-  padding: 4px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+  margin-top: 14px;
 }
 
 .dashboard-subject {
-  background: linear-gradient(145deg, var(--card), #0e141c);
-  border: 1px solid var(--border);
-  border-radius: 18px;
-  padding: 16px;
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.45);
-  transition: all 0.25s ease;
+  margin-bottom: 0; /* Clear bottom margins inside grid layout */
   position: relative;
   overflow: hidden;
-}
-
-.dashboard-subject:hover {
-  transform: translateY(-4px);
-  border-color: var(--primary);
-  box-shadow: 0 10px 26px rgba(0, 212, 255, 0.15);
 }
 
 .dashboard-subject::before {
@@ -283,32 +272,13 @@ tr:nth-child(even) {
   background: linear-gradient(90deg, var(--primary), #00ffa6);
 }
 
-.dashboard-subject h3 {
-  margin: 0 0 12px 0;
-  font-size: 17px;
-  color: var(--primary);
-}
-
-.dashboard-subject p {
-  margin: 0;
-  font-size: 12px;
-  color: var(--muted);
-  text-align: right;
-}
-
-/* ===============================
-   TOP STUDENT MODE
-=============================== */
+/* ==========================================================
+   🧠 TOP STUDENT SPECIAL SECTIONS
+   ========================================================== */
 .top-student-container {
   max-width: 900px;
-  margin: 10px auto;
-  animation: fadeIn 0.5s ease;
-}
-
-.top-student-container h2 {
-  text-align: center;
-  margin-bottom: 10px;
-  color: var(--primary);
+  margin: 0 auto;
+  animation: fadeIn 0.4s ease;
 }
 
 .top-student-intro {
@@ -316,32 +286,12 @@ tr:nth-child(even) {
   color: var(--muted);
   font-size: 14px;
   margin-bottom: 16px;
-}
-
-.top-student-card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 14px;
-  margin-bottom: 14px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
-  transition: all 0.25s ease;
-}
-
-.top-student-card:hover {
-  border-color: var(--primary);
-  box-shadow: 0 6px 18px rgba(0, 212, 255, 0.15);
-  transform: translateY(-2px);
-}
-
-.top-student-card h3 {
-  color: var(--primary);
-  margin-bottom: 10px;
-  font-size: 16px;
+  line-height: 1.5;
 }
 
 .top-student-card ul {
   padding-left: 18px;
+  margin: 0;
 }
 
 .top-student-card li {
@@ -354,53 +304,22 @@ tr:nth-child(even) {
   color: var(--muted);
   font-size: 13px;
   line-height: 1.6;
+  text-align: left; /* Restores standard reading direction */
 }
 
 .highlight-card {
-  background: linear-gradient(135deg, #007acc, #00d4ff);
-  color: white;
-  border: none;
+  background: linear-gradient(135deg, #007acc, #00d4ff) !important;
+  color: #ffffff !important;
+  border: none !important;
 }
 
-.highlight-card p {
-  color: white;
+.highlight-card h3, .highlight-card p, .highlight-card li {
+  color: #ffffff !important;
 }
 
-/* ===============================
-   ANIMATION
-=============================== */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* ===============================
-   MOBILE
-=============================== */
-@media (max-width: 500px) {
-  h1 {
-    font-size: 18px;
-  }
-
-  th, td {
-    font-size: 11px;
-    padding: 6px;
-  }
-
-  .dashboard-container {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* ===============================
-   SPLASH SCREEN
-=============================== */
+/* ==========================================================
+   ⏳ SPLASH SCREENS & LOADERS
+   ========================================================== */
 #splash-screen {
   position: fixed;
   inset: 0;
@@ -411,7 +330,7 @@ tr:nth-child(even) {
   z-index: 99999;
   opacity: 1;
   visibility: visible;
-  transition: opacity 0.2s ease, visibility 0.2s ease; /* 🔥 faster fade */
+  transition: opacity 0.2s ease, visibility 0.2s ease;
   will-change: opacity;
 }
 
@@ -426,29 +345,6 @@ tr:nth-child(even) {
   animation: splashFadeIn 0.6s ease;
 }
 
-@keyframes splashFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-#splash-screen h1 {
-  color: var(--primary);
-  font-size: 24px;
-  margin-bottom: 8px;
-}
-
-#splash-screen p {
-  color: var(--muted);
-  font-size: 13px;
-}
-
-/* Loader */
 .loader {
   width: 40px;
   height: 40px;
@@ -459,9 +355,47 @@ tr:nth-child(even) {
   animation: spin 0.9s linear infinite;
 }
 
-/* FIXED */
+/* ==========================================================
+   🎭 KEYFRAME ANIMATION ARRAYS
+   ========================================================== */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes splashFadeIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 @keyframes spin {
-  to {
-    transform: rotate(360deg);
+  to { transform: rotate(360deg); }
+}
+
+/* ==========================================================
+   📱 MOBILE ADAPTATION SYSTEM (MEDIA QUERIES)
+   ========================================================== */
+@media (max-width: 500px) {
+  body {
+    padding: 8px;
+  }
+  
+  h1 {
+    font-size: 19px;
+  }
+
+  th, td {
+    font-size: 11px;
+    padding: 8px 6px;
+  }
+
+  .dashboard-container {
+    grid-template-columns: 1fr;
+  }
+  
+  .section-buttons button, #grade-nav button {
+    padding: 10px;
+    font-size: 0.85rem;
   }
    }
+   
