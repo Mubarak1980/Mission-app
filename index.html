@@ -206,6 +206,9 @@ function showInstallButton() {
     btn.style.display = "block";
 }
 
+// Fixed: Ensured complete functional scoping visibility
+window.showInstallButton = showInstallButton;
+
 function hideInstallButton() {
 
     const btn = document.getElementById("installBtn");
@@ -325,7 +328,6 @@ async function registerServiceWorker() {
 
     try {
 
-        // Updated paths to match subfolder structure for proper installation alignment
         const registration =
             await navigator.serviceWorker.register(
                 "/Mission-app/service-worker.js",
@@ -420,4 +422,5 @@ window.addEventListener("DOMContentLoaded", async () => {
 </script>
 
 </body>
-</html>
+            </html>
+    
