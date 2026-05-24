@@ -4,7 +4,7 @@
 // SERVICE WORKER (ULTRA-RESILIENT CHROME PRODUCTION ENGINE V65)
 // ==========================================================
 
-const CACHE_NAME = "mission-cache-v69";
+const CACHE_NAME = "mission-cache-v7";
 
 const APP_SHELL = [
   "/Mission-app/",
