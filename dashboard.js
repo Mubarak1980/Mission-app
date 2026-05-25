@@ -117,7 +117,6 @@ function loadDashboard() {
       }
     };
 
-    // Keep track of total pages per subject for priority math calculations later
     const subjectStats = {};
 
     let html = `
@@ -138,7 +137,6 @@ function loadDashboard() {
         totalAbsoluteMax += maxPages;
       });
 
-      // Retain tracking data memory parameters for priority scaling blocks
       subjectStats[subject] = {
         done: totalAbsoluteDone,
         max: totalAbsoluteMax
@@ -200,22 +198,15 @@ function loadDashboard() {
 
     subjects.forEach(subject => {
       const stats = subjectStats[subject] || { done: 0, max: 0 };
-      
-      // Calculate perfect expected pages completion parameter for today's specific timeline position
       const expectedCompletionRate = totalYearDaysElapsed / yearTotalTargetWindow;
       const expectedPagesToday = Math.round(stats.max * expectedCompletionRate);
-      
-      // Deficit footprint detection gap
       const currentDeficit = Math.max(0, expectedPagesToday - stats.done);
-      
-      // 🔥 EXPONENTIAL TRANSFORM: Squaring the deficit shifts dynamic priority to lagging fields
       const calculatedWeight = Math.pow(currentDeficit, 2) + 1; 
       
       exponentialWeights[subject] = calculatedWeight;
       totalWeightFactor += calculatedWeight;
     });
 
-    // Generate neat string blocks containing our smart targets
     let structuralPriorityHTML = `<div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border);">
         <label style="color: #00d4ff; font-weight:700; font-size:13px; display:block; margin-bottom: 6px;">
           🎯 Exponential Daily Priorities (Allocated out of ${baseTargetValue} pgs)
@@ -224,7 +215,6 @@ function loadDashboard() {
     let checkSumAllocatedPages = 0;
     const individualTargets = [];
 
-    // First round distribution pass parsing loop
     subjects.forEach((subject, idx) => {
       const portion = exponentialWeights[subject] / totalWeightFactor;
       let targetForSubject = Math.floor(portion * baseTargetValue);
@@ -233,7 +223,6 @@ function loadDashboard() {
       checkSumAllocatedPages += targetForSubject;
     });
 
-    // Remainder calculation safety validation to prevent rounding drop discrepancies
     let missingRemainder = baseTargetValue - checkSumAllocatedPages;
     while (missingRemainder > 0) {
       individualTargets.sort((a, b) => exponentialWeights[b.subject] - exponentialWeights[a.subject]);
@@ -241,7 +230,6 @@ function loadDashboard() {
       missingRemainder--;
     }
 
-    // Build the clean string presentation fields inside the template panel block
     individualTargets.forEach(item => {
       const weightScore = exponentialWeights[item.subject];
       let priorityAlertIndicator = "";
@@ -264,16 +252,16 @@ function loadDashboard() {
     structuralPriorityHTML += `</ul></div>`;
 
     // =====================================================
-    // 🧠 SMART STUDY ENGINE & CYCLE INFO (SHORT & CLEAN)
+    // 🧠 SMART STUDY ENGINE & CYCLE INFO (STYLISH RE-COLOR)
     // =====================================================
     html += `
       <div class="smart-cycle-section" style="padding: 15px; margin-top: 20px;">
         <h2>🧠 Smart Study Engine</h2>
         <h3>⏱️ Cycle ${runningCycleNum} Info</h3>
 
-        <p style="margin: 6px 0;">📅 <strong>Current Cycle Day:</strong> ${cleanCycleDay}/90</p>
-        <p style="margin: 6px 0;">📉 <strong>Cycle Remaining:</strong> ${cleanRemainingDays} Days</p>
-        <p style="margin: 6px 0;">📌 <strong>Base Target:</strong> ${baseTargetValue}</p>
+        <p style="margin: 6px 0;">📅 <strong>Current Cycle Day:</strong> <span style="color: #e5c158; font-weight: bold;">${cleanCycleDay}/90</span></p>
+        <p style="margin: 6px 0;">📉 <strong>Cycle Remaining:</strong> <span style="color: #ff4d4d; font-weight: bold;">${cleanRemainingDays} Days</span></p>
+        <p style="margin: 6px 0;">📌 <strong>Base Target:</strong> <span style="color: #00d4ff; font-weight: bold;">${baseTargetValue} pages</span></p>
 
         ${structuralPriorityHTML}
 
@@ -311,4 +299,4 @@ function loadDashboard() {
 // EXPORT
 // =====================================================
 window.loadDashboard = loadDashboard;
-          
+        
