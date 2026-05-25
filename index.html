@@ -93,7 +93,7 @@
 
 <div id="app" style="display:none;">
 
-    <h1>TIME</h1>
+    <h1 id="app-time-heading">TIME</h1>
 
     <div class="section-buttons">
 
@@ -206,7 +206,6 @@ function showInstallButton() {
     btn.style.display = "block";
 }
 
-// Fixed: Ensured complete functional scoping visibility
 window.showInstallButton = showInstallButton;
 
 function hideInstallButton() {
@@ -422,5 +421,4 @@ window.addEventListener("DOMContentLoaded", async () => {
 </script>
 
 </body>
-            </html>
-    
+</html>
