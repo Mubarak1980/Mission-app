@@ -191,25 +191,48 @@ function loadDashboard() {
     }
 
     // =====================================================
-    // 🧮 EXPONENTIAL SUBJECT WEIGHTING CALCULATION LOOP
+    // 🧮 EXPONENTIAL SUBJECT WEIGHTING & GLOBAL SURPLUS
     // =====================================================
     let exponentialWeights = {};
     let totalWeightFactor = 0;
+    let globalTotalDone = 0;
+    let globalTotalExpectedToday = 0;
 
     subjects.forEach(subject => {
       const stats = subjectStats[subject] || { done: 0, max: 0 };
       const expectedCompletionRate = totalYearDaysElapsed / yearTotalTargetWindow;
       const expectedPagesToday = Math.round(stats.max * expectedCompletionRate);
       const currentDeficit = Math.max(0, expectedPagesToday - stats.done);
-      const calculatedWeight = Math.pow(currentDeficit, 2) + 1; 
       
+      // Accumulate totals for global surplus parsing logic
+      globalTotalDone += stats.done;
+      globalTotalExpectedToday += expectedPagesToday;
+
+      const calculatedWeight = Math.pow(currentDeficit, 2) + 1; 
       exponentialWeights[subject] = calculatedWeight;
       totalWeightFactor += calculatedWeight;
     });
 
+    // Calculate overall safety cushion buffer credit
+    const globalSurplusGap = globalTotalDone - globalTotalExpectedToday;
+    let originalBaseTargetValue = baseTargetValue;
+    
+    // Reward mechanism: If globally ahead, scale down target work proportionally
+    if (globalSurplusGap > 0 && cleanRemainingDays > 0) {
+      const dailyReliefCredit = Math.floor(globalSurplusGap / cleanRemainingDays);
+      // Ensure target doesn't drop below a reasonable floor of 10 pages total
+      baseTargetValue = Math.max(10, baseTargetValue - dailyReliefCredit);
+    }
+
+    // Dynamic label displaying our reward credit to the user if active
+    let targetSubtextLabel = `Allocated out of ${baseTargetValue} pgs`;
+    if (baseTargetValue < originalBaseTargetValue) {
+       targetSubtextLabel += ` <span style="color: #2ecc71;">(Saved ${originalBaseTargetValue - baseTargetValue} pgs today! 🎉)</span>`;
+    }
+
     let structuralPriorityHTML = `<div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border);">
         <label style="color: #00d4ff; font-weight:700; font-size:13px; display:block; margin-bottom: 6px;">
-          🎯 Exponential Daily Priorities (Allocated out of ${baseTargetValue} pgs)
+          🎯 Exponential Daily Priorities (${targetSubtextLabel})
         </label><ul style="list-style: none; padding: 0; margin: 0; font-size: 12px;">`;
 
     let checkSumAllocatedPages = 0;
@@ -239,7 +262,7 @@ function loadDashboard() {
       } else if (weightScore > 1) {
          priorityAlertIndicator = `<b style="color: #00d4ff; float: right;">📈 Stepping Up</b>`;
       } else {
-         priorityAlertIndicator = `<span style="color: #888; float: right;">✅ Ahead / Safe</span>`;
+         priorityAlertIndicator = `<span style="color: #2ecc71; float: right;">✅ Ahead / Safe</span>`;
       }
 
       structuralPriorityHTML += `
@@ -261,7 +284,7 @@ function loadDashboard() {
 
         <p style="margin: 6px 0;">📅 <strong>Current Cycle Day:</strong> <span style="color: #e5c158; font-weight: bold;">${cleanCycleDay}/90</span></p>
         <p style="margin: 6px 0;">📉 <strong>Cycle Remaining:</strong> <span style="color: #ff4d4d; font-weight: bold;">${cleanRemainingDays} Days</span></p>
-        <p style="margin: 6px 0;">📌 <strong>Base Target:</strong> <span style="color: #00d4ff; font-weight: bold;">${baseTargetValue} pages</span></p>
+        <p style="margin: 6px 0;">📌 <strong>Base Target:</strong> <span style="color: #00d4ff; font-weight: bold;">${originalBaseTargetValue} pages</span></p>
 
         ${structuralPriorityHTML}
 
