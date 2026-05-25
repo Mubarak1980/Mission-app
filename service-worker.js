@@ -1,11 +1,14 @@
 "use strict";
 
 // ==========================================================
-// SERVICE WORKER (NETWORK-FIRST ENGINE FOR FREQUENT UPDATES)
+// 🚀 ENTERPRISE PRODUCTION SERVICE WORKER (V16.1)
 // ==========================================================
 
-const CACHE_NAME = "mission-cache-v16";
+const CACHE_NAME = "mission-cache-v17";
+const LOG_STYLE = "color: #00d4ff; font-weight: bold; background: #0b0f14; padding: 2px 6px; border-radius: 4px;";
+const WARN_STYLE = "color: #e5c158; font-weight: bold; background: #0b0f14; padding: 2px 6px; border-radius: 4px;";
 
+// Core application runtime paths
 const APP_SHELL = [
   "/Mission-app/",
   "/Mission-app/index.html",
@@ -23,19 +26,27 @@ const APP_SHELL = [
   "/Mission-app/icon-192.png"
 ];
 
+// High-frequency script assets that require absolute fresh network state
+const NETWORK_FIRST_ASSETS = [
+  "dashboard.js",
+  "main.js",
+  "Study-tracker.js",
+  "study-tracker.js"
+];
+
 function toAbsolute(url) {
   return new URL(url, self.location.origin).toString();
 }
 
 // ==========================================================
-// INSTALLATION (FAIL-SAFE OFFLINE VERIFICATION)
+// 📦 1. INSTALLATION EVENT (Pre-Caching)
 // ==========================================================
 self.addEventListener("install", (event) => {
   self.skipWaiting();
 
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log("📦 SW: Pre-caching Core Application Shell Bundle...");
+      console.log("%c[SW] Pre-caching core application shell bundle...", LOG_STYLE);
       
       const absoluteUrls = APP_SHELL.map(resource => toAbsolute(resource));
       
@@ -45,16 +56,16 @@ self.addEventListener("install", (event) => {
             if (response.ok) {
               return cache.put(url, response);
             }
-            console.warn(`⚠️ SW: Skipping missing asset path: ${url}`);
-          }).catch(err => console.error(`❌ SW: Fetch failed for: ${url}`, err));
+            console.warn(`%c[SW] Skipping missing asset path: ${url}`, WARN_STYLE);
+          }).catch(err => console.error(`[SW] Fetch failed during installation for: ${url}`, err));
         })
-      ).then(() => console.log("✅ SW: Production assets analyzed. PWA install ready."));
+      ).then(() => console.log("%c[SW] Initialization complete. PWA ready for production launch.", LOG_STYLE));
     })
   );
 });
 
 // ==========================================================
-// ACTIVATION (CLEAN EXPIRED METRICS)
+// 🧹 2. ACTIVATION EVENT (Cache Management)
 // ==========================================================
 self.addEventListener("activate", (event) => {
   event.waitUntil(
@@ -62,7 +73,7 @@ self.addEventListener("activate", (event) => {
       return Promise.all(
         keys.map((key) => {
           if (key !== CACHE_NAME) {
-            console.log("🧹 SW: Disposing old obsolete cache store:", key);
+            console.log(`%c[SW] Disposing legacy obsolete cache store: ${key}`, WARN_STYLE);
             return caches.delete(key);
           }
         })
@@ -72,7 +83,7 @@ self.addEventListener("activate", (event) => {
 });
 
 // ==========================================================
-// FETCH STRATEGY: DYNAMIC NETWORK-FIRST WITH CACHE FALLBACK
+// 📡 3. INTELLIGENT ROUTER FETCH ENGINE
 // ==========================================================
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
@@ -81,53 +92,58 @@ self.addEventListener("fetch", (event) => {
   const workerUrl = new URL(self.location.href);
   const workerDir = "/Mission-app/";
 
+  // Normalize directory root routing to point directly to index.html
   let cacheKey = event.request;
   if (requestUrl.origin === workerUrl.origin && requestUrl.pathname === workerDir) {
     cacheKey = toAbsolute("/Mission-app/index.html");
   }
 
-  // FORCE NETWORK-FIRST: Always check for fresh live changes first!
+  const isNetworkFirstAsset = NETWORK_FIRST_ASSETS.some(asset => requestUrl.pathname.endsWith(asset));
+
+  // Strategy A: Strict Network-First Route (For calculations and active logic scripts)
+  if (isNetworkFirstAsset) {
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseToCache = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseToCache));
+          }
+          return networkResponse;
+        })
+        .catch(() => caches.match(cacheKey))
+    );
+    return;
+  }
+
+  // Strategy B: Stale-While-Revalidate Route (For static UI templates, layout sheets, images)
   event.respondWith(
-    fetch(event.request)
-      .then((networkResponse) => {
-        // If response is valid, update our persistent cache store dynamically
+    caches.match(cacheKey).then((cachedResponse) => {
+      const fetchPromise = fetch(event.request).then((networkResponse) => {
         if (networkResponse && networkResponse.status === 200) {
           if (requestUrl.origin === workerUrl.origin && requestUrl.pathname.startsWith(workerDir)) {
             const responseToCache = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, responseToCache);
-            });
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseToCache));
           }
         }
         return networkResponse;
-      })
-      .catch((err) => {
-        console.log("🌐 SW: Network down or checking updates, querying local system repository storage ->", err);
-        
-        // Offline Fallback: If network is broken, look up the cache key
-        return caches.match(cacheKey).then((cachedResponse) => {
-          if (cachedResponse) return cachedResponse;
+      }).catch((err) => {
+        console.log("%c[SW] System offline. Relying on active cache assets.", WARN_STYLE);
+        if (event.request.mode === "navigate") {
+          return caches.match(toAbsolute("/Mission-app/index.html"));
+        }
+      });
 
-          // If the resource isn't cached and we are navigating, fall back cleanly to index.html
-          if (event.request.mode === "navigate") {
-            return caches.match(toAbsolute("/Mission-app/index.html"));
-          }
-          
-          return new Response("Offline Content Unavailable", {
-            status: 503,
-            headers: { "Content-Type": "text/plain" }
-          });
-        });
-      })
+      return cachedResponse || fetchPromise;
+    })
   );
 });
 
-// ==========================================
-// INTER-PROCESS COMMUNICATION CORRIDOR
-// ==========================================
+// ==========================================================
+// 💬 4. IPC COMMS INTER-PROCESS CHANNEL
+// ==========================================================
 self.addEventListener("message", (event) => {
   if (event.data?.type === "SKIP_WAITING") {
     self.skipWaiting();
   }
 });
-    
