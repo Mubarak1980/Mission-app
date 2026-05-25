@@ -117,6 +117,9 @@ function loadDashboard() {
       }
     };
 
+    // Keep track of total pages per subject for priority math calculations later
+    const subjectStats = {};
+
     let html = `
       <h2>📊 Dashboard: Overall Subject Progress</h2>
       <div class="dashboard-container">
@@ -134,6 +137,12 @@ function loadDashboard() {
         totalAbsoluteDone += done;
         totalAbsoluteMax += maxPages;
       });
+
+      // Retain tracking data memory parameters for priority scaling blocks
+      subjectStats[subject] = {
+        done: totalAbsoluteDone,
+        max: totalAbsoluteMax
+      };
 
       const accurateAvg = totalAbsoluteMax
         ? Math.round((totalAbsoluteDone / totalAbsoluteMax) * 100)
@@ -184,6 +193,77 @@ function loadDashboard() {
     }
 
     // =====================================================
+    // 🧮 EXPONENTIAL SUBJECT WEIGHTING CALCULATION LOOP
+    // =====================================================
+    let exponentialWeights = {};
+    let totalWeightFactor = 0;
+
+    subjects.forEach(subject => {
+      const stats = subjectStats[subject] || { done: 0, max: 0 };
+      
+      // Calculate perfect expected pages completion parameter for today's specific timeline position
+      const expectedCompletionRate = totalYearDaysElapsed / yearTotalTargetWindow;
+      const expectedPagesToday = Math.round(stats.max * expectedCompletionRate);
+      
+      // Deficit footprint detection gap
+      const currentDeficit = Math.max(0, expectedPagesToday - stats.done);
+      
+      // 🔥 EXPONENTIAL TRANSFORM: Squaring the deficit shifts dynamic priority to lagging fields
+      const calculatedWeight = Math.pow(currentDeficit, 2) + 1; 
+      
+      exponentialWeights[subject] = calculatedWeight;
+      totalWeightFactor += calculatedWeight;
+    });
+
+    // Generate neat string blocks containing our smart targets
+    let structuralPriorityHTML = `<div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border);">
+        <label style="color: #00d4ff; font-weight:700; font-size:13px; display:block; margin-bottom: 6px;">
+          🎯 Exponential Daily Priorities (Allocated out of ${baseTargetValue} pgs)
+        </label><ul style="list-style: none; padding: 0; margin: 0; font-size: 12px;">`;
+
+    let checkSumAllocatedPages = 0;
+    const individualTargets = [];
+
+    // First round distribution pass parsing loop
+    subjects.forEach((subject, idx) => {
+      const portion = exponentialWeights[subject] / totalWeightFactor;
+      let targetForSubject = Math.floor(portion * baseTargetValue);
+      
+      individualTargets.push({ subject, target: targetForSubject });
+      checkSumAllocatedPages += targetForSubject;
+    });
+
+    // Remainder calculation safety validation to prevent rounding drop discrepancies
+    let missingRemainder = baseTargetValue - checkSumAllocatedPages;
+    while (missingRemainder > 0) {
+      individualTargets.sort((a, b) => exponentialWeights[b.subject] - exponentialWeights[a.subject]);
+      individualTargets[0].target += 1;
+      missingRemainder--;
+    }
+
+    // Build the clean string presentation fields inside the template panel block
+    individualTargets.forEach(item => {
+      const weightScore = exponentialWeights[item.subject];
+      let priorityAlertIndicator = "";
+      
+      if (weightScore > 1000) {
+         priorityAlertIndicator = `<b style="color: #ff4d4d; float: right;">🔥 High Priority</b>`;
+      } else if (weightScore > 1) {
+         priorityAlertIndicator = `<b style="color: #00d4ff; float: right;">📈 Stepping Up</b>`;
+      } else {
+         priorityAlertIndicator = `<span style="color: #888; float: right;">✅ Ahead / Safe</span>`;
+      }
+
+      structuralPriorityHTML += `
+        <li style="margin: 6px 0; padding: 4px 8px; background: rgba(255,255,255,0.03); border-radius: 4px;">
+          <strong>${item.subject}:</strong> <span style="color:#00d4ff; font-weight:bold;">${item.target}</span> pages
+          ${priorityAlertIndicator}
+        </li>
+      `;
+    });
+    structuralPriorityHTML += `</ul></div>`;
+
+    // =====================================================
     // 🧠 SMART STUDY ENGINE & CYCLE INFO (SHORT & CLEAN)
     // =====================================================
     html += `
@@ -194,6 +274,8 @@ function loadDashboard() {
         <p style="margin: 6px 0;">📅 <strong>Current Cycle Day:</strong> ${cleanCycleDay}/90</p>
         <p style="margin: 6px 0;">📉 <strong>Cycle Remaining:</strong> ${cleanRemainingDays} Days</p>
         <p style="margin: 6px 0;">📌 <strong>Base Target:</strong> ${baseTargetValue}</p>
+
+        ${structuralPriorityHTML}
 
         <div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border);">
             <label style="color: var(--primary); font-weight:600; font-size:13px; display:block; margin-bottom: 6px;">
@@ -229,4 +311,4 @@ function loadDashboard() {
 // EXPORT
 // =====================================================
 window.loadDashboard = loadDashboard;
-                     
+          
