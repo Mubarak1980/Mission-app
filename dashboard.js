@@ -20,10 +20,24 @@ function checkAndAutoRotateCycle() {
                 const today = new Date();
                 const start = new Date(startDate);
                 if (isNaN(start.getTime())) return 1;
+                
                 today.setHours(0, 0, 0, 0);
                 start.setHours(0, 0, 0, 0);
-                const diff = Math.floor((today - start) / (1000 * 60 * 60 * 24));
-                return Math.max(1, diff + 1);
+                
+                // 🌴 THURSDAY & FRIDAY FREEZE LOGIC FOR ENGINE ACCURACY
+                let activeDaysCount = 0;
+                let tempDate = new Date(start);
+                
+                while (tempDate <= today) {
+                    const dayOfWeek = tempDate.getDay(); 
+                    // 0 = Sunday, 1 = Monday, 2 = Tuesday, 3 = Wednesday, 4 = Thursday, 5 = Friday, 6 = Saturday
+                    if (dayOfWeek !== 4 && dayOfWeek !== 5) {
+                        activeDaysCount++;
+                    }
+                    tempDate.setDate(tempDate.getDate() + 1);
+                }
+                
+                return Math.max(1, activeDaysCount);
             } catch {
                 return 1;
             }
@@ -163,18 +177,33 @@ function loadDashboard() {
     html += `</div>`;
 
     // =====================================================
-    // FETCH LIVE TIMELINES
+    // FETCH LIVE TIMELINES WITH FREEZE EXCLUSIONS
     // =====================================================
     const currentStudyData = JSON.parse(localStorage.getItem("study_progress")) || {};
     const runningCycleNum = Number(currentStudyData.cycleNumber) || 1;
     
     const localStartStr = currentStudyData.startDate || new Date().toISOString().split("T")[0];
+    
+    // Check if TODAY is Thursday (4) or Friday (5)
+    const currentDayOfWeek = new Date().getDay();
+    const isFreeTimeDay = (currentDayOfWeek === 4 || currentDayOfWeek === 5);
+
     const rawDaysCount = (function(start) {
         try {
             const today = new Date(); const s = new Date(start);
             if(isNaN(s.getTime())) return 1;
             today.setHours(0,0,0,0); s.setHours(0,0,0,0);
-            return Math.max(1, Math.floor((today - s) / (1000*60*60*24)) + 1);
+            
+            let activeDays = 0;
+            let temp = new Date(s);
+            while(temp <= today) {
+                const dayW = temp.getDay();
+                if(dayW !== 4 && dayW !== 5) {
+                    activeDays++;
+                }
+                temp.setDate(temp.getDate() + 1);
+            }
+            return Math.max(1, activeDays);
         } catch { return 1; }
     })(localStartStr);
 
@@ -220,8 +249,15 @@ function loadDashboard() {
       baseTargetValue = Math.max(10, baseTargetValue - dailyReliefCredit);
     }
 
+    // If it is Thursday or Friday, set all study targets completely to zero!
+    if (isFreeTimeDay) {
+      baseTargetValue = 0;
+    }
+
     let targetSubtextLabel = `Allocated out of ${baseTargetValue} pgs`;
-    if (baseTargetValue < originalBaseTargetValue) {
+    if (isFreeTimeDay) {
+       targetSubtextLabel = `<span style="color: #2ecc71; font-weight: bold;">🎉 Free Time Mode Active!</span>`;
+    } else if (baseTargetValue < originalBaseTargetValue) {
        targetSubtextLabel += ` <span style="color: #2ecc71;">(Saved ${originalBaseTargetValue - baseTargetValue} pgs today! 🎉)</span>`;
     }
 
@@ -234,31 +270,33 @@ function loadDashboard() {
     const individualTargets = [];
 
     subjects.forEach((subject, idx) => {
-      const portion = exponentialWeights[subject] / totalWeightFactor;
-      let targetForSubject = Math.floor(portion * baseTargetValue);
+      const portion = totalWeightFactor ? (exponentialWeights[subject] / totalWeightFactor) : 0;
+      let targetForSubject = isFreeTimeDay ? 0 : Math.floor(portion * baseTargetValue);
       
       individualTargets.push({ subject, target: targetForSubject });
       checkSumAllocatedPages += targetForSubject;
     });
 
-    let missingRemainder = baseTargetValue - checkSumAllocatedPages;
-    while (missingRemainder > 0) {
-      individualTargets.sort((a, b) => exponentialWeights[b.subject] - exponentialWeights[a.subject]);
-      individualTargets[0].target += 1;
-      missingRemainder--;
+    if (!isFreeTimeDay) {
+      let missingRemainder = baseTargetValue - checkSumAllocatedPages;
+      while (missingRemainder > 0) {
+        individualTargets.sort((a, b) => exponentialWeights[b.subject] - exponentialWeights[a.subject]);
+        individualTargets[0].target += 1;
+        missingRemainder--;
+      }
     }
 
     individualTargets.forEach(item => {
       const weightScore = exponentialWeights[item.subject];
       let priorityAlertIndicator = "";
       
-      if (weightScore > 1000) {
+      if (isFreeTimeDay) {
+         priorityAlertIndicator = `<span style="color: #e5c158; float: right;">🌴 Weekend Chill</span>`;
+      } else if (weightScore > 1000) {
          priorityAlertIndicator = `<b style="color: #ff4d4d; float: right;">🔥 High Priority</b>`;
       } else if (weightScore > 1) {
-         // Changed string indicator to simple "Behind" label configuration
          priorityAlertIndicator = `<b style="color: #00d4ff; float: right;">📈 Behind</b>`;
       } else {
-         // Changed string indicator to simple "Good" label configuration
          priorityAlertIndicator = `<span style="color: #2ecc71; float: right;">✅ Good</span>`;
       }
 
@@ -281,7 +319,7 @@ function loadDashboard() {
 
         <p style="margin: 6px 0;">📅 <strong>Current Cycle Day:</strong> <span style="color: #e5c158; font-weight: bold;">${cleanCycleDay}/90</span></p>
         <p style="margin: 6px 0;">📉 <strong>Cycle Remaining:</strong> <span style="color: #ff4d4d; font-weight: bold;">${cleanRemainingDays} Days</span></p>
-        <p style="margin: 6px 0;">📌 <strong>Base Target:</strong> <span style="color: #00d4ff; font-weight: bold;">${originalBaseTargetValue} pages</span></p>
+        <p style="margin: 6px 0;">📌 <strong>Base Target:</strong> <span style="color: #00d4ff; font-weight: bold;">${isFreeTimeDay ? 0 : originalBaseTargetValue} pages</span></p>
 
         ${structuralPriorityHTML}
 
@@ -319,4 +357,4 @@ function loadDashboard() {
 // EXPORT
 // =====================================================
 window.loadDashboard = loadDashboard;
-        
+            
