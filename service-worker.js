@@ -1,7 +1,7 @@
 "use strict";
 
 // ==========================================================
-// SERVICE WORKER (ULTRA-RESILIENT CHROME PRODUCTION ENGINE V65)
+// SERVICE WORKER (NETWORK-FIRST ENGINE FOR FREQUENT UPDATES)
 // ==========================================================
 
 const CACHE_NAME = "mission-cache-v16";
@@ -13,9 +13,9 @@ const APP_SHELL = [
   "/Mission-app/main.js",
   "/Mission-app/data.js",
   "/Mission-app/Study-tracker.js",
-  "/Mission-app/study-tracker.js", // Added lowercase fallback mapping
+  "/Mission-app/study-tracker.js", 
   "/Mission-app/Sunnah-tracker.js",
-  "/Mission-app/sunnah-tracker.js", // Added lowercase fallback mapping
+  "/Mission-app/sunnah-tracker.js", 
   "/Mission-app/dashboard.js",
   "/Mission-app/weekly-timetable.js",
   "/Mission-app/top-student-mode.js",
@@ -39,8 +39,6 @@ self.addEventListener("install", (event) => {
       
       const absoluteUrls = APP_SHELL.map(resource => toAbsolute(resource));
       
-      // Use a resilient mapping technique to guarantee that a 404 filename typo 
-      // does NOT block the rest of the PWA install criteria from qualifying
       return Promise.all(
         absoluteUrls.map(url => {
           return fetch(url).then(response => {
@@ -74,7 +72,7 @@ self.addEventListener("activate", (event) => {
 });
 
 // ==========================================================
-// FETCH REVENUE STRATEGY (CACHE-FIRST WITH NETWORK BACKUP)
+// FETCH STRATEGY: DYNAMIC NETWORK-FIRST WITH CACHE FALLBACK
 // ==========================================================
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
@@ -88,36 +86,39 @@ self.addEventListener("fetch", (event) => {
     cacheKey = toAbsolute("/Mission-app/index.html");
   }
 
+  // FORCE NETWORK-FIRST: Always check for fresh live changes first!
   event.respondWith(
-    caches.match(cacheKey).then((cachedResponse) => {
-      if (cachedResponse) return cachedResponse;
-
-      return fetch(event.request).then((networkResponse) => {
-        if (!networkResponse || networkResponse.status !== 200) {
-          return networkResponse;
+    fetch(event.request)
+      .then((networkResponse) => {
+        // If response is valid, update our persistent cache store dynamically
+        if (networkResponse && networkResponse.status === 200) {
+          if (requestUrl.origin === workerUrl.origin && requestUrl.pathname.startsWith(workerDir)) {
+            const responseToCache = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseToCache);
+            });
+          }
         }
-
-        if (requestUrl.origin === workerUrl.origin && requestUrl.pathname.startsWith(workerDir)) {
-          const responseToCache = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseToCache);
-          });
-        }
-
         return networkResponse;
-      }).catch((err) => {
-        console.log("🌐 SW: Fetch fallback triggered ->", err);
-
-        if (event.request.mode === "navigate") {
-          return caches.match(toAbsolute("/Mission-app/index.html"));
-        }
+      })
+      .catch((err) => {
+        console.log("🌐 SW: Network down or checking updates, querying local system repository storage ->", err);
         
-        return new Response("Offline Content Unavailable", {
-          status: 503,
-          headers: { "Content-Type": "text/plain" }
+        // Offline Fallback: If network is broken, look up the cache key
+        return caches.match(cacheKey).then((cachedResponse) => {
+          if (cachedResponse) return cachedResponse;
+
+          // If the resource isn't cached and we are navigating, fall back cleanly to index.html
+          if (event.request.mode === "navigate") {
+            return caches.match(toAbsolute("/Mission-app/index.html"));
+          }
+          
+          return new Response("Offline Content Unavailable", {
+            status: 503,
+            headers: { "Content-Type": "text/plain" }
+          });
         });
-      });
-    })
+      })
   );
 });
 
@@ -129,3 +130,4 @@ self.addEventListener("message", (event) => {
     self.skipWaiting();
   }
 });
+    
