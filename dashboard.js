@@ -204,7 +204,6 @@ function loadDashboard() {
       const expectedPagesToday = Math.round(stats.max * expectedCompletionRate);
       const currentDeficit = Math.max(0, expectedPagesToday - stats.done);
       
-      // Accumulate totals for global surplus parsing logic
       globalTotalDone += stats.done;
       globalTotalExpectedToday += expectedPagesToday;
 
@@ -213,18 +212,14 @@ function loadDashboard() {
       totalWeightFactor += calculatedWeight;
     });
 
-    // Calculate overall safety cushion buffer credit
     const globalSurplusGap = globalTotalDone - globalTotalExpectedToday;
     let originalBaseTargetValue = baseTargetValue;
     
-    // Reward mechanism: If globally ahead, scale down target work proportionally
     if (globalSurplusGap > 0 && cleanRemainingDays > 0) {
       const dailyReliefCredit = Math.floor(globalSurplusGap / cleanRemainingDays);
-      // Ensure target doesn't drop below a reasonable floor of 10 pages total
       baseTargetValue = Math.max(10, baseTargetValue - dailyReliefCredit);
     }
 
-    // Dynamic label displaying our reward credit to the user if active
     let targetSubtextLabel = `Allocated out of ${baseTargetValue} pgs`;
     if (baseTargetValue < originalBaseTargetValue) {
        targetSubtextLabel += ` <span style="color: #2ecc71;">(Saved ${originalBaseTargetValue - baseTargetValue} pgs today! 🎉)</span>`;
@@ -260,9 +255,11 @@ function loadDashboard() {
       if (weightScore > 1000) {
          priorityAlertIndicator = `<b style="color: #ff4d4d; float: right;">🔥 High Priority</b>`;
       } else if (weightScore > 1) {
-         priorityAlertIndicator = `<b style="color: #00d4ff; float: right;">📈 Stepping Up</b>`;
+         // Changed string indicator to simple "Behind" label configuration
+         priorityAlertIndicator = `<b style="color: #00d4ff; float: right;">📈 Behind</b>`;
       } else {
-         priorityAlertIndicator = `<span style="color: #2ecc71; float: right;">✅ Ahead / Safe</span>`;
+         // Changed string indicator to simple "Good" label configuration
+         priorityAlertIndicator = `<span style="color: #2ecc71; float: right;">✅ Good</span>`;
       }
 
       structuralPriorityHTML += `
