@@ -397,11 +397,20 @@ tr:nth-child(even) {
    ========================================================== */
 @media (max-width: 500px) {
   body {
-    /* Safe-area expansion targeting bottom operating-system bars */
-    padding-top: env(safe-area-inset-top, 12px);
-    padding-bottom: env(safe-area-inset-bottom, 36px);
-    padding-left: env(safe-area-inset-left, 12px);
-    padding-right: env(safe-area-inset-right, 12px);
+    /* 🛡️ Fallback values (14px) added alongside safe-area rules to guarantee edge distance */
+    padding-top: calc(12px + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(36px + env(safe-area-inset-bottom, 0px));
+    padding-left: calc(14px + env(safe-area-inset-left, 0px));
+    padding-right: calc(14px + env(safe-area-inset-right, 0px));
+  }
+  
+  /* 🛡️ Explicit padding injected directly into pure text nodes resting outside cards */
+  #main-content > h2,
+  #main-content > h3,
+  #main-content > p,
+  #main-content > div:not(.subject):not(.quran-progress):not(.top-student-card):not(.dashboard-subject) {
+    padding-left: 4px;
+    padding-right: 4px;
   }
   
   h1 {
@@ -429,4 +438,5 @@ tr:nth-child(even) {
     padding: 16px;
     margin-bottom: 12px;
   }
-}
+   }
+   
