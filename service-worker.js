@@ -1,29 +1,29 @@
 "use strict";
 
 // ==========================================================
-// 🚀 ENTERPRISE PRODUCTION SERVICE WORKER (V16.1)
+// 🚀 ENTERPRISE PRODUCTION SERVICE WORKER (V16.2)
 // ==========================================================
 
-const CACHE_NAME = "mission-cache-v28";
+const CACHE_NAME = "mission-cache-v29";
 const LOG_STYLE = "color: #00d4ff; font-weight: bold; background: #0b0f14; padding: 2px 6px; border-radius: 4px;";
 const WARN_STYLE = "color: #e5c158; font-weight: bold; background: #0b0f14; padding: 2px 6px; border-radius: 4px;";
 
-// Core application runtime paths
+// 📘 HARMONIZED RELATIVE PATH MATRIX: Ensures seamless PWA installation verification matches manifest rules
 const APP_SHELL = [
-  "/Mission-app/",
-  "/Mission-app/index.html",
-  "/Mission-app/styles.css",
-  "/Mission-app/main.js",
-  "/Mission-app/data.js",
-  "/Mission-app/Study-tracker.js",
-  "/Mission-app/study-tracker.js", 
-  "/Mission-app/Sunnah-tracker.js",
-  "/Mission-app/sunnah-tracker.js", 
-  "/Mission-app/dashboard.js",
-  "/Mission-app/weekly-timetable.js",
-  "/Mission-app/top-student-mode.js",
-  "/Mission-app/manifest.json",
-  "/Mission-app/icon-192.png"
+  "./",
+  "./index.html",
+  "./styles.css",
+  "./main.js",
+  "./data.js",
+  "./Study-tracker.js",
+  "./study-tracker.js", 
+  "./Sunnah-tracker.js",
+  "./sunnah-tracker.js", 
+  "./dashboard.js",
+  "./weekly-timetable.js",
+  "./top-student-mode.js",
+  "./manifest.json",
+  "./icon-192.png"
 ];
 
 // High-frequency script assets that require absolute fresh network state
@@ -90,17 +90,18 @@ self.addEventListener("fetch", (event) => {
 
   const requestUrl = new URL(event.request.url);
   const workerUrl = new URL(self.location.href);
-  const workerDir = "/Mission-app/";
-
-  // Normalize directory root routing to point directly to index.html
+  
+  // Dynamic normalized root resolving calculation logic
   let cacheKey = event.request;
-  if (requestUrl.origin === workerUrl.origin && requestUrl.pathname === workerDir) {
-    cacheKey = toAbsolute("/Mission-app/index.html");
+  const currentPath = requestUrl.pathname;
+  
+  if (requestUrl.origin === workerUrl.origin && (currentPath.endsWith("/Mission-app/") || currentPath.endsWith("/"))) {
+    cacheKey = toAbsolute("./index.html");
   }
 
   const isNetworkFirstAsset = NETWORK_FIRST_ASSETS.some(asset => requestUrl.pathname.endsWith(asset));
 
-  // Strategy A: Strict Network-First Route (For calculations and active logic scripts)
+  // Strategy A: Strict Network-First Route (For active calculation engines)
   if (isNetworkFirstAsset) {
     event.respondWith(
       fetch(event.request)
@@ -116,12 +117,12 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Strategy B: Stale-While-Revalidate Route (For static UI templates, layout sheets, images)
+  // Strategy B: Stale-While-Revalidate Route (For static UI layout stylesheets and data grids)
   event.respondWith(
     caches.match(cacheKey).then((cachedResponse) => {
       const fetchPromise = fetch(event.request).then((networkResponse) => {
         if (networkResponse && networkResponse.status === 200) {
-          if (requestUrl.origin === workerUrl.origin && requestUrl.pathname.startsWith(workerDir)) {
+          if (requestUrl.origin === workerUrl.origin) {
             const responseToCache = networkResponse.clone();
             caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseToCache));
           }
@@ -130,7 +131,7 @@ self.addEventListener("fetch", (event) => {
       }).catch((err) => {
         console.log("%c[SW] System offline. Relying on active cache assets.", WARN_STYLE);
         if (event.request.mode === "navigate") {
-          return caches.match(toAbsolute("/Mission-app/index.html"));
+          return caches.match(toAbsolute("./index.html"));
         }
       });
 
@@ -147,4 +148,4 @@ self.addEventListener("message", (event) => {
     self.skipWaiting();
   }
 });
-              
+  
