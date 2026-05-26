@@ -160,7 +160,7 @@ function loadDashboard() {
         <div class="dashboard-subject">
           <h3>${subject}</h3>
           <progress value="${accurateAvg}" max="100"></progress>
-          <p style="margin: 8px 0 0 0; display: flex; align-items: center; justify-content: space-between; flex-wrap: nowrap; gap: 8px;">
+          <p style="margin: 8px 0 0 0; display: flex !important; align-items: center !important; justify-content: space-between !important; flex-wrap: nowrap !important; gap: 8px !important;">
             <span style="font-weight: 600; white-space: nowrap;">${accurateAvg}% progress</span>
             <span style="font-size:0.85em; color:#8b949e; white-space: nowrap; text-align: right;">
               (${totalAbsoluteDone}/${totalAbsoluteMax} pgs)
@@ -257,7 +257,7 @@ function loadDashboard() {
     let structuralPriorityHTML = `<div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid #1f2a36;">
         <label style="color: #00d4ff; font-weight:700; font-size:0.9rem; display:block; margin-bottom: 10px; line-height: 1.4;">
           🎯 EXPONENTIAL DAILY PRIORITIES <br>${targetSubtextLabel}
-        </label><ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px;">`;
+        </label><ul style="list-style: none !important; padding: 0 !important; margin: 0 !important; display: flex !important; flex-direction: column !important; gap: 8px !important;">`;
 
     let checkSumAllocatedPages = 0;
     const individualTargets = [];
@@ -280,30 +280,32 @@ function loadDashboard() {
     }
 
     // =====================================================
-    // 🛠️ ALIGNMENT ENHANCEMENT: FORCES STATUSES TO OPPOSITE EDGE
+    // 🛠️ FIX SYSTEM: STOPS BREAKING AND SNAP-ALIGNS BADGES TO EXTREME RIGHT
     // =====================================================
     individualTargets.forEach(item => {
       const weightScore = exponentialWeights[item.subject];
       let priorityAlertIndicator = "";
       
       if (isFreeTimeDay) {
-         priorityAlertIndicator = `<span style="color: #e5c158; font-weight: bold; white-space: nowrap; text-align: right; margin-left: auto;">🌴 Weekend Chill</span>`;
+         priorityAlertIndicator = `<span style="color: #e5c158; font-weight: bold; white-space: nowrap !important; text-align: right; display: inline-block !important;">🌴 Weekend Chill</span>`;
       } else if (weightScore > 1000) {
-         priorityAlertIndicator = `<span style="color: #ff4d4d; font-weight: bold; white-space: nowrap; text-align: right; margin-left: auto;">🔥 High Priority</span>`;
+         priorityAlertIndicator = `<span style="color: #ff4d4d; font-weight: bold; white-space: nowrap !important; text-align: right; display: inline-block !important;">🔥 High Priority</span>`;
       } else if (weightScore > 1) {
-         priorityAlertIndicator = `<span style="color: #00d4ff; font-weight: bold; white-space: nowrap; text-align: right; margin-left: auto;">📈 Behind</span>`;
+         priorityAlertIndicator = `<span style="color: #00d4ff; font-weight: bold; white-space: nowrap !important; text-align: right; display: inline-block !important;">📈 Behind</span>`;
       } else {
-         priorityAlertIndicator = `<span style="color: #2ecc71; font-weight: bold; white-space: nowrap; text-align: right; margin-left: auto;">✅ Good</span>`;
+         priorityAlertIndicator = `<span style="color: #2ecc71; font-weight: bold; white-space: nowrap !important; text-align: right; display: inline-block !important;">✅ Good</span>`;
       }
 
       structuralPriorityHTML += `
-        <li style="margin: 0; padding: 12px 14px; background: rgba(255,255,255,0.02); border: 1px solid #1f2a36; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; gap: 16px; width: 100%; box-sizing: border-box;">
-          <div style="color: #e6edf3; font-size: 0.9rem; font-weight: 500; display: flex; align-items: center; gap: 4px; white-space: nowrap;">
+        <li style="margin: 0 !important; padding: 12px 14px !important; background: rgba(255,255,255,0.02) !important; border: 1px solid #1f2a36 !important; border-radius: 8px !important; display: flex !important; flex-direction: row !important; align-items: center !important; justify-content: space-between !important; gap: 12px !important; width: 100% !important; box-sizing: border-box !important;">
+          <div style="color: #e6edf3 !important; font-size: 0.9rem !important; font-weight: 500 !important; display: flex !important; align-items: center !important; gap: 6px !important; white-space: nowrap !important; flex-shrink: 0 !important;">
             <span style="color: #8b949e; font-weight: 600;">${item.subject}:</span>
             <span style="color: #00d4ff; font-weight: 700;">${item.target}</span>
-            <span style="color: #8b949e; font-size: 0.8rem; font-weight: 400; margin-left: 2px;">pages</span>
+            <span style="color: #8b949e; font-size: 0.8rem; font-weight: 400;">pages</span>
           </div>
-          ${priorityAlertIndicator}
+          <div style="display: flex !important; align-items: center !important; justify-content: flex-end !important; flex-grow: 1 !important; text-align: right !important;">
+            ${priorityAlertIndicator}
+          </div>
         </li>
       `;
     });
@@ -323,7 +325,7 @@ function loadDashboard() {
             <span style="color: #e5c158; font-weight: 700; white-space: nowrap;">${cleanCycleDay}/90</span>
           </p>
           <p style="margin: 0; display: flex; justify-content: space-between; flex-wrap: nowrap; border-bottom: 1px solid rgba(255,255,255,0.02); padding-bottom: 6px;">
-            <span style="color: #8b949e;">📉 Cycle Remaining:</span> 
+            <span style="color: #ff4d4d;">📉 Cycle Remaining:</span> 
             <span style="color: #ff4d4d; font-weight: 700; white-space: nowrap;">${cleanRemainingDays} Days</span>
           </p>
           <p style="margin: 0; display: flex; justify-content: space-between; flex-wrap: nowrap; padding-bottom: 4px;">
@@ -368,4 +370,4 @@ function loadDashboard() {
 // EXPORT
 // =====================================================
 window.loadDashboard = loadDashboard;
-                    
+    
