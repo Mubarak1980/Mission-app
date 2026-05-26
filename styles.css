@@ -23,10 +23,19 @@
 html, body {
   background: var(--bg); /* Prevents default white/icon flash on native startup */
   margin: 0;
-  padding: 12px;
+  
+  /* 📱 ADVANCED NATIVE SAFETY PADDING (PREVENTS WALLPAPER BLEED) */
+  padding-top: env(safe-area-inset-top, 12px);
+  padding-bottom: env(safe-area-inset-bottom, 12px);
+  padding-left: env(safe-area-inset-left, 12px);
+  padding-right: env(safe-area-inset-right, 12px);
+  
+  width: 100vw;
+  min-height: 100vh;
   color: var(--text);
   font-family: 'Segoe UI', Roboto, -apple-system, sans-serif;
   -webkit-tap-highlight-color: transparent;
+  overflow-x: hidden;
 }
 
 #main-content {
@@ -377,7 +386,11 @@ tr:nth-child(even) {
    ========================================================== */
 @media (max-width: 500px) {
   body {
-    padding: 8px;
+    /* Respect hardware area parameters elegantly on ultra-small viewport phones */
+    padding-top: env(safe-area-inset-top, 8px);
+    padding-bottom: env(safe-area-inset-bottom, 8px);
+    padding-left: env(safe-area-inset-left, 8px);
+    padding-right: env(safe-area-inset-right, 8px);
   }
   
   h1 {
@@ -398,4 +411,3 @@ tr:nth-child(even) {
     font-size: 0.85rem;
   }
    }
-   
