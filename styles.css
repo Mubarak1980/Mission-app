@@ -411,36 +411,32 @@ tr:nth-child(even) {
     width: 100% !important;
   }
 
-  /* 📘 FIXED FONT SIZE MATRIX: Sets loose progress lines, lists, and numbers 
-     to crystal clear, standardized layout base heights */
+  /* 📘 HIGH-PRECISION TEXT RECOVERY: Prevents forced text wrapping 
+     and maintains proper hierarchy inside container components */
   #main-content h2,
   #main-content h3 {
-    font-size: 16px !important; /* Normal uniform structural heading font */
+    font-size: 16px !important;
     font-weight: 600 !important;
+    display: inline-block !important; /* Prevents headers from blocking sibling items */
+    width: auto !important;
   }
 
   #main-content p,
   #main-content span,
-  #main-content li,
-  #main-content div:not(.subject):not(.quran-progress):not(.top-student-card):not(.dashboard-subject) {
-    font-size: 14px !important; /* Normal readable default body font size */
+  #main-content li {
+    font-size: 14px !important;
     font-weight: 500 !important;
     line-height: 1.5 !important;
+    display: inline-block !important; /* Stops tracking strings from jumping to new lines */
+    width: auto !important;
   }
 
-  /* Structural Shield Padding Rules */
-  #main-content h1,
-  #main-content h2,
-  #main-content h3,
-  #main-content p,
-  #main-content span,
-  #main-content li,
-  #main-content div:not(.subject):not(.quran-progress):not(.top-student-card):not(.dashboard-subject) {
-    padding-left: 18px !important; 
-    padding-right: 18px !important;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-    text-align: left !important;
+  /* Structural Shield Padding Rules: Applied ONLY to top-level text nodes outside wrappers */
+  #main-content > h1,
+  #main-content > h2,
+  #main-content > p {
+    padding-left: 14px !important; 
+    padding-right: 14px !important;
     box-sizing: border-box !important;
     display: block !important;
     width: 100% !important;
@@ -449,11 +445,11 @@ tr:nth-child(even) {
   h1 {
     font-size: 20px !important;
     margin-bottom: 16px;
-    text-align: center !important;
+    text-align: center !important; /* Retains symmetric tracking title layout */
   }
 
   th, td {
-    font-size: 12px !important; /* Normal legible data grid text sizes */
+    font-size: 12px !important;
     padding: 10px 8px;
   }
 
@@ -464,15 +460,16 @@ tr:nth-child(even) {
   
   .section-buttons button, #grade-nav button {
     padding: 12px 10px;
-    font-size: 13px; /* Standard navigation button font sizes */
+    font-size: 13px;
     border-radius: 12px;
   }
 
+  /* Standardizes card spaces cleanly without squishing internal text layout */
   .subject, .quran-progress, .top-student-card, .dashboard-subject {
     padding: 16px;
     margin-bottom: 12px;
     width: 100% !important;
     box-sizing: border-box !important;
+    display: block !important;
   }
-   }
-                        
+}
