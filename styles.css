@@ -407,27 +407,32 @@ tr:nth-child(even) {
   #main-content {
     padding-left: 0 !important;
     padding-right: 0 !important;
-    box-sizing: border-box;
+    box-sizing: border-box !important;
+    width: 100% !important;
   }
 
-  /* 📘 FIXED: Hard protection to lock book icons completely onto the visible viewport */
-  #main-content > h1,
-  #main-content > h2,
-  #main-content > h3,
-  #main-content > p,
-  #main-content > div:not(.subject):not(.quran-progress):not(.top-student-card):not(.dashboard-subject) {
-    padding-left: 20px !important; 
-    padding-right: 20px !important;
+  /* 📘 HARDENED SPACING ENGINE: Locks overall progress lines, percentages, 
+     and emoji headers seamlessly away from the bezel edge */
+  #main-content h1,
+  #main-content h2,
+  #main-content h3,
+  #main-content p,
+  #main-content span,
+  #main-content div:not(.subject):not(.quran-progress):not(.top-student-card):not(.dashboard-subject) {
+    padding-left: 18px !important; 
+    padding-right: 18px !important;
     margin-left: 0 !important;
     margin-right: 0 !important;
     text-align: left !important;
     box-sizing: border-box !important;
+    display: block !important;
+    width: 100% !important;
   }
   
   h1 {
     font-size: 20px;
     margin-bottom: 16px;
-    text-align: center !important; /* Keep main title looking professional */
+    text-align: center !important; /* Retains symmetric tracking title layout */
   }
 
   th, td {
@@ -452,5 +457,5 @@ tr:nth-child(even) {
     width: 100% !important;
     box-sizing: border-box !important;
   }
-     }
-     
+   }
+   
