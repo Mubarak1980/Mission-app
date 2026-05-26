@@ -397,20 +397,29 @@ tr:nth-child(even) {
    ========================================================== */
 @media (max-width: 500px) {
   body {
-    /* 🛡️ Fallback values (14px) added alongside safe-area rules to guarantee edge distance */
+    /* 🛡️ Fallback safe area rules to prevent elements hitting browser chrome */
     padding-top: calc(12px + env(safe-area-inset-top, 0px));
     padding-bottom: calc(36px + env(safe-area-inset-bottom, 0px));
     padding-left: calc(14px + env(safe-area-inset-left, 0px));
     padding-right: calc(14px + env(safe-area-inset-right, 0px));
   }
   
-  /* 🛡️ Explicit padding injected directly into pure text nodes resting outside cards */
+  /* 🛡️ SOLID DEFENSIVE EDGE EXTENSION FOR INJECTED STRINGS */
+  #main-content {
+    padding-left: 6px !important;
+    padding-right: 6px !important;
+    box-sizing: border-box;
+  }
+
+  /* Dynamically catches non-card text layouts and indents them precisely */
+  #main-content > h1,
   #main-content > h2,
   #main-content > h3,
   #main-content > p,
   #main-content > div:not(.subject):not(.quran-progress):not(.top-student-card):not(.dashboard-subject) {
-    padding-left: 4px;
-    padding-right: 4px;
+    padding-left: 6px !important;
+    padding-right: 6px !important;
+    text-align: left;
   }
   
   h1 {
@@ -437,6 +446,6 @@ tr:nth-child(even) {
   .subject, .quran-progress, .top-student-card, .dashboard-subject {
     padding: 16px;
     margin-bottom: 12px;
+    width: 100% !important;
   }
-   }
-   
+}
