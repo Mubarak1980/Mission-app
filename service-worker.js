@@ -1,24 +1,22 @@
 "use strict";
 
 // ==========================================================
-// 🚀 ENTERPRISE PRODUCTION SERVICE WORKER (V16.3)
+// 🚀 ENTERPRISE PRODUCTION SERVICE WORKER (V16.4)
 // ==========================================================
 
-const CACHE_NAME = "mission-cache-v35";
+const CACHE_NAME = "mission-cache-v36";
 const LOG_STYLE = "color: #00d4ff; font-weight: bold; background: #0b0f14; padding: 2px 6px; border-radius: 4px;";
 const WARN_STYLE = "color: #e5c158; font-weight: bold; background: #0b0f14; padding: 2px 6px; border-radius: 4px;";
 
-// 📘 HARMONIZED RELATIVE PATH MATRIX: Updated with the crucial 512px icon asset to pass validation matching manifest rules
+// 📘 HARMONIZED RELATIVE PATH MATRIX: Case-aligned exactly to match physical workspace files
 const APP_SHELL = [
   "./",
   "./index.html",
   "./styles.css",
   "./main.js",
   "./data.js",
-  "./Study-tracker.js",
-  "./study-tracker.js", 
-  "./Sunnah-tracker.js",
-  "./sunnah-tracker.js", 
+  "./Study-tracker.js", 
+  "./Sunnah-tracker.js", 
   "./dashboard.js",
   "./weekly-timetable.js",
   "./top-student-mode.js",
@@ -31,8 +29,7 @@ const APP_SHELL = [
 const NETWORK_FIRST_ASSETS = [
   "dashboard.js",
   "main.js",
-  "Study-tracker.js",
-  "study-tracker.js"
+  "Study-tracker.js"
 ];
 
 function toAbsolute(url) {
@@ -92,17 +89,17 @@ self.addEventListener("fetch", (event) => {
   const requestUrl = new URL(event.request.url);
   const workerUrl = new URL(self.location.href);
   
-  // Dynamic normalized root resolving calculation logic
   let cacheKey = event.request;
   const currentPath = requestUrl.pathname;
   
-  if (requestUrl.origin === workerUrl.origin && (currentPath.endsWith("/Mission-app/") || currentPath.endsWith("/"))) {
+  // Dynamic normalized root resolving: Checks for both root variants to safely serve index.html offline
+  if (requestUrl.origin === workerUrl.origin && (currentPath.endsWith("/Mission-app/") || currentPath.endsWith("/Mission-app/index.html") || currentPath.endsWith("/"))) {
     cacheKey = toAbsolute("./index.html");
   }
 
   const isNetworkFirstAsset = NETWORK_FIRST_ASSETS.some(asset => requestUrl.pathname.endsWith(asset));
 
-  // Strategy A: Strict Network-First Route (For active calculation engines)
+  // Strategy A: Strict Network-First Route (For active tracker calculations and engines)
   if (isNetworkFirstAsset) {
     event.respondWith(
       fetch(event.request)
@@ -118,7 +115,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Strategy B: Stale-While-Revalidate Route (For static UI layout stylesheets and data grids)
+  // Strategy B: Stale-While-Revalidate Route (For core layouts and styling systems)
   event.respondWith(
     caches.match(cacheKey).then((cachedResponse) => {
       const fetchPromise = fetch(event.request).then((networkResponse) => {
@@ -149,4 +146,4 @@ self.addEventListener("message", (event) => {
     self.skipWaiting();
   }
 });
-        
+                               
