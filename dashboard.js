@@ -87,7 +87,6 @@ function checkAndAutoRotateCycle() {
 // =====================================================
 // 📊 DASHBOARD (WEIGHTED PROGRESS FIXED)
 // =====================================================
-
 function loadDashboard() {
 
   try {
@@ -280,25 +279,30 @@ function loadDashboard() {
       }
     }
 
+    // =====================================================
+    // 🛠️ ALIGNMENT ENHANCEMENT: FORCES STATUSES TO OPPOSITE EDGE
+    // =====================================================
     individualTargets.forEach(item => {
       const weightScore = exponentialWeights[item.subject];
       let priorityAlertIndicator = "";
       
       if (isFreeTimeDay) {
-         priorityAlertIndicator = `<span style="color: #e5c158; font-weight: 600; white-space: nowrap; text-align: right;">🌴 Weekend Chill</span>`;
+         priorityAlertIndicator = `<span style="color: #e5c158; font-weight: bold; white-space: nowrap; text-align: right; margin-left: auto;">🌴 Weekend Chill</span>`;
       } else if (weightScore > 1000) {
-         priorityAlertIndicator = `<span style="color: #ff4d4d; font-weight: bold; white-space: nowrap; text-align: right;">🔥 High Priority</span>`;
+         priorityAlertIndicator = `<span style="color: #ff4d4d; font-weight: bold; white-space: nowrap; text-align: right; margin-left: auto;">🔥 High Priority</span>`;
       } else if (weightScore > 1) {
-         priorityAlertIndicator = `<span style="color: #00d4ff; font-weight: bold; white-space: nowrap; text-align: right;">📈 Behind</span>`;
+         priorityAlertIndicator = `<span style="color: #00d4ff; font-weight: bold; white-space: nowrap; text-align: right; margin-left: auto;">📈 Behind</span>`;
       } else {
-         priorityAlertIndicator = `<span style="color: #2ecc71; font-weight: bold; white-space: nowrap; text-align: right;">✅ Good</span>`;
+         priorityAlertIndicator = `<span style="color: #2ecc71; font-weight: bold; white-space: nowrap; text-align: right; margin-left: auto;">✅ Good</span>`;
       }
 
       structuralPriorityHTML += `
-        <li style="margin: 0; padding: 10px 12px; background: rgba(255,255,255,0.02); border: 1px solid #1f2a36; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: nowrap;">
-          <span style="color: #e6edf3; font-size: 0.9rem; font-weight: 500;">
-            ${item.subject}: <span style="color:#00d4ff; font-weight:700; margin-left: 2px;">${item.target}</span> <span style="color: #8b949e; font-size: 0.8rem;">pages</span>
-          </span>
+        <li style="margin: 0; padding: 12px 14px; background: rgba(255,255,255,0.02); border: 1px solid #1f2a36; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; gap: 16px; width: 100%; box-sizing: border-box;">
+          <div style="color: #e6edf3; font-size: 0.9rem; font-weight: 500; display: flex; align-items: center; gap: 4px; white-space: nowrap;">
+            <span style="color: #8b949e; font-weight: 600;">${item.subject}:</span>
+            <span style="color: #00d4ff; font-weight: 700;">${item.target}</span>
+            <span style="color: #8b949e; font-size: 0.8rem; font-weight: 400; margin-left: 2px;">pages</span>
+          </div>
           ${priorityAlertIndicator}
         </li>
       `;
@@ -306,7 +310,7 @@ function loadDashboard() {
     structuralPriorityHTML += `</ul></div>`;
 
     // =====================================================
-    // 🧠 SMART STUDY ENGINE & CYCLE INFO (STYLISH RE-COLOR)
+    // 🧠 SMART STUDY ENGINE & CYCLE INFO
     // =====================================================
     html += `
       <div class="smart-cycle-section" style="padding: 16px; margin-top: 16px; background: #121821; border: 1px solid #1f2a36; border-radius: 14px;">
@@ -364,4 +368,4 @@ function loadDashboard() {
 // EXPORT
 // =====================================================
 window.loadDashboard = loadDashboard;
-            
+                    
