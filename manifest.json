@@ -2,7 +2,7 @@
   "name": "Mission App",
   "short_name": "Mission",
   "description": "Mission App - Smart study tracking system",
-  "id": "./mission-app-pwa-id",
+  "id": "/Mission-app/mission-app-pwa-id",
   "start_url": "./index.html?utm_source=pwa",
   "scope": "./",
   "display": "standalone",
@@ -28,13 +28,13 @@
       "purpose": "maskable"
     },
     {
-      "src": "./icon-192.png",
+      "src": "./icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "./icon-192.png",
+      "src": "./icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
