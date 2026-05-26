@@ -705,6 +705,37 @@ if (
 }
 
 /* ===============================
+   ⚡ IMPLANTED: AUTOMATED NATIVE CHROMIUM INSTALL ACTION
+=============================== */
+let hasPromptedAutomatedInstall = false;
+
+window.addEventListener("beforeinstallprompt", (e) => {
+  // Prevent older Chromium configurations from taking default pathing actions
+  e.preventDefault();
+
+  // Reference the native system prompt callback sequence
+  const automaticDeferredPrompt = e;
+
+  // Security Verification Guard: Ensure browser engine execution triggers once
+  if (!hasPromptedAutomatedInstall) {
+    hasPromptedAutomatedInstall = true;
+
+    // Execute prompt sequence automatically upon application view visibility confirmation
+    setTimeout(() => {
+      automaticDeferredPrompt.prompt();
+
+      automaticDeferredPrompt.userChoice.then((choiceResult) => {
+        if (choiceResult.outcome === "accepted") {
+          console.log("User accepted automated native PWA installation.");
+        } else {
+          console.log("User rejected automated native PWA installation.");
+        }
+      });
+    }, 800);
+  }
+});
+
+/* ===============================
    BOOTSTRAP
 =============================== */
 if (
@@ -779,4 +810,4 @@ window.isRunningStandalone =
 }
 
 })();
-   
+     
