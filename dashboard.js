@@ -30,7 +30,6 @@ function checkAndAutoRotateCycle() {
                 
                 while (tempDate <= today) {
                     const dayOfWeek = tempDate.getDay(); 
-                    // 0 = Sunday, 1 = Monday, 2 = Tuesday, 3 = Wednesday, 4 = Thursday, 5 = Friday, 6 = Saturday
                     if (dayOfWeek !== 4 && dayOfWeek !== 5) {
                         activeDaysCount++;
                     }
@@ -100,13 +99,11 @@ function loadDashboard() {
     if (!main) return;
 
     if (!window.maxPagesByGrade) {
-
       main.innerHTML = `
         <p style="color:red; text-align:center; padding:20px;">
           Error: grade data not loaded
         </p>
       `;
-
       return;
     }
 
@@ -164,10 +161,10 @@ function loadDashboard() {
         <div class="dashboard-subject">
           <h3>${subject}</h3>
           <progress value="${accurateAvg}" max="100"></progress>
-          <p>
-            ${accurateAvg}% progress
-            <span style="font-size:0.85em; color:#888;">
-              (${totalAbsoluteDone}/${totalAbsoluteMax} pages)
+          <p style="margin: 8px 0 0 0; display: flex; align-items: center; justify-content: space-between; flex-wrap: nowrap; gap: 8px;">
+            <span style="font-weight: 600; white-space: nowrap;">${accurateAvg}% progress</span>
+            <span style="font-size:0.85em; color:#8b949e; white-space: nowrap; text-align: right;">
+              (${totalAbsoluteDone}/${totalAbsoluteMax} pgs)
             </span>
           </p>
         </div>
@@ -181,10 +178,8 @@ function loadDashboard() {
     // =====================================================
     const currentStudyData = JSON.parse(localStorage.getItem("study_progress")) || {};
     const runningCycleNum = Number(currentStudyData.cycleNumber) || 1;
-    
     const localStartStr = currentStudyData.startDate || new Date().toISOString().split("T")[0];
     
-    // Check if TODAY is Thursday (4) or Friday (5)
     const currentDayOfWeek = new Date().getDay();
     const isFreeTimeDay = (currentDayOfWeek === 4 || currentDayOfWeek === 5);
 
@@ -249,22 +244,21 @@ function loadDashboard() {
       baseTargetValue = Math.max(10, baseTargetValue - dailyReliefCredit);
     }
 
-    // If it is Thursday or Friday, set all study targets completely to zero!
     if (isFreeTimeDay) {
       baseTargetValue = 0;
     }
 
-    let targetSubtextLabel = `Allocated out of ${baseTargetValue} pgs`;
+    let targetSubtextLabel = `<span style="white-space: nowrap;">Allocated out of ${baseTargetValue} pgs</span>`;
     if (isFreeTimeDay) {
-       targetSubtextLabel = `<span style="color: #2ecc71; font-weight: bold;">🎉 Free Time Mode Active!</span>`;
+       targetSubtextLabel = `<span style="color: #2ecc71; font-weight: bold; white-space: nowrap;">🎉 Free Time Mode Active!</span>`;
     } else if (baseTargetValue < originalBaseTargetValue) {
-       targetSubtextLabel += ` <span style="color: #2ecc71;">(Saved ${originalBaseTargetValue - baseTargetValue} pgs today! 🎉)</span>`;
+       targetSubtextLabel += ` <span style="color: #2ecc71; font-weight: 600; display: inline-block;">(Saved ${originalBaseTargetValue - baseTargetValue} pgs today! 🎉)</span>`;
     }
 
-    let structuralPriorityHTML = `<div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border);">
-        <label style="color: #00d4ff; font-weight:700; font-size:13px; display:block; margin-bottom: 6px;">
-          🎯 Exponential Daily Priorities (${targetSubtextLabel})
-        </label><ul style="list-style: none; padding: 0; margin: 0; font-size: 12px;">`;
+    let structuralPriorityHTML = `<div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid #1f2a36;">
+        <label style="color: #00d4ff; font-weight:700; font-size:0.9rem; display:block; margin-bottom: 10px; line-height: 1.4;">
+          🎯 EXPONENTIAL DAILY PRIORITIES <br>${targetSubtextLabel}
+        </label><ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px;">`;
 
     let checkSumAllocatedPages = 0;
     const individualTargets = [];
@@ -291,18 +285,20 @@ function loadDashboard() {
       let priorityAlertIndicator = "";
       
       if (isFreeTimeDay) {
-         priorityAlertIndicator = `<span style="color: #e5c158; float: right;">🌴 Weekend Chill</span>`;
+         priorityAlertIndicator = `<span style="color: #e5c158; font-weight: 600; white-space: nowrap; text-align: right;">🌴 Weekend Chill</span>`;
       } else if (weightScore > 1000) {
-         priorityAlertIndicator = `<b style="color: #ff4d4d; float: right;">🔥 High Priority</b>`;
+         priorityAlertIndicator = `<span style="color: #ff4d4d; font-weight: bold; white-space: nowrap; text-align: right;">🔥 High Priority</span>`;
       } else if (weightScore > 1) {
-         priorityAlertIndicator = `<b style="color: #00d4ff; float: right;">📈 Behind</b>`;
+         priorityAlertIndicator = `<span style="color: #00d4ff; font-weight: bold; white-space: nowrap; text-align: right;">📈 Behind</span>`;
       } else {
-         priorityAlertIndicator = `<span style="color: #2ecc71; float: right;">✅ Good</span>`;
+         priorityAlertIndicator = `<span style="color: #2ecc71; font-weight: bold; white-space: nowrap; text-align: right;">✅ Good</span>`;
       }
 
       structuralPriorityHTML += `
-        <li style="margin: 6px 0; padding: 4px 8px; background: rgba(255,255,255,0.03); border-radius: 4px;">
-          <strong>${item.subject}:</strong> <span style="color:#00d4ff; font-weight:bold;">${item.target}</span> pages
+        <li style="margin: 0; padding: 10px 12px; background: rgba(255,255,255,0.02); border: 1px solid #1f2a36; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: nowrap;">
+          <span style="color: #e6edf3; font-size: 0.9rem; font-weight: 500;">
+            ${item.subject}: <span style="color:#00d4ff; font-weight:700; margin-left: 2px;">${item.target}</span> <span style="color: #8b949e; font-size: 0.8rem;">pages</span>
+          </span>
           ${priorityAlertIndicator}
         </li>
       `;
@@ -313,23 +309,34 @@ function loadDashboard() {
     // 🧠 SMART STUDY ENGINE & CYCLE INFO (STYLISH RE-COLOR)
     // =====================================================
     html += `
-      <div class="smart-cycle-section" style="padding: 15px; margin-top: 20px;">
-        <h2>🧠 Smart Study Engine</h2>
-        <h3>⏱️ Cycle ${runningCycleNum} Info</h3>
+      <div class="smart-cycle-section" style="padding: 16px; margin-top: 16px; background: #121821; border: 1px solid #1f2a36; border-radius: 14px;">
+        <h2 style="margin-top: 0; margin-bottom: 14px; font-size: 1.15rem; color: #e6edf3; font-weight: 700; border: none; padding: 0;">🧠 Smart Study Engine</h2>
+        <h3 style="margin-top: 0; margin-bottom: 12px; font-size: 0.95rem; color: #8b949e; font-weight: 600;">⏱️ Cycle ${runningCycleNum} Info</h3>
 
-        <p style="margin: 6px 0;">📅 <strong>Current Cycle Day:</strong> <span style="color: #e5c158; font-weight: bold;">${cleanCycleDay}/90</span></p>
-        <p style="margin: 6px 0;">📉 <strong>Cycle Remaining:</strong> <span style="color: #ff4d4d; font-weight: bold;">${cleanRemainingDays} Days</span></p>
-        <p style="margin: 6px 0;">📌 <strong>Base Target:</strong> <span style="color: #00d4ff; font-weight: bold;">${isFreeTimeDay ? 0 : originalBaseTargetValue} pages</span></p>
+        <div style="display: flex; flex-direction: column; gap: 6px; font-size: 0.88rem;">
+          <p style="margin: 0; display: flex; justify-content: space-between; flex-wrap: nowrap; border-bottom: 1px solid rgba(255,255,255,0.02); padding-bottom: 6px;">
+            <span style="color: #8b949e;">📅 Current Cycle Day:</span> 
+            <span style="color: #e5c158; font-weight: 700; white-space: nowrap;">${cleanCycleDay}/90</span>
+          </p>
+          <p style="margin: 0; display: flex; justify-content: space-between; flex-wrap: nowrap; border-bottom: 1px solid rgba(255,255,255,0.02); padding-bottom: 6px;">
+            <span style="color: #8b949e;">📉 Cycle Remaining:</span> 
+            <span style="color: #ff4d4d; font-weight: 700; white-space: nowrap;">${cleanRemainingDays} Days</span>
+          </p>
+          <p style="margin: 0; display: flex; justify-content: space-between; flex-wrap: nowrap; padding-bottom: 4px;">
+            <span style="color: #8b949e;">📌 Base Target:</span> 
+            <span style="color: #00d4ff; font-weight: 700; white-space: nowrap;">${isFreeTimeDay ? 0 : originalBaseTargetValue} pages</span>
+          </p>
+        </div>
 
         ${structuralPriorityHTML}
 
-        <div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border);">
-            <label style="color: var(--primary); font-weight:600; font-size:13px; display:block; margin-bottom: 6px;">
-              📊 Overall Year Timeline Progress
+        <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid #1f2a36;">
+            <label style="color: #e6edf3; font-weight:600; font-size:13px; display:block; margin-bottom: 8px; letter-spacing: 0.3px;">
+              📊 OVERALL YEAR TIMELINE PROGRESS
             </label>
-            <progress max="${yearTotalTargetWindow}" value="${totalYearDaysElapsed}"></progress>
-            <p style="text-align: left; font-size: 12px; margin-top: 4px; color: var(--muted); margin-bottom: 0;">
-              <strong>Total Elapsed:</strong> ${totalYearDaysElapsed} / ${yearTotalTargetWindow} Days
+            <progress max="${yearTotalTargetWindow}" value="${totalYearDaysElapsed}" style="width: 100%; height: 8px; border-radius: 4px; overflow: hidden;"></progress>
+            <p style="text-align: left; font-size: 11px; margin-top: 6px; color: #8b949e; margin-bottom: 0;">
+              <strong>Total Elapsed:</strong> <span style="color: #e6edf3; font-weight: 600;">${totalYearDaysElapsed} / ${yearTotalTargetWindow} Days</span>
             </p>
         </div>
       </div>
