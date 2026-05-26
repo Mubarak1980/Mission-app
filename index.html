@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-
     <meta
         name="viewport"
         content="width=device-width,
@@ -11,47 +10,30 @@
         user-scalable=no,
         viewport-fit=cover"
     />
-
     <title>Mission App</title>
 
     <link rel="manifest" href="./manifest.json">
+    <link rel="stylesheet" href="./styles.css" />
+    <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png" />
+    <link rel="apple-touch-icon" href="./icon-192.png" />
 
     <meta name="theme-color" content="#0b0f14" />
     <meta name="background-color" content="#0b0f14" />
-
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Mission App">
+    <meta name="application-name" content="Mission App">
+    <meta name="format-detection" content="telephone=no">
 
-    <meta
-        name="apple-mobile-web-app-status-bar-style"
-        content="black-translucent"
-    >
-
-    <meta
-        name="apple-mobile-web-app-title"
-        content="Mission App"
-    >
-
-    <meta
-        name="application-name"
-        content="Mission App"
-    >
-
-    <meta
-        name="format-detection"
-        content="telephone=no"
-    >
-
-    <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png" />
-
-    <link
-        rel="apple-touch-icon"
-        href="./icon-192.png"
-    />
-
-    <link rel="stylesheet" href="./styles.css" />
+    <style>
+        html, body {
+            background-color: #0b0f14 !important;
+            margin: 0;
+            padding: 0;
+        }
+    </style>
 </head>
-
 <body>
 
 <button
@@ -59,74 +41,44 @@
     aria-label="Install Mission App"
     style="
         position: fixed;
-        bottom: 20px;
-        right: 20px;
-        padding: 12px 16px;
+        bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+        right: calc(20px + env(safe-area-inset-right, 0px));
+        padding: 14px 20px;
         border: none;
         background: #00d4ff;
-        color: black;
-        font-weight: bold;
-        border-radius: 10px;
+        color: #05070a;
+        font-weight: 700;
+        font-size: 0.95rem;
+        border-radius: 14px;
         display: none;
-        z-index: 9999;
+        z-index: 99999;
         cursor: pointer;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
         touch-action: manipulation;
+        transition: transform 0.1s ease;
     "
 >
     📲 Install App
 </button>
 
 <div id="splash-screen">
-
     <div class="splash-content">
-
         <h1>📘 Mission App</h1>
-
-        <p>Loading...</p>
-
+        <p style="color: #8b949e; font-weight: 500; letter-spacing: 0.5px;">Loading System Engine...</p>
         <div class="loader"></div>
-
     </div>
-
 </div>
 
-<div id="app" style="display:none;">
-
+<div id="app" style="display: none; opacity: 0; transition: opacity 0.25s ease;">
+    
     <h1 id="app-time-heading">TIME</h1>
 
     <div class="section-buttons">
-
-        <button
-            onclick="loadSection('study', getCurrentGradeSafe())"
-        >
-            Study Tracker
-        </button>
-
-        <button
-            onclick="loadSection('timetable')"
-        >
-            Weekly Timetable
-        </button>
-
-        <button
-            onclick="loadSection('dashboard')"
-        >
-            Dashboard
-        </button>
-
-        <button
-            onclick="loadSection('top-student')"
-        >
-            Top Student Mode
-        </button>
-
-        <button
-            onclick="loadSection('sunnah')"
-        >
-            Sunnah Tracker
-        </button>
-
+        <button onclick="loadSection('study', getCurrentGradeSafe())">Study Tracker</button>
+        <button onclick="loadSection('timetable')">Weekly Timetable</button>
+        <button onclick="loadSection('dashboard')">Dashboard</button>
+        <button onclick="loadSection('top-student')">Top Student Mode</button>
+        <button onclick="loadSection('sunnah')">Sunnah Tracker</button>
     </div>
 
     <div id="grade-progress-bar"></div>
@@ -134,23 +86,9 @@
     <main id="main-content"></main>
 
     <div id="grade-nav">
-
-        <button
-            onclick="previousGrade()"
-            id="prev-btn"
-        >
-            Previous
-        </button>
-
-        <button
-            onclick="nextGrade()"
-            id="next-btn"
-        >
-            Next
-        </button>
-
+        <button onclick="previousGrade()" id="prev-btn">Previous</button>
+        <button onclick="nextGrade()" id="next-btn">Next</button>
     </div>
-
 </div>
 
 <script src="./data.js" defer></script>
@@ -164,261 +102,179 @@
 <script>
 "use strict";
 
-/* ==========================================
-   GLOBAL INSTALL PROMPT
-========================================== */
+/* ==========================================================
+   📦 ARCHITECTURAL GLOBAL STATE STATE INITIALIZATION
+   ========================================================== */
 let deferredPrompt = null;
 
-/* ==========================================
-   STANDALONE DETECTION
-========================================== */
+/* ==========================================================
+   📱 ELITE NATIVE STANDALONE DETECTION ENGINE
+   ========================================================== */
 function isRunningStandalone() {
-
     return (
         window.matchMedia("(display-mode: standalone)").matches ||
         window.navigator.standalone === true ||
-        document.referrer.includes("android-app://")
+        document.referrer.includes("android-app://") ||
+        window.matchMedia("(display-mode: fullscreen)").matches ||
+        window.matchMedia("(display-mode: minimal-ui)").matches
     );
 }
 
-/* ==========================================
-   SAFE CURRENT GRADE
-========================================== */
 function getCurrentGradeSafe() {
-
     return window.UI?.currentGrade || 9;
 }
 
-/* ==========================================
-   INSTALL BUTTON
-========================================== */
+/* ==========================================================
+   ⚙️ VISUAL INTERACTION HANDLERS (INSTALL UI)
+   ========================================================== */
 function showInstallButton() {
-
     const btn = document.getElementById("installBtn");
-
     if (!btn) return;
 
     if (isRunningStandalone()) {
-        btn.style.display = "none";
+        btn.style.setProperty("display", "none", "important");
         return;
     }
-
     btn.style.display = "block";
 }
 
-window.showInstallButton = showInstallButton;
-
 function hideInstallButton() {
-
     const btn = document.getElementById("installBtn");
-
     if (!btn) return;
-
-    btn.style.display = "none";
+    btn.style.setProperty("display", "none", "important");
 }
 
-/* ==========================================
-   BEFORE INSTALL PROMPT
-========================================== */
+window.showInstallButton = showInstallButton;
+window.hideInstallButton = hideInstallButton;
+
+/* ==========================================================
+   🛑 SYSTEM DEFENSIVE NATIVE BANNER INTERCEPTION
+   ========================================================== */
 window.addEventListener("beforeinstallprompt", (e) => {
-
+    // Kills native automatic bottom browser prompt sheets completely
     e.preventDefault();
-
-    if (isRunningStandalone()) return;
+    
+    if (isRunningStandalone()) return false;
 
     deferredPrompt = e;
-
     showInstallButton();
-
-    console.log("✅ PWA install prompt ready");
+    console.log("✅ PWA Native Install Engine intercepted & bound successfully.");
+    return false;
 });
 
-/* ==========================================
-   INSTALL BUTTON LOGIC
-========================================== */
 function setupInstallButton() {
-
-    const installBtn =
-        document.getElementById("installBtn");
-
+    const installBtn = document.getElementById("installBtn");
     if (!installBtn) return;
 
     installBtn.addEventListener("click", async () => {
-
+        if (!deferredPrompt) {
+            alert("App engine preparation incomplete. Hold on a brief moment or access your browser settings menu to install!");
+            return;
+        }
         try {
-
-            if (!deferredPrompt) {
-
-                alert(
-                    "Install option is not ready yet. Please keep the app open for a moment."
-                );
-
-                return;
-            }
-
             deferredPrompt.prompt();
-
-            const result =
-                await deferredPrompt.userChoice;
-
-            console.log(
-                "📲 Install result:",
-                result.outcome
-            );
-
+            const result = await deferredPrompt.userChoice;
+            console.log("📲 Install application decision recorded:", result.outcome);
             deferredPrompt = null;
-
             hideInstallButton();
-
         } catch (err) {
-
-            console.error(
-                "Install failed:",
-                err
-            );
+            console.error("🔥 Installation engine crashed:", err);
         }
     });
+
+    // Tap scale bounce feedback animation
+    installBtn.addEventListener("touchstart", () => installBtn.style.transform = "scale(0.95)");
+    installBtn.addEventListener("touchend", () => installBtn.style.transform = "scale(1)");
 }
 
-/* ==========================================
-   APP INSTALLED
-========================================== */
 window.addEventListener("appinstalled", () => {
-
-    console.log("✅ Mission App installed");
-
+    console.log("🚀 High honor! Mission App installed directly to localized workspace.");
     deferredPrompt = null;
-
     hideInstallButton();
 });
 
-/* ==========================================
-   SPLASH SCREEN
-========================================== */
+/* ==========================================================
+   ⏳ HARDWARE ACCELERATED SPLASH TRANSITION VIEW
+   ========================================================== */
 function hideSplashScreen() {
-
-    const splash =
-        document.getElementById("splash-screen");
-
-    const app =
-        document.getElementById("app");
-
+    const splash = document.getElementById("splash-screen");
+    const app = document.getElementById("app");
     if (!splash || !app) return;
 
     splash.classList.add("hide");
+    app.style.display = "block";
+    
+    // Smooth transition to mitigate text clipping jumps
+    setTimeout(() => {
+        app.style.opacity = "1";
+    }, 50);
 
     setTimeout(() => {
         if (splash.parentNode) {
             splash.remove();
         }
-        app.style.display = "block";
-    }, 250);
+    }, 300);
 }
 
-/* ==========================================
-   SERVICE WORKER
-========================================== */
+/* ==========================================================
+   🌐 ENTERPRISE SERVICE WORKER SYNC ENGINE
+   ========================================================== */
 async function registerServiceWorker() {
-
     if (!("serviceWorker" in navigator)) {
-        console.warn("⚠️ Service Worker unsupported");
+        console.warn("⚠️ Localized system platform environment does not support background worker scopes.");
         return;
     }
-
     try {
-
-        const registration =
-            await navigator.serviceWorker.register(
-                "/Mission-app/service-worker.js",
-                {
-                    scope: "/Mission-app/"
-                }
-            );
-
-        console.log(
-            "✅ Service Worker registered:",
-            registration.scope
+        const registration = await navigator.serviceWorker.register(
+            "./service-worker.js", // Sanitized relative root pathways to solve GitHub pages resolution faults
+            { scope: "./" }
         );
 
-        /* ==========================================
-           PERIODIC UPDATE CHECK
-        =========================================== */
+        console.log("🎯 Service Worker lifecycle hooked:", registration.scope);
+
+        // Lifecycle updates checking block running in secondary background thread
         setInterval(() => {
             if (navigator.onLine) {
-                registration.update().catch(() => console.log("SW update check skipped offline"));
+                registration.update().catch(() => console.log("SW check skipped while user workspace is offline."));
             }
-        }, 60 * 60 * 1000);
+        }, 1000 * 60 * 30); // Checks every 30 minutes seamlessly
 
     } catch (err) {
-
-        console.error(
-            "❌ Service Worker registration failed:",
-            err
-        );
+        console.error("❌ Service Worker execution fault encountered:", err);
     }
 }
 
-/* ==========================================
-   AUTO REFRESH ON SW UPDATE
-========================================== */
-let refreshing = false;
-
+// Global atomic single-instance controller switch to halt reload loops
+let isRefreshing = false;
 if ("serviceWorker" in navigator) {
-
-    navigator.serviceWorker.addEventListener(
-        "controllerchange",
-        () => {
-
-            if (refreshing) return;
-
-            refreshing = true;
-
-            window.location.reload();
-        }
-    );
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (isRefreshing) return;
+        isRefreshing = true;
+        window.location.reload();
+    });
 }
 
-/* ==========================================
-   CONNECTION MONITOR
-========================================== */
-window.addEventListener("online", () => {
-    console.log("🌐 Back online");
-});
-
-window.addEventListener("offline", () => {
-    console.log("📴 Offline mode");
-});
-
-/* ==========================================
-   DOM READY
-========================================== */
+/* ==========================================================
+   🚀 SYSTEM BOOTSTRAP PIPELINE INITIALIZER
+   ========================================================== */
 window.addEventListener("DOMContentLoaded", async () => {
-
     try {
-
+        // Enforce structural boundary checks right out the gate
         if (isRunningStandalone()) {
             hideInstallButton();
         }
-
+        
         setupInstallButton();
-
         await registerServiceWorker();
 
-        setTimeout(() => {
-            hideSplashScreen();
-        }, 500);
-
-        console.log("✅ UI Bootstrap complete");
-
+        // Delays splash tear-down slightly until script engines compute layout widths
+        setTimeout(hideSplashScreen, 450);
+        console.log("🔥 Mission Application initialization routine finalized.");
     } catch (err) {
-
-        console.error(
-            "🔥 Bootstrap crash:",
-            err
-        );
+        console.error("🛑 Operational system deployment initialization aborted:", err);
     }
 });
 </script>
-
 </body>
-</html>
+    </html>
+    
