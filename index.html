@@ -56,7 +56,7 @@
         align-items: center;
         justify-content: space-between;
         gap: 12px;
-        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
         pointer-events: none;
     "
 >
@@ -132,11 +132,12 @@ function isRunningStandalone() {
                              
     const isNavStandalone = window.navigator.standalone === true;
     const isAndroidReferrer = document.referrer.includes("android-app://");
+    const isPWAQuery = window.location.search.includes("utm_source=pwa");
     
-    // Fallback: Check inner window constraints to filter out home screen instances
+    // Fallback: Check structural dimensions
     const isPWAWindow = (window.screen.height - window.innerHeight < 120);
 
-    return (isStandaloneMode || isNavStandalone || isAndroidReferrer || isPWAWindow);
+    return (isStandaloneMode || isNavStandalone || isAndroidReferrer || isPWAQuery || isPWAWindow);
 }
 
 function getCurrentGradeSafe() {
@@ -148,10 +149,14 @@ function getCurrentGradeSafe() {
    ========================================================== */
 function showInstallBanner() {
     const banner = document.getElementById("pwa-install-banner");
-    if (!banner || isRunningStandalone() || sessionStorage.getItem("pwa-banner-dismissed") === "true") {
+    
+    // If already installed or running inside app view, hide it instantly
+    if (!banner || isRunningStandalone()) {
         hideInstallBanner();
         return;
     }
+    
+    // REMOVED SESSIONSTORAGE LOCK: Prompts on every fresh load if not installed
     banner.style.pointerEvents = "auto";
     banner.style.transform = "translateX(-50%) translateY(0)";
 }
@@ -167,10 +172,9 @@ function hideInstallBanner() {
    🛑 INTERCEPT AUTOMATIC BROWSER INSTALLATION BLOCKS
    ========================================================== */
 window.addEventListener("beforeinstallprompt", (e) => {
-    // Stop random default browser bottom card sheets from firing
+    // Stop random default browser layout overlays
     e.preventDefault();
     
-    // Defensive check: If already installed on the device, break deployment instantly
     if (isRunningStandalone()) {
         hideInstallBanner();
         return false;
@@ -187,7 +191,7 @@ function setupInstallBannerListeners() {
 
     if (closeBtn) {
         closeBtn.addEventListener("click", () => {
-            sessionStorage.setItem("pwa-banner-dismissed", "true");
+            // Dismisses temporarily for this session, but will show up on page refresh
             hideInstallBanner();
         });
     }
@@ -195,15 +199,17 @@ function setupInstallBannerListeners() {
     if (actionBtn) {
         actionBtn.addEventListener("click", async () => {
             if (!deferredPrompt) {
-                hideInstallBanner();
                 return;
             }
             try {
                 deferredPrompt.prompt();
                 const result = await deferredPrompt.userChoice;
                 console.log("📲 PWA installation outcome recorded:", result.outcome);
-                deferredPrompt = null;
-                hideInstallBanner();
+                
+                if (result.outcome === "accepted") {
+                    deferredPrompt = null;
+                    hideInstallBanner();
+                }
             } catch (err) {
                 console.error("🔥 Installation system error encountered:", err);
             }
@@ -254,7 +260,7 @@ async function registerServiceWorker() {
         );
         console.log("🎯 Service Worker scope active:", registration.scope);
 
-        // Silent automated core background upgrade listener (Every 30 mins)
+        // Background update check loop
         setInterval(() => {
             if (navigator.onLine) {
                 registration.update().catch(() => console.log("SW Sync skipped while working offline."));
@@ -266,7 +272,6 @@ async function registerServiceWorker() {
     }
 }
 
-// Single active event loop handle to keep controller sync linear
 if ("serviceWorker" in navigator) {
     navigator.serviceWorker.addEventListener("controllerchange", () => {
         if (isRefreshing) return;
@@ -282,7 +287,14 @@ window.addEventListener("DOMContentLoaded", async () => {
     try {
         setupInstallBannerListeners();
 
-        if (isRunningStandalone()) {
+        if (!isRunningStandalone()) {
+            // Defensive backup: forces prompt check if browser delays event dispatching
+            setTimeout(() => {
+                if (!isRunningStandalone()) {
+                    showInstallBanner();
+                }
+            }, 800);
+        } else {
             hideInstallBanner();
         }
         
