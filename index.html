@@ -36,35 +36,47 @@
 </head>
 <body>
 
-<button
-    id="installBtn"
-    aria-label="Install Mission App"
+<div 
+    id="pwa-install-banner" 
     style="
         position: fixed;
-        bottom: calc(20px + env(safe-area-inset-bottom, 0px));
-        right: calc(20px + env(safe-area-inset-right, 0px));
-        padding: 14px 20px;
-        border: none;
-        background: #00d4ff;
-        color: #05070a;
-        font-weight: 700;
-        font-size: 0.95rem;
+        top: calc(12px + env(safe-area-inset-top, 0px));
+        left: 50%;
+        transform: translateX(-50%) translateY(-150%);
+        width: calc(100% - 24px);
+        max-width: 460px;
+        background: #121821;
+        border: 1px solid #1f2a36;
+        border-top: 3px solid #00d4ff;
         border-radius: 14px;
-        display: none;
-        z-index: 99999;
-        cursor: pointer;
-        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
-        touch-action: manipulation;
-        transition: transform 0.1s ease;
+        padding: 14px 16px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        z-index: 999999;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        pointer-events: none;
     "
 >
-    📲 Install App
-</button>
+    <div style="display: flex; align-items: center; gap: 12px;">
+        <img src="./icon-192.png" alt="App Icon" style="width: 40px; height: 40px; border-radius: 10px; object-fit: cover;" onerror="this.style.display='none'">
+        <div>
+            <div style="font-weight: 700; font-size: 0.95rem; color: #e6edf3; margin-bottom: 2px;">Mission App</div>
+            <div style="font-size: 0.8rem; color: #8b949e;">Install to track offline smoothly</div>
+        </div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px;">
+        <button id="pwa-close-btn" style="background: transparent; border: none; color: #8b949e; font-size: 0.85rem; padding: 8px; cursor: pointer; font-weight: 500;">Later</button>
+        <button id="pwa-action-btn" style="background: #00d4ff; border: none; color: #05070a; font-weight: 700; font-size: 0.85rem; padding: 8px 14px; border-radius: 8px; cursor: pointer;">Install</button>
+    </div>
+</div>
 
 <div id="splash-screen">
     <div class="splash-content">
         <h1>📘 Mission App</h1>
-        <p style="color: #8b949e; font-weight: 500; letter-spacing: 0.5px;">Loading System Engine...</p>
+        <p style="color: #8b949e; font-weight: 500; letter-spacing: 0.5px;">Initializing Dashboard Workspace...</p>
         <div class="loader"></div>
     </div>
 </div>
@@ -103,21 +115,26 @@
 "use strict";
 
 /* ==========================================================
-   📦 ARCHITECTURAL GLOBAL STATE STATE INITIALIZATION
+   📦 ARCHITECTURAL GLOBAL STATE CONTROL KEYS
    ========================================================== */
 let deferredPrompt = null;
+let isRefreshing = false;
 
 /* ==========================================================
-   📱 ELITE NATIVE STANDALONE DETECTION ENGINE
+   📱 ELITE NATIVE STANDALONE REALM DETECTION
    ========================================================== */
 function isRunningStandalone() {
-    return (
-        window.matchMedia("(display-mode: standalone)").matches ||
-        window.navigator.standalone === true ||
-        document.referrer.includes("android-app://") ||
-        window.matchMedia("(display-mode: fullscreen)").matches ||
-        window.matchMedia("(display-mode: minimal-ui)").matches
-    );
+    const isStandaloneMode = window.matchMedia("(display-mode: standalone)").matches ||
+                             window.matchMedia("(display-mode: fullscreen)").matches ||
+                             window.matchMedia("(display-mode: minimal-ui)").matches;
+                             
+    const isNavStandalone = window.navigator.standalone === true;
+    const isAndroidReferrer = document.referrer.includes("android-app://");
+    
+    // Fallback: Check inner window constraints to filter out home screen instances
+    const isPWAWindow = (window.screen.height - window.innerHeight < 120);
+
+    return (isStandaloneMode || isNavStandalone || isAndroidReferrer || isPWAWindow);
 }
 
 function getCurrentGradeSafe() {
@@ -125,72 +142,77 @@ function getCurrentGradeSafe() {
 }
 
 /* ==========================================================
-   ⚙️ VISUAL INTERACTION HANDLERS (INSTALL UI)
+   ⚙️ PROFESSIONAL BANNER CONTROLLER LOGIC
    ========================================================== */
-function showInstallButton() {
-    const btn = document.getElementById("installBtn");
-    if (!btn) return;
-
-    if (isRunningStandalone()) {
-        btn.style.setProperty("display", "none", "important");
+function showInstallBanner() {
+    const banner = document.getElementById("pwa-install-banner");
+    if (!banner || isRunningStandalone() || sessionStorage.getItem("pwa-banner-dismissed") === "true") {
+        hideInstallBanner();
         return;
     }
-    btn.style.display = "block";
+    banner.style.pointerEvents = "auto";
+    banner.style.transform = "translateX(-50%) translateY(0)";
 }
 
-function hideInstallButton() {
-    const btn = document.getElementById("installBtn");
-    if (!btn) return;
-    btn.style.setProperty("display", "none", "important");
+function hideInstallBanner() {
+    const banner = document.getElementById("pwa-install-banner");
+    if (!banner) return;
+    banner.style.transform = "translateX(-50%) translateY(-150%)";
+    banner.style.pointerEvents = "none";
 }
-
-window.showInstallButton = showInstallButton;
-window.hideInstallButton = hideInstallButton;
 
 /* ==========================================================
-   🛑 SYSTEM DEFENSIVE NATIVE BANNER INTERCEPTION
+   🛑 INTERCEPT AUTOMATIC BROWSER INSTALLATION BLOCKS
    ========================================================== */
 window.addEventListener("beforeinstallprompt", (e) => {
-    // Kills native automatic bottom browser prompt sheets completely
+    // Stop random default browser bottom card sheets from firing
     e.preventDefault();
     
-    if (isRunningStandalone()) return false;
+    // Defensive check: If already installed on the device, break deployment instantly
+    if (isRunningStandalone()) {
+        hideInstallBanner();
+        return false;
+    }
 
     deferredPrompt = e;
-    showInstallButton();
-    console.log("✅ PWA Native Install Engine intercepted & bound successfully.");
+    showInstallBanner();
     return false;
 });
 
-function setupInstallButton() {
-    const installBtn = document.getElementById("installBtn");
-    if (!installBtn) return;
+function setupInstallBannerListeners() {
+    const actionBtn = document.getElementById("pwa-action-btn");
+    const closeBtn = document.getElementById("pwa-close-btn");
 
-    installBtn.addEventListener("click", async () => {
-        if (!deferredPrompt) {
-            alert("App engine preparation incomplete. Hold on a brief moment or access your browser settings menu to install!");
-            return;
-        }
-        try {
-            deferredPrompt.prompt();
-            const result = await deferredPrompt.userChoice;
-            console.log("📲 Install application decision recorded:", result.outcome);
-            deferredPrompt = null;
-            hideInstallButton();
-        } catch (err) {
-            console.error("🔥 Installation engine crashed:", err);
-        }
-    });
+    if (closeBtn) {
+        closeBtn.addEventListener("click", () => {
+            sessionStorage.setItem("pwa-banner-dismissed", "true");
+            hideInstallBanner();
+        });
+    }
 
-    // Tap scale bounce feedback animation
-    installBtn.addEventListener("touchstart", () => installBtn.style.transform = "scale(0.95)");
-    installBtn.addEventListener("touchend", () => installBtn.style.transform = "scale(1)");
+    if (actionBtn) {
+        actionBtn.addEventListener("click", async () => {
+            if (!deferredPrompt) {
+                hideInstallBanner();
+                return;
+            }
+            try {
+                deferredPrompt.prompt();
+                const result = await deferredPrompt.userChoice;
+                console.log("📲 PWA installation outcome recorded:", result.outcome);
+                deferredPrompt = null;
+                hideInstallBanner();
+            } catch (err) {
+                console.error("🔥 Installation system error encountered:", err);
+            }
+        });
+    }
 }
 
 window.addEventListener("appinstalled", () => {
-    console.log("🚀 High honor! Mission App installed directly to localized workspace.");
+    console.log("🚀 Application environment bound directly to local workspace successfully.");
     deferredPrompt = null;
-    hideInstallButton();
+    hideInstallBanner();
 });
 
 /* ==========================================================
@@ -204,7 +226,6 @@ function hideSplashScreen() {
     splash.classList.add("hide");
     app.style.display = "block";
     
-    // Smooth transition to mitigate text clipping jumps
     setTimeout(() => {
         app.style.opacity = "1";
     }, 50);
@@ -217,35 +238,33 @@ function hideSplashScreen() {
 }
 
 /* ==========================================================
-   🌐 ENTERPRISE SERVICE WORKER SYNC ENGINE
+   🌐 ENTERPRISE SERVICE WORKER SYNC CONTROL
    ========================================================== */
 async function registerServiceWorker() {
     if (!("serviceWorker" in navigator)) {
-        console.warn("⚠️ Localized system platform environment does not support background worker scopes.");
+        console.warn("⚠️ System does not support background worker thread mappings.");
         return;
     }
     try {
         const registration = await navigator.serviceWorker.register(
-            "./service-worker.js", // Sanitized relative root pathways to solve GitHub pages resolution faults
+            "./service-worker.js",
             { scope: "./" }
         );
+        console.log("🎯 Service Worker scope active:", registration.scope);
 
-        console.log("🎯 Service Worker lifecycle hooked:", registration.scope);
-
-        // Lifecycle updates checking block running in secondary background thread
+        // Silent automated core background upgrade listener (Every 30 mins)
         setInterval(() => {
             if (navigator.onLine) {
-                registration.update().catch(() => console.log("SW check skipped while user workspace is offline."));
+                registration.update().catch(() => console.log("SW Sync skipped while working offline."));
             }
-        }, 1000 * 60 * 30); // Checks every 30 minutes seamlessly
+        }, 1000 * 60 * 30);
 
     } catch (err) {
-        console.error("❌ Service Worker execution fault encountered:", err);
+        console.error("❌ Service Worker registration failure:", err);
     }
 }
 
-// Global atomic single-instance controller switch to halt reload loops
-let isRefreshing = false;
+// Single active event loop handle to keep controller sync linear
 if ("serviceWorker" in navigator) {
     navigator.serviceWorker.addEventListener("controllerchange", () => {
         if (isRefreshing) return;
@@ -255,26 +274,23 @@ if ("serviceWorker" in navigator) {
 }
 
 /* ==========================================================
-   🚀 SYSTEM BOOTSTRAP PIPELINE INITIALIZER
+   🚀 FRAMEWORK PIPELINE BOOTSTRAP INITIALIZATION
    ========================================================== */
 window.addEventListener("DOMContentLoaded", async () => {
     try {
-        // Enforce structural boundary checks right out the gate
+        setupInstallBannerListeners();
+
         if (isRunningStandalone()) {
-            hideInstallButton();
+            hideInstallBanner();
         }
         
-        setupInstallButton();
         await registerServiceWorker();
-
-        // Delays splash tear-down slightly until script engines compute layout widths
         setTimeout(hideSplashScreen, 450);
-        console.log("🔥 Mission Application initialization routine finalized.");
+        console.log("🔥 Production bootstrap successfully initialized.");
     } catch (err) {
-        console.error("🛑 Operational system deployment initialization aborted:", err);
+        console.error("🛑 Operational startup aborted:", err);
     }
 });
 </script>
 </body>
-    </html>
-    
+</html>
