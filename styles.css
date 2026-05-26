@@ -411,13 +411,30 @@ tr:nth-child(even) {
     width: 100% !important;
   }
 
-  /* 📘 HARDENED SPACING ENGINE: Locks overall progress lines, percentages, 
-     and emoji headers seamlessly away from the bezel edge */
+  /* 📘 FIXED FONT SIZE MATRIX: Sets loose progress lines, lists, and numbers 
+     to crystal clear, standardized layout base heights */
+  #main-content h2,
+  #main-content h3 {
+    font-size: 16px !important; /* Normal uniform structural heading font */
+    font-weight: 600 !important;
+  }
+
+  #main-content p,
+  #main-content span,
+  #main-content li,
+  #main-content div:not(.subject):not(.quran-progress):not(.top-student-card):not(.dashboard-subject) {
+    font-size: 14px !important; /* Normal readable default body font size */
+    font-weight: 500 !important;
+    line-height: 1.5 !important;
+  }
+
+  /* Structural Shield Padding Rules */
   #main-content h1,
   #main-content h2,
   #main-content h3,
   #main-content p,
   #main-content span,
+  #main-content li,
   #main-content div:not(.subject):not(.quran-progress):not(.top-student-card):not(.dashboard-subject) {
     padding-left: 18px !important; 
     padding-right: 18px !important;
@@ -430,13 +447,13 @@ tr:nth-child(even) {
   }
   
   h1 {
-    font-size: 20px;
+    font-size: 20px !important;
     margin-bottom: 16px;
-    text-align: center !important; /* Retains symmetric tracking title layout */
+    text-align: center !important;
   }
 
   th, td {
-    font-size: 11.5px;
+    font-size: 12px !important; /* Normal legible data grid text sizes */
     padding: 10px 8px;
   }
 
@@ -447,7 +464,7 @@ tr:nth-child(even) {
   
   .section-buttons button, #grade-nav button {
     padding: 12px 10px;
-    font-size: 0.82rem;
+    font-size: 13px; /* Standard navigation button font sizes */
     border-radius: 12px;
   }
 
@@ -458,4 +475,4 @@ tr:nth-child(even) {
     box-sizing: border-box !important;
   }
    }
-   
+                        
