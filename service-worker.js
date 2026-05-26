@@ -1,14 +1,14 @@
 "use strict";
 
 // ==========================================================
-// 🚀 ENTERPRISE PRODUCTION SERVICE WORKER (V16.2)
+// 🚀 ENTERPRISE PRODUCTION SERVICE WORKER (V16.3)
 // ==========================================================
 
-const CACHE_NAME = "mission-cache-v34";
+const CACHE_NAME = "mission-cache-v35";
 const LOG_STYLE = "color: #00d4ff; font-weight: bold; background: #0b0f14; padding: 2px 6px; border-radius: 4px;";
 const WARN_STYLE = "color: #e5c158; font-weight: bold; background: #0b0f14; padding: 2px 6px; border-radius: 4px;";
 
-// 📘 HARMONIZED RELATIVE PATH MATRIX: Ensures seamless PWA installation verification matches manifest rules
+// 📘 HARMONIZED RELATIVE PATH MATRIX: Updated with the crucial 512px icon asset to pass validation matching manifest rules
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -23,7 +23,8 @@ const APP_SHELL = [
   "./weekly-timetable.js",
   "./top-student-mode.js",
   "./manifest.json",
-  "./icon-192.png"
+  "./icon-192.png",
+  "./icon-512.png"
 ];
 
 // High-frequency script assets that require absolute fresh network state
@@ -148,4 +149,4 @@ self.addEventListener("message", (event) => {
     self.skipWaiting();
   }
 });
-  
+        
