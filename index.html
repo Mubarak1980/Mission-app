@@ -136,7 +136,7 @@ window.addEventListener("beforeinstallprompt", (e) => {
                     }
                 }).catch(err => console.error("Auto prompt evaluation rejected:", err));
             }
-        }, 800); // Shifted to 800ms to give sub-engines extra breathing room to cache offline
+        }, 800); // Gives sub-engines extra breathing room to cache offline smoothly
     }
     return false;
 });
@@ -177,10 +177,8 @@ async function registerServiceWorker() {
         return;
     }
     try {
-        const registration = await navigator.serviceWorker.register(
-            "./service-worker.js",
-            { scope: "./" }
-        );
+        // 🎯 FIXED: Scope object omitted to prevent sub-directory resolution loops on production hosts
+        const registration = await navigator.serviceWorker.register("./service-worker.js");
         console.log("🎯 Service Worker scope active:", registration.scope);
 
         // Background update check loop
@@ -217,5 +215,4 @@ window.addEventListener("DOMContentLoaded", async () => {
 });
 </script>
 </body>
-    </html>
-    
+</html>
