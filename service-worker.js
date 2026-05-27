@@ -1,10 +1,10 @@
 "use strict";
 
 // ==========================================================
-// 🚀 ENTERPRISE PRODUCTION SERVICE WORKER (V16.8 - PARAMETER LOCK)
+// 🚀 ENTERPRISE PRODUCTION SERVICE WORKER (V17.1 - OFFLINE MAXIMUM)
 // ==========================================================
 
-const CACHE_NAME = "mission-cache-v40";
+const CACHE_NAME = "mission-cache-v5";
 const LOG_STYLE = "color: #00d4ff; font-weight: bold; background: #0b0f14; padding: 2px 6px; border-radius: 4px;";
 const WARN_STYLE = "color: #e5c158; font-weight: bold; background: #0b0f14; padding: 2px 6px; border-radius: 4px;";
 
@@ -23,16 +23,6 @@ const APP_SHELL = [
   "./manifest.json",
   "./icon-192.png",
   "./icon-512.png"
-];
-
-const NETWORK_FIRST_ASSETS = [
-  "dashboard.js",
-  "main.js",
-  "data.js",
-  "Study-tracker.js",
-  "weekly-timetable.js",
-  "top-student-mode.js",
-  "Sunnah-tracker.js"
 ];
 
 function toAbsolute(url) {
@@ -84,7 +74,7 @@ self.addEventListener("activate", (event) => {
 });
 
 // ==========================================================
-// 📡 3. INTELLIGENT ROUTER FETCH ENGINE
+// 📡 3. IMMUTABLE CACHE-FIRST ROUTER FETCH ENGINE
 // ==========================================================
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
@@ -92,10 +82,10 @@ self.addEventListener("fetch", (event) => {
   const requestUrl = new URL(event.request.url);
   const workerUrl = new URL(self.location.href);
   
-  let cacheKey = event.request;
+  let lookupTarget = event.request;
   const currentPath = requestUrl.pathname;
   
-  // ⚡ FIX: Matches the root structure and forces the cache lookup to ignore query strings completely
+  // Normalize navigation roots to index.html safely
   if (requestUrl.origin === workerUrl.origin) {
     if (
       currentPath.endsWith("/Mission-app/") || 
@@ -103,52 +93,32 @@ self.addEventListener("fetch", (event) => {
       currentPath === "/" || 
       currentPath === "/index.html"
     ) {
-      cacheKey = toAbsolute("./index.html");
+      lookupTarget = toAbsolute("./index.html");
     }
   }
 
-  const isNetworkFirstAsset = NETWORK_FIRST_ASSETS.some(asset => requestUrl.pathname.endsWith(asset));
+  // 🔥 MAXIMUM OFFLINE LOCK: Intercept local app assets directly from cache
+  event.respondWith(
+    caches.match(lookupTarget, { ignoreSearch: true }).then((cachedResponse) => {
+      if (cachedResponse) {
+        return cachedResponse; // Instant execution with zero network dependency
+      }
 
-  // Strategy A: Robust Network-First with Direct Self-Fallback
-  if (isNetworkFirstAsset) {
-    event.respondWith(
-      fetch(event.request)
+      // Fallback network strategy for edge assets or background requests
+      return fetch(event.request)
         .then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
+          if (networkResponse && networkResponse.status === 200 && requestUrl.origin === workerUrl.origin) {
             const responseToCache = networkResponse.clone();
             caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseToCache));
           }
           return networkResponse;
         })
-        .catch(() => {
-          // Fall back gracefully to cache, explicitly ignoring the search parameters
-          return caches.match(cacheKey, { ignoreSearch: true }).then((matchedResponse) => {
-            return matchedResponse || caches.match(event.request, { ignoreSearch: true });
-          });
-        })
-    );
-    return;
-  }
-
-  // Strategy B: Stale-While-Revalidate Route with Search Parameter Safeguards
-  event.respondWith(
-    caches.match(cacheKey, { ignoreSearch: true }).then((cachedResponse) => {
-      const fetchPromise = fetch(event.request).then((networkResponse) => {
-        if (networkResponse && networkResponse.status === 200) {
-          if (requestUrl.origin === workerUrl.origin) {
-            const responseToCache = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseToCache));
+        .catch((err) => {
+          console.log("%c[SW] Network connection dead. Resolving navigate fallback layers.", WARN_STYLE);
+          if (event.request.mode === "navigate") {
+            return caches.match(toAbsolute("./index.html"), { ignoreSearch: true });
           }
-        }
-        return networkResponse;
-      }).catch((err) => {
-        console.log("%c[SW] System offline. Relying on active cache assets.", WARN_STYLE);
-        if (event.request.mode === "navigate") {
-          return caches.match(toAbsolute("./index.html"), { ignoreSearch: true });
-        }
-      });
-
-      return cachedResponse || fetchPromise;
+        });
     })
   );
 });
@@ -161,4 +131,4 @@ self.addEventListener("message", (event) => {
     self.skipWaiting();
   }
 });
-        
+          
