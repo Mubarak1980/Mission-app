@@ -3,14 +3,21 @@
   "short_name": "Mission",
   "description": "Mission App - Smart study tracking system",
   "id": "/Mission-app/mission-app-pwa-id",
-  "start_url": "./index.html?utm_source=pwa",
-  "scope": "./",
+  "start_url": "/Mission-app/",
+  "scope": "/Mission-app/",
   "display": "standalone",
-  "display_override": ["standalone", "fullscreen", "minimal-ui"],
+  "display_override": [
+    "standalone",
+    "fullscreen",
+    "minimal-ui"
+  ],
   "orientation": "portrait-primary",
   "background_color": "#0b0f14",
   "theme_color": "#0b0f14",
-  "categories": ["education", "productivity"],
+  "categories": [
+    "education",
+    "productivity"
+  ],
   "prefer_related_applications": false,
   "dir": "ltr",
   "lang": "en-US",
