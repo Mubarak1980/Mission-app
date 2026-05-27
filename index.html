@@ -177,7 +177,6 @@ async function registerServiceWorker() {
         return;
     }
     try {
-        // 🎯 FIXED: Scope object omitted to prevent sub-directory resolution loops on production hosts
         const registration = await navigator.serviceWorker.register("./service-worker.js");
         console.log("🎯 Service Worker scope active:", registration.scope);
 
@@ -215,4 +214,5 @@ window.addEventListener("DOMContentLoaded", async () => {
 });
 </script>
 </body>
-</html>
+    </html>
+    
