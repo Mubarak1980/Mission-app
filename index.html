@@ -46,14 +46,14 @@
 
 <div id="app" style="display: none; opacity: 0; transition: opacity 0.25s ease;">
     
-    <h1 id="app-time-heading">TIME</h1>
+    <h1 id="app-time-heading">MISSION</h1>
 
     <div class="section-buttons">
-        <button onclick="loadSection('study', getCurrentGradeSafe())">Study Tracker</button>
-        <button onclick="loadSection('timetable')">Weekly Timetable</button>
-        <button onclick="loadSection('dashboard')">Dashboard</button>
-        <button onclick="loadSection('top-student')">Top Student Mode</button>
-        <button onclick="loadSection('sunnah')">Sunnah Tracker</button>
+        <button onclick="if(typeof loadSection === 'function') { loadSection('study', getCurrentGradeSafe()); }">Study Tracker</button>
+        <button onclick="if(typeof loadSection === 'function') { loadSection('timetable'); }">Weekly Timetable</button>
+        <button onclick="if(typeof loadSection === 'function') { loadSection('dashboard'); }">Dashboard</button>
+        <button onclick="if(typeof loadSection === 'function') { loadSection('top-student'); }">Top Student Mode</button>
+        <button onclick="if(typeof loadSection === 'function') { loadSection('sunnah'); }">Sunnah Tracker</button>
     </div>
 
     <div style="width: 100%; box-sizing: border-box; padding: 0 4px;">
@@ -63,8 +63,8 @@
     <main id="main-content"></main>
 
     <div id="grade-nav">
-        <button onclick="previousGrade()" id="prev-btn">Previous</button>
-        <button onclick="nextGrade()" id="next-btn">Next</button>
+        <button onclick="if(typeof previousGrade === 'function') previousGrade();" id="prev-btn">Previous</button>
+        <button onclick="if(typeof nextGrade === 'function') nextGrade();" id="next-btn">Next</button>
     </div>
 </div>
 
@@ -105,14 +105,16 @@ function isRunningStandalone() {
 }
 
 function getCurrentGradeSafe() {
-    return window.UI?.currentGrade || 9;
+    if (window.UI && typeof window.UI.currentGrade !== 'undefined') {
+        return window.UI.currentGrade;
+    }
+    return 9; // Perfect fallback to prevent script execution blockages offline
 }
 
 /* ==========================================================
    🛑 INTERCEPT AUTOMATIC BROWSER INSTALLATION BLOCKS & AUTO-PROMPT
    ========================================================== */
 window.addEventListener("beforeinstallprompt", (e) => {
-    // Stop random default browser banner bars from appearing automatically
     e.preventDefault();
     
     if (isRunningStandalone()) {
@@ -121,7 +123,6 @@ window.addEventListener("beforeinstallprompt", (e) => {
 
     deferredPrompt = e;
 
-    // ⚡ AUTOMATION SECTOR: Command Chrome to say "Install" immediately upon confirmation
     if (!hasAutomatedPromptFired) {
         hasAutomatedPromptFired = true;
         
@@ -135,7 +136,7 @@ window.addEventListener("beforeinstallprompt", (e) => {
                     }
                 }).catch(err => console.error("Auto prompt evaluation rejected:", err));
             }
-        }, 600); // 600ms holds deployment until UI paint completes smoothly
+        }, 800); // Shifted to 800ms to give sub-engines extra breathing room to cache offline
     }
     return false;
 });
@@ -216,4 +217,5 @@ window.addEventListener("DOMContentLoaded", async () => {
 });
 </script>
 </body>
-</html>
+    </html>
+    
