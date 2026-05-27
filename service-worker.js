@@ -1,14 +1,14 @@
 "use strict";
 
 // ==========================================================
-// 🚀 ENTERPRISE PRODUCTION SERVICE WORKER (V16.7 - OFFLINE MAXIMUM)
+// 🚀 ENTERPRISE PRODUCTION SERVICE WORKER (V16.8 - PARAMETER LOCK)
 // ==========================================================
 
-const CACHE_NAME = "mission-cache-v1";
+const CACHE_NAME = "mission-cache-v40";
 const LOG_STYLE = "color: #00d4ff; font-weight: bold; background: #0b0f14; padding: 2px 6px; border-radius: 4px;";
 const WARN_STYLE = "color: #e5c158; font-weight: bold; background: #0b0f14; padding: 2px 6px; border-radius: 4px;";
 
-// 📘 HARMONIZED RELATIVE PATH MATRIX: Every file required to load the UI offline
+// 📘 HARMONIZED RELATIVE PATH MATRIX
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -25,7 +25,6 @@ const APP_SHELL = [
   "./icon-512.png"
 ];
 
-// ⚡ ALL tracked application engines must be declared here
 const NETWORK_FIRST_ASSETS = [
   "dashboard.js",
   "main.js",
@@ -96,7 +95,7 @@ self.addEventListener("fetch", (event) => {
   let cacheKey = event.request;
   const currentPath = requestUrl.pathname;
   
-  // Normalized root resolving to safely catch PWA launch parameters (?utm_source=pwa)
+  // ⚡ FIX: Matches the root structure and forces the cache lookup to ignore query strings completely
   if (requestUrl.origin === workerUrl.origin) {
     if (
       currentPath.endsWith("/Mission-app/") || 
@@ -122,18 +121,18 @@ self.addEventListener("fetch", (event) => {
           return networkResponse;
         })
         .catch(() => {
-          // 🛠️ FIX: If offline, directly fetch the exact matching script resource from the cache store
-          return caches.match(event.request).then((matchedResponse) => {
-            return matchedResponse || caches.match(cacheKey);
+          // Fall back gracefully to cache, explicitly ignoring the search parameters
+          return caches.match(cacheKey, { ignoreSearch: true }).then((matchedResponse) => {
+            return matchedResponse || caches.match(event.request, { ignoreSearch: true });
           });
         })
     );
     return;
   }
 
-  // Strategy B: Stale-While-Revalidate Route (For core UI structures and styles)
+  // Strategy B: Stale-While-Revalidate Route with Search Parameter Safeguards
   event.respondWith(
-    caches.match(cacheKey).then((cachedResponse) => {
+    caches.match(cacheKey, { ignoreSearch: true }).then((cachedResponse) => {
       const fetchPromise = fetch(event.request).then((networkResponse) => {
         if (networkResponse && networkResponse.status === 200) {
           if (requestUrl.origin === workerUrl.origin) {
@@ -145,7 +144,7 @@ self.addEventListener("fetch", (event) => {
       }).catch((err) => {
         console.log("%c[SW] System offline. Relying on active cache assets.", WARN_STYLE);
         if (event.request.mode === "navigate") {
-          return caches.match(toAbsolute("./index.html"));
+          return caches.match(toAbsolute("./index.html"), { ignoreSearch: true });
         }
       });
 
@@ -162,4 +161,4 @@ self.addEventListener("message", (event) => {
     self.skipWaiting();
   }
 });
-      
+        
