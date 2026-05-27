@@ -1,14 +1,13 @@
 "use strict";
 
 // ==========================================================
-// 🚀 ENTERPRISE PRODUCTION SERVICE WORKER (V17.1 - OFFLINE MAXIMUM)
+// 🚀 ENTERPRISE PRODUCTION SERVICE WORKER (V20.0 - MAXIMUM OFFLINE LOCK)
 // ==========================================================
 
-const CACHE_NAME = "mission-cache-v8";
+const CACHE_NAME = "mission-cache-v50";
 const LOG_STYLE = "color: #00d4ff; font-weight: bold; background: #0b0f14; padding: 2px 6px; border-radius: 4px;";
 const WARN_STYLE = "color: #e5c158; font-weight: bold; background: #0b0f14; padding: 2px 6px; border-radius: 4px;";
 
-// 📘 HARMONIZED RELATIVE PATH MATRIX
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -83,28 +82,26 @@ self.addEventListener("fetch", (event) => {
   const workerUrl = new URL(self.location.href);
   
   let lookupTarget = event.request;
-  const currentPath = requestUrl.pathname;
-  
-  // Normalize navigation roots to index.html safely
+  const normalizedPath = requestUrl.pathname.replace(/\/+$/, ""); // Wipes out trailing slashes cleanly
+
+  // 🎯 UNBREAKABLE PATH MATCHING FOR ANDROID WEBVIEW
   if (requestUrl.origin === workerUrl.origin) {
     if (
-      currentPath.endsWith("/Mission-app/") || 
-      currentPath.endsWith("/Mission-app/index.html") || 
-      currentPath === "/" || 
-      currentPath === "/index.html"
+      normalizedPath === "" ||
+      normalizedPath === "/index.html" ||
+      normalizedPath === "/Mission-app" ||
+      normalizedPath === "/Mission-app/index.html"
     ) {
       lookupTarget = toAbsolute("./index.html");
     }
   }
 
-  // 🔥 MAXIMUM OFFLINE LOCK: Intercept local app assets directly from cache
   event.respondWith(
     caches.match(lookupTarget, { ignoreSearch: true }).then((cachedResponse) => {
       if (cachedResponse) {
-        return cachedResponse; // Instant execution with zero network dependency
+        return cachedResponse; // Instant load out of local hardware memory!
       }
 
-      // Fallback network strategy for edge assets or background requests
       return fetch(event.request)
         .then((networkResponse) => {
           if (networkResponse && networkResponse.status === 200 && requestUrl.origin === workerUrl.origin) {
@@ -114,10 +111,10 @@ self.addEventListener("fetch", (event) => {
           return networkResponse;
         })
         .catch((err) => {
-          console.log("%c[SW] Network connection dead. Resolving navigate fallback layers.", WARN_STYLE);
-          if (event.request.mode === "navigate") {
-            return caches.match(toAbsolute("./index.html"), { ignoreSearch: true });
-          }
+          console.log("%c[SW] System offline. Invoking structural fallback layers.", WARN_STYLE);
+          
+          // Absolute safety backup response strategy to bypass Android's WebView error checking
+          return caches.match(toAbsolute("./index.html"), { ignoreSearch: true });
         });
     })
   );
@@ -131,4 +128,4 @@ self.addEventListener("message", (event) => {
     self.skipWaiting();
   }
 });
-          
+                            
