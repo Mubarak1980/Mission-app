@@ -2,9 +2,9 @@
   "name": "Mission App",
   "short_name": "Mission",
   "description": "Mission App - Smart study tracking system",
-  "id": "/Mission-app/mission-app-pwa-id",
-  "start_url": "/Mission-app/",
-  "scope": "/Mission-app/",
+  "id": "mission-app-pwa-unique-id",
+  "start_url": "index.html",
+  "scope": "./",
   "display": "standalone",
   "display_override": [
     "standalone",
