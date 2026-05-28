@@ -208,6 +208,8 @@ function getSmartCycle() {
   const cycle = getDelayStatus();
   const remainingDays = Math.max(1, TOTAL_DAYS - cycle.cycleDay);
   const gap = Number(cycle.gap) || 0;
+  
+  // 📈 5705 pages / 90 days baseline evaluation
   const baseTarget = TOTAL_PAGES / TOTAL_DAYS;
 
   let catchUpPerDay = 0;
@@ -236,6 +238,9 @@ function getSmartCycle() {
     pressure = "LOW_BACKLOG";
   }
 
+  // Ensure calculations return at least a baseline target of 63 pages
+  const structuralBase = Math.round(baseTarget);
+
   return {
     ...cycle,
     remainingDays,
@@ -243,7 +248,7 @@ function getSmartCycle() {
     dailyTarget: Math.round(dailyTarget),
     intensity,
     pressure,
-    baseTarget: Math.round(baseTarget)
+    baseTarget: structuralBase > 0 ? structuralBase : 63
   };
 }
 
@@ -448,4 +453,4 @@ window.isRunningStandalone = function () {
 }
 
 })();
-   
+     
