@@ -159,7 +159,10 @@ function loadDashboard() {
       html += `
         <div class="dashboard-subject">
           <h3>${subject}</h3>
-          <progress value="${accurateAvg}" max="100"></progress>
+          <!-- Custom track look for subjects -->
+          <div style="width: 100%; height: 6px; background: #1f2a36; border-radius: 4px; overflow: hidden; margin: 8px 0;">
+            <div style="width: ${accurateAvg}%; height: 100%; background: #388bfd; border-radius: 4px;"></div>
+          </div>
           <p style="margin: 8px 0 0 0; display: flex !important; align-items: center !important; justify-content: space-between !important; flex-wrap: nowrap !important; gap: 8px !important;">
             <span style="font-weight: 600; white-space: nowrap;">${accurateAvg}% progress</span>
             <span style="font-size:0.85em; color:#8b949e; white-space: nowrap; text-align: right;">
@@ -173,7 +176,7 @@ function loadDashboard() {
     html += `</div>`;
 
     // =====================================================
-    // ⚙️ FETCH LIVE CORE ENGINE METRICS FOR THE NEW EXTRA TRACKER
+    // ⚙️ FETCH LIVE CORE ENGINE METRICS
     // =====================================================
     let masterMetrics = {
       actualPages: 0,
@@ -192,7 +195,7 @@ function loadDashboard() {
       }
     }
 
-    // Add Master Total Pages Card underneath the subject breakdown container grid
+    // 🎨 FIX: Swapped standard browser progress element for an enterprise custom tracking div bar
     html += `
       <!-- 📈 EXTRA MASTER PAGES PROGRESS TRACKER -->
       <div class="master-pages-card" style="padding: 16px; margin-top: 16px; background: linear-gradient(135deg, #121821 0%, rgba(0, 212, 255, 0.04) 100%); border: 1px solid #1f2a36; border-left: 4px solid #00d4ff; border-radius: 14px; box-sizing: border-box; width: 100%;">
@@ -208,7 +211,9 @@ function loadDashboard() {
         </div>
 
         <div style="width: 100%; box-sizing: border-box; margin-bottom: 12px;">
-          <progress max="${masterMetrics.TOTAL_PAGES}" value="${masterMetrics.actualPages}" style="width: 100%; height: 8px; border-radius: 4px; overflow: hidden; display: block;"></progress>
+          <div style="width: 100%; height: 8px; background: #1f2a36; border-radius: 4px; overflow: hidden; display: block;">
+            <div style="width: ${masterMetrics.totalPagesPercentage}%; height: 100%; background: linear-gradient(90deg, #005f73, #00d4ff); border-radius: 4px; transition: width 0.3s ease;"></div>
+          </div>
         </div>
 
         <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.82rem; color: #8b949e; gap: 10px; flex-wrap: nowrap;">
@@ -391,7 +396,9 @@ function loadDashboard() {
             <label style="color: #e6edf3; font-weight:600; font-size:13px; display:block; margin-bottom: 8px; letter-spacing: 0.3px; text-transform: uppercase;">
               📊 OVERALL YEAR TIMELINE PROGRESS
             </label>
-            <progress max="${yearTotalTargetWindow}" value="${totalYearDaysElapsed}" style="width: 100%; height: 8px; border-radius: 4px; overflow: hidden;"></progress>
+            <div style="width: 100%; height: 8px; background: #1f2a36; border-radius: 4px; overflow: hidden; margin-top: 4px;">
+              <div style="width: ${Math.min(100, (totalYearDaysElapsed / yearTotalTargetWindow) * 100)}%; height: 100%; background: #2ecc71; border-radius: 4px;"></div>
+            </div>
             <p style="text-align: left; font-size: 11px; margin-top: 6px; color: #8b949e; margin-bottom: 0;">
               <strong>Total Elapsed:</strong> <span style="color: #e6edf3; font-weight: 600;">${totalYearDaysElapsed} / ${yearTotalTargetWindow} Days</span>
             </p>
@@ -421,4 +428,4 @@ function loadDashboard() {
 // EXPORT
 // =====================================================
 window.loadDashboard = loadDashboard;
-    
+        
