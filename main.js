@@ -241,6 +241,11 @@ function getSmartCycle() {
   // Ensure calculations return at least a baseline target of 63 pages
   const structuralBase = Math.round(baseTarget);
 
+  // 📊 EXTRA TRACKER METRICS: MASTER COMPLETION CALCULATION
+  const actualPages = cycle.actualPages || 0;
+  const totalPagesPercentage = Math.min(100, Math.max(0, parseFloat(((actualPages / TOTAL_PAGES) * 100).toFixed(1))));
+  const remainingPages = Math.max(0, TOTAL_PAGES - actualPages);
+
   return {
     ...cycle,
     remainingDays,
@@ -248,7 +253,11 @@ function getSmartCycle() {
     dailyTarget: Math.round(dailyTarget),
     intensity,
     pressure,
-    baseTarget: structuralBase > 0 ? structuralBase : 63
+    baseTarget: structuralBase > 0 ? structuralBase : 63,
+    // Properties exported for dashboard layout rendering
+    TOTAL_PAGES,
+    totalPagesPercentage,
+    remainingPages
   };
 }
 
@@ -460,4 +469,3 @@ window.isRunningStandalone = function () {
 }
 
 })();
-       
