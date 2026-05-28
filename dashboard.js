@@ -24,7 +24,7 @@ function checkAndAutoRotateCycle() {
                 today.setHours(0, 0, 0, 0);
                 start.setHours(0, 0, 0, 0);
                 
-                // 🌴 THURSDAY & FRIDAY FREEZE LOGIC FOR ENGINE ACCURACY
+                // 🔒 THURSDAY & FRIDAY COMPLIANCE DAYS FILTER
                 let activeDaysCount = 0;
                 let tempDate = new Date(start);
                 
@@ -85,7 +85,7 @@ function checkAndAutoRotateCycle() {
 }
 
 // =====================================================
-// 📊 DASHBOARD (WEIGHTED PROGRESS FIXED)
+// 📊 DASHBOARD (PROFESSIONAL MANAGEMENT STYLE)
 // =====================================================
 function loadDashboard() {
 
@@ -173,14 +173,14 @@ function loadDashboard() {
     html += `</div>`;
 
     // =====================================================
-    // FETCH LIVE TIMELINES WITH FREEZE EXCLUSIONS
+    // FETCH LIVE TIMELINES WITH COMPLIANCE EXCLUSIONS
     // =====================================================
     const currentStudyData = JSON.parse(localStorage.getItem("study_progress")) || {};
     const runningCycleNum = Number(currentStudyData.cycleNumber) || 1;
     const localStartStr = currentStudyData.startDate || new Date().toISOString().split("T")[0];
     
     const currentDayOfWeek = new Date().getDay();
-    const isFreeTimeDay = (currentDayOfWeek === 4 || currentDayOfWeek === 5);
+    const isFreeTimeDay = (currentDayOfWeek === 4 || currentDayOfWeek === 5); // Thursday or Friday
 
     const rawDaysCount = (function(start) {
         try {
@@ -207,10 +207,12 @@ function loadDashboard() {
     const totalYearDaysElapsed = ((runningCycleNum - 1) * 90) + cleanCycleDay;
     const yearTotalTargetWindow = 360;
 
+    // 🎯 FIX: Hard baseline set to 63 if the data module returns an invalid zero on Day 1
     let baseTargetValue = 63;
     if (typeof window.getSmartCycle === "function") {
       const smart = window.getSmartCycle();
-      baseTargetValue = Number(smart?.baseTarget ?? 63);
+      const extractedBase = Number(smart?.baseTarget);
+      baseTargetValue = (!isNaN(extractedBase) && extractedBase > 0) ? extractedBase : 63;
     }
 
     // =====================================================
@@ -247,16 +249,17 @@ function loadDashboard() {
       baseTargetValue = 0;
     }
 
-    let targetSubtextLabel = `<span style="white-space: nowrap;">Allocated out of ${baseTargetValue} pgs</span>`;
+    // 👔 PROFESSIONAL TEXT CONVERSION: Executive Status Titles
+    let targetSubtextLabel = `<span style="white-space: nowrap; color: #8b949e;">Allocation Window: ${baseTargetValue} pages</span>`;
     if (isFreeTimeDay) {
-       targetSubtextLabel = `<span style="color: #2ecc71; font-weight: bold; white-space: nowrap;">🎉 Free Time Mode Active!</span>`;
+       targetSubtextLabel = `<span style="color: #2ecc71; font-weight: bold; white-space: nowrap;">⚡ SCHEDULED REST RECOVERY ACTIVE</span>`;
     } else if (baseTargetValue < originalBaseTargetValue) {
-       targetSubtextLabel += ` <span style="color: #2ecc71; font-weight: 600; display: inline-block;">(Saved ${originalBaseTargetValue - baseTargetValue} pgs today! 🎉)</span>`;
+       targetSubtextLabel += ` <span style="color: #2ecc71; font-weight: 600; display: inline-block;">(Surplus Optimization: -${originalBaseTargetValue - baseTargetValue} pgs)</span>`;
     }
 
     let structuralPriorityHTML = `<div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid #1f2a36;">
-        <label style="color: #00d4ff; font-weight:700; font-size:0.9rem; display:block; margin-bottom: 10px; line-height: 1.4;">
-          🎯 EXPONENTIAL DAILY PRIORITIES <br>${targetSubtextLabel}
+        <label style="color: #00d4ff; font-weight:700; font-size:0.9rem; display:block; margin-bottom: 10px; line-height: 1.4; text-transform: uppercase; letter-spacing: 0.5px;">
+          📈 Operational Daily Priorities <br>${targetSubtextLabel}
         </label><ul style="list-style: none !important; padding: 0 !important; margin: 0 !important; display: flex !important; flex-direction: column !important; gap: 8px !important;">`;
 
     let checkSumAllocatedPages = 0;
@@ -280,20 +283,20 @@ function loadDashboard() {
     }
 
     // =====================================================
-    // 🛠️ FIX SYSTEM: STOPS BREAKING AND SNAP-ALIGNS BADGES TO EXTREME RIGHT
+    // 📊 ALIGNED BADGES & PROFESSIONAL METRICS
     // =====================================================
     individualTargets.forEach(item => {
       const weightScore = exponentialWeights[item.subject];
       let priorityAlertIndicator = "";
       
       if (isFreeTimeDay) {
-         priorityAlertIndicator = `<span style="color: #e5c158; font-weight: bold; white-space: nowrap !important; text-align: right; display: inline-block !important;">🌴 Weekend Chill</span>`;
+         priorityAlertIndicator = `<span style="color: #e5c158; font-weight: 600; white-space: nowrap !important; text-align: right; display: inline-block !important; letter-spacing: 0.3px;">🔋 Recharge</span>`;
       } else if (weightScore > 1000) {
-         priorityAlertIndicator = `<span style="color: #ff4d4d; font-weight: bold; white-space: nowrap !important; text-align: right; display: inline-block !important;">🔥 High Priority</span>`;
+         priorityAlertIndicator = `<span style="color: #ff4d4d; font-weight: bold; white-space: nowrap !important; text-align: right; display: inline-block !important; letter-spacing: 0.3px;">⚠️ Critical Deficit</span>`;
       } else if (weightScore > 1) {
-         priorityAlertIndicator = `<span style="color: #00d4ff; font-weight: bold; white-space: nowrap !important; text-align: right; display: inline-block !important;">📈 Behind</span>`;
+         priorityAlertIndicator = `<span style="color: #00d4ff; font-weight: 600; white-space: nowrap !important; text-align: right; display: inline-block !important; letter-spacing: 0.3px;">📊 Behind Target</span>`;
       } else {
-         priorityAlertIndicator = `<span style="color: #2ecc71; font-weight: bold; white-space: nowrap !important; text-align: right; display: inline-block !important;">✅ Good</span>`;
+         priorityAlertIndicator = `<span style="color: #2ecc71; font-weight: 600; white-space: nowrap !important; text-align: right; display: inline-block !important; letter-spacing: 0.3px;">✅ Metrics Nominal</span>`;
       }
 
       structuralPriorityHTML += `
@@ -316,8 +319,8 @@ function loadDashboard() {
     // =====================================================
     html += `
       <div class="smart-cycle-section" style="padding: 16px; margin-top: 16px; background: #121821; border: 1px solid #1f2a36; border-radius: 14px;">
-        <h2 style="margin-top: 0; margin-bottom: 14px; font-size: 1.15rem; color: #e6edf3; font-weight: 700; border: none; padding: 0;">🧠 Smart Study Engine</h2>
-        <h3 style="margin-top: 0; margin-bottom: 12px; font-size: 0.95rem; color: #8b949e; font-weight: 600;">⏱️ Cycle ${runningCycleNum} Info</h3>
+        <h2 style="margin-top: 0; margin-bottom: 14px; font-size: 1.15rem; color: #e6edf3; font-weight: 700; border: none; padding: 0; text-transform: uppercase; letter-spacing: 0.5px;">🧠 Smart Study Engine</h2>
+        <h3 style="margin-top: 0; margin-bottom: 12px; font-size: 0.95rem; color: #8b949e; font-weight: 600;">⏱️ Cycle ${runningCycleNum} Operations</h3>
 
         <div style="display: flex; flex-direction: column; gap: 6px; font-size: 0.88rem;">
           <p style="margin: 0; display: flex; justify-content: space-between; flex-wrap: nowrap; border-bottom: 1px solid rgba(255,255,255,0.02); padding-bottom: 6px;">
@@ -337,7 +340,7 @@ function loadDashboard() {
         ${structuralPriorityHTML}
 
         <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid #1f2a36;">
-            <label style="color: #e6edf3; font-weight:600; font-size:13px; display:block; margin-bottom: 8px; letter-spacing: 0.3px;">
+            <label style="color: #e6edf3; font-weight:600; font-size:13px; display:block; margin-bottom: 8px; letter-spacing: 0.3px; text-transform: uppercase;">
               📊 OVERALL YEAR TIMELINE PROGRESS
             </label>
             <progress max="${yearTotalTargetWindow}" value="${totalYearDaysElapsed}" style="width: 100%; height: 8px; border-radius: 4px; overflow: hidden;"></progress>
@@ -370,4 +373,4 @@ function loadDashboard() {
 // EXPORT
 // =====================================================
 window.loadDashboard = loadDashboard;
-    
+          
