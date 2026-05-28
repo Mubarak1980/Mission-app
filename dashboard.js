@@ -173,6 +173,52 @@ function loadDashboard() {
     html += `</div>`;
 
     // =====================================================
+    // ⚙️ FETCH LIVE CORE ENGINE METRICS FOR THE NEW EXTRA TRACKER
+    // =====================================================
+    let masterMetrics = {
+      actualPages: 0,
+      TOTAL_PAGES: 5705,
+      totalPagesPercentage: 0,
+      remainingPages: 5705
+    };
+
+    if (typeof window.getSmartCycle === "function") {
+      const liveCycleData = window.getSmartCycle();
+      if (liveCycleData) {
+        masterMetrics.actualPages = liveCycleData.actualPages || 0;
+        masterMetrics.TOTAL_PAGES = liveCycleData.TOTAL_PAGES || 5705;
+        masterMetrics.totalPagesPercentage = liveCycleData.totalPagesPercentage || 0;
+        masterMetrics.remainingPages = liveCycleData.remainingPages || 0;
+      }
+    }
+
+    // Add Master Total Pages Card underneath the subject breakdown container grid
+    html += `
+      <!-- 📈 EXTRA MASTER PAGES PROGRESS TRACKER -->
+      <div class="master-pages-card" style="padding: 16px; margin-top: 16px; background: linear-gradient(135deg, #121821 0%, rgba(0, 212, 255, 0.04) 100%); border: 1px solid #1f2a36; border-left: 4px solid #00d4ff; border-radius: 14px; box-sizing: border-box; width: 100%;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 8px;">
+          <h2 style="margin: 0; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px; color: #8b949e; font-weight: 700; border: none; padding: 0;">🎯 Master Pages Completion</h2>
+          <span style="font-size: 0.8rem; background: rgba(0, 212, 255, 0.15); color: #00d4ff; padding: 3px 8px; border-radius: 12px; font-weight: 700; white-space: nowrap;">
+            ${masterMetrics.totalPagesPercentage}% Done
+          </span>
+        </div>
+        
+        <div style="font-size: 1.8rem; font-weight: 800; color: #e6edf3; margin-bottom: 10px; letter-spacing: -0.5px;">
+          ${masterMetrics.actualPages.toLocaleString()} <span style="font-size: 0.9rem; color: #8b949e; font-weight: 500; letter-spacing: 0px;">/ ${masterMetrics.TOTAL_PAGES.toLocaleString()} Total Pages</span>
+        </div>
+
+        <div style="width: 100%; box-sizing: border-box; margin-bottom: 12px;">
+          <progress max="${masterMetrics.TOTAL_PAGES}" value="${masterMetrics.actualPages}" style="width: 100%; height: 8px; border-radius: 4px; overflow: hidden; display: block;"></progress>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.82rem; color: #8b949e; gap: 10px; flex-wrap: nowrap;">
+          <div style="white-space: nowrap;">📚 Reading Backlog Remaining:</div>
+          <div style="color: #e5c158; font-weight: 700; white-space: nowrap; text-align: right;">${masterMetrics.remainingPages.toLocaleString()} pgs</div>
+        </div>
+      </div>
+    `;
+
+    // =====================================================
     // FETCH LIVE TIMELINES WITH COMPLIANCE EXCLUSIONS
     // =====================================================
     const currentStudyData = JSON.parse(localStorage.getItem("study_progress")) || {};
@@ -375,4 +421,4 @@ function loadDashboard() {
 // EXPORT
 // =====================================================
 window.loadDashboard = loadDashboard;
-        
+    
