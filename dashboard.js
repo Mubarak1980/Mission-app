@@ -130,7 +130,7 @@ function loadDashboard() {
     const subjectStats = {};
 
     let html = `
-      <h2>📊 Overall Subject Progress</h2>
+      <h2>📊 Dashboard: Overall Subject Progress</h2>
       <div class="dashboard-container">
     `;
 
@@ -229,12 +229,12 @@ function loadDashboard() {
     const totalYearDaysElapsed = ((runningCycleNum - 1) * 90) + cleanCycleDay;
     const yearTotalTargetWindow = 360;
 
-    // Layout and scaling metrics
+    // Layout visibility constraints for Day 1
     const yearProgressRawPct = (totalYearDaysElapsed / yearTotalTargetWindow) * 100;
     const yearProgressVisiblePct = totalYearDaysElapsed > 0 ? Math.max(1.5, yearProgressRawPct) : 0;
     const roundedYearProgressLabel = (totalYearDaysElapsed / yearTotalTargetWindow * 100).toFixed(1);
 
-    // Hard baseline set to 63 if data returns zero on Day 1
+    // Hard baseline validation
     let baseTargetValue = 63;
     if (typeof window.getSmartCycle === "function") {
       const smart = window.getSmartCycle();
@@ -276,7 +276,7 @@ function loadDashboard() {
       baseTargetValue = 0;
     }
 
-    // Executive Status Titles
+    // Status context layout variables
     let targetSubtextLabel = `<span style="white-space: nowrap; color: #8b949e;">Allocation Window: ${baseTargetValue} pages</span>`;
     if (isFreeTimeDay) {
        targetSubtextLabel = `<span style="color: #2ecc71; font-weight: bold; white-space: nowrap;">⚡ SCHEDULED REST RECOVERY ACTIVE</span>`;
@@ -309,7 +309,7 @@ function loadDashboard() {
       }
     }
 
-    // Aligned status metrics
+    // Priority allocation builder
     individualTargets.forEach(item => {
       const weightScore = exponentialWeights[item.subject];
       let priorityAlertIndicator = "";
@@ -337,56 +337,50 @@ function loadDashboard() {
         </li>
       `;
     });
-    structuralPriorityHTML += `</ul></div>`;
 
-    // =====================================================
-    // 🏛️ HORIZONTAL MACRO TARGETS GRID CONTAINER (NEW ARCHITECTURE)
-    // =====================================================
-    html += `
-      <div class="dashboard-container" style="margin-top: 16px; margin-bottom: 4px;">
-        
-        <div class="dashboard-subject" style="border-left: 4px solid #00d4ff; background: linear-gradient(135deg, #121821 0%, rgba(0, 212, 255, 0.02) 100%);">
-          <h3 style="color: #8b949e; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">🎯 Master Pages</h3>
-          
-          <div style="font-size: 1.45rem; font-weight: 800; color: #e6edf3; margin-bottom: 8px; letter-spacing: -0.5px;">
-            ${masterMetrics.actualPages.toLocaleString()} <span style="font-size: 0.8rem; color: #8b949e; font-weight: 500;">/ ${masterMetrics.TOTAL_PAGES.toLocaleString()} pgs</span>
-          </div>
-
-          <div style="width: 100%; height: 6px; background: #1f2a36; border-radius: 4px; overflow: hidden; margin-bottom: 8px;">
-            <div style="width: ${masterMetrics.totalPagesPercentage}%; height: 100%; background: linear-gradient(90deg, #005f73, #00d4ff); border-radius: 4px;"></div>
-          </div>
-
-          <p style="margin: 0; display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem;">
-            <span style="font-weight: 600; color: #00d4ff;">${masterMetrics.totalPagesPercentage}% Done</span>
-            <span style="color: #e5c158; font-weight: 600;">${masterMetrics.remainingPages.toLocaleString()} left</span>
-          </p>
+    // ====================================================================
+    // 🎛️ INTEGRATED MACRO METRIC PROGRESS TRACKS (MOVED UNDER LIST)
+    // ====================================================================
+    structuralPriorityHTML += `
+      </ul>
+      
+      <!-- 🎯 INLINE MASTER PAGES PROGRESS TRACK -->
+      <div style="margin-top: 20px; padding: 12px; background: rgba(0, 212, 255, 0.02); border: 1px solid #1f2a36; border-radius: 10px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 0.82rem;">
+          <span style="color: #8b949e; font-weight: 600;">🎯 Master Pages Completion</span>
+          <span style="color: #00d4ff; font-weight: 700;">${masterMetrics.totalPagesPercentage}% Done</span>
         </div>
-
-        <div class="dashboard-subject" style="border-left: 4px solid #2ecc71; background: linear-gradient(135deg, #121821 0%, rgba(46, 204, 113, 0.02) 100%);">
-          <h3 style="color: #8b949e; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">📅 Year Timeline</h3>
-          
-          <div style="font-size: 1.45rem; font-weight: 800; color: #e6edf3; margin-bottom: 8px; letter-spacing: -0.5px;">
-            ${totalYearDaysElapsed.toLocaleString()} <span style="font-size: 0.8rem; color: #8b949e; font-weight: 500;">/ ${yearTotalTargetWindow.toLocaleString()} days</span>
-          </div>
-
-          <div style="width: 100%; height: 6px; background: #1f2a36; border-radius: 4px; overflow: hidden; margin-bottom: 8px;">
-            <div style="width: ${yearProgressVisiblePct}%; height: 100%; background: linear-gradient(90deg, #1e7e34, #2ecc71); border-radius: 4px;"></div>
-          </div>
-
-          <p style="margin: 0; display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem;">
-            <span style="font-weight: 600; color: #2ecc71;">${roundedYearProgressLabel}% Elapsed</span>
-            <span style="color: #ff4d4d; font-weight: 600;">${Math.max(0, yearTotalTargetWindow - totalYearDaysElapsed)} left</span>
-          </p>
+        <div style="width: 100%; height: 6px; background: #1f2a36; border-radius: 3px; overflow: hidden; margin-bottom: 6px;">
+          <div style="width: ${masterMetrics.totalPagesPercentage}%; height: 100%; background: linear-gradient(90deg, #005f73, #00d4ff); border-radius: 3px;"></div>
         </div>
-
+        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; color: #8b949e;">
+          <span>Completed: <strong>${masterMetrics.actualPages.toLocaleString()} / ${masterMetrics.TOTAL_PAGES.toLocaleString()}</strong> pgs</span>
+          <span style="color: #e5c158;">${masterMetrics.remainingPages.toLocaleString()} left</span>
+        </div>
       </div>
-    `;
+
+      <!-- 📅 INLINE YEAR TIMELINE PROGRESS TRACK -->
+      <div style="margin-top: 12px; padding: 12px; background: rgba(46, 204, 113, 0.02); border: 1px solid #1f2a36; border-radius: 10px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 0.82rem;">
+          <span style="color: #8b949e; font-weight: 600;">📅 Overall Year Timeline</span>
+          <span style="color: #2ecc71; font-weight: 700;">${roundedYearProgressLabel}% Elapsed</span>
+        </div>
+        <div style="width: 100%; height: 6px; background: #1f2a36; border-radius: 3px; overflow: hidden; margin-bottom: 6px;">
+          <div style="width: ${yearProgressVisiblePct}%; height: 100%; background: linear-gradient(90deg, #1e7e34, #2ecc71); border-radius: 3px;"></div>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; color: #8b949e;">
+          <span>Elapsed Time: <strong>${totalYearDaysElapsed.toLocaleString()} / ${yearTotalTargetWindow.toLocaleString()}</strong> days</span>
+          <span style="color: #ff4d4d;">${Math.max(0, yearTotalTargetWindow - totalYearDaysElapsed)} left</span>
+        </div>
+      </div>
+
+    </div>`;
 
     // =====================================================
-    // 🧠 SMART STUDY ENGINE (OPERATIONAL DAILY WINDOWS)
+    // 🧠 SMART STUDY ENGINE CONTAINER ASSEMBLY
     // =====================================================
     html += `
-      <div class="smart-cycle-section" style="padding: 16px; margin-top: 12px; background: #121821; border: 1px solid #1f2a36; border-radius: 14px;">
+      <div class="smart-cycle-section" style="padding: 16px; margin-top: 16px; background: #121821; border: 1px solid #1f2a36; border-radius: 14px;">
         <h2 style="margin-top: 0; margin-bottom: 14px; font-size: 1.15rem; color: #e6edf3; font-weight: 700; border: none; padding: 0; text-transform: uppercase; letter-spacing: 0.5px;">🧠 Smart Study Engine</h2>
         <h3 style="margin-top: 0; margin-bottom: 12px; font-size: 0.95rem; color: #8b949e; font-weight: 600;">⏱️ Cycle ${runningCycleNum} Operations</h3>
 
@@ -433,4 +427,3 @@ function loadDashboard() {
 // EXPORT
 // =====================================================
 window.loadDashboard = loadDashboard;
-                               
