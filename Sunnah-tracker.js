@@ -6,7 +6,7 @@
 
 const totalQuranPages = 604;
 const pagesPerJuz = 20;
-const totalJuz = 30; // 🔥 FIXED: Locked to exactly 30 Juz instead of rounding up to 31
+const totalJuz = 30; 
 
 // 🎯 YOUR PACE: Exactly 1 page per day
 const TARGET_PAGES_PER_DAY = 1; 
@@ -29,7 +29,6 @@ function getDaysSinceStart(startDate) {
 
         if (isNaN(start.getTime())) return 1;
 
-        // Strip hour metrics cleanly without relying on UTC strings
         today.setHours(0, 0, 0, 0);
         start.setHours(0, 0, 0, 0);
 
@@ -71,7 +70,7 @@ function saveSunnahProgress(data) {
 }
 
 // ==========================================
-// CENTRALIZED INPUT HANDLER ROUTER
+// CENTRALIZED INPUT HANDLER ROUTER (FIXED DYNAMIC UPDATE)
 // ==========================================
 function cleanSunnahInputRouter(e) {
     const input = e.target;
@@ -80,7 +79,7 @@ function cleanSunnahInputRouter(e) {
     let value = safeNumber(input.value);
     value = Math.max(0, Math.min(value, totalQuranPages));
 
-    // 🔥 FIXED: Floor calculation capped at 30 so page 604 stays perfectly inside Juz 30
+    // Calculate Juz based on input page values
     const newJuz = Math.min(Math.floor(value / pagesPerJuz), totalJuz);
     input.value = value;
 
@@ -95,7 +94,7 @@ function cleanSunnahInputRouter(e) {
     if (juzInput) juzInput.value = newJuz;
     if (juzProgress) juzProgress.value = newJuz;
 
-    // Update text indicators dynamically on-screen
+    // Update progress bar percentage labels instantly
     if (pagesPercentText && pagesPercentText.tagName === "P") {
         const percentPages = Math.round((value / totalQuranPages) * 100);
         pagesPercentText.textContent = `${percentPages}% (${value}/${totalQuranPages} pages)`;
@@ -105,7 +104,7 @@ function cleanSunnahInputRouter(e) {
         juzPercentText.textContent = `${percentJuz}% (${newJuz}/${totalJuz} Juz)`;
     }
 
-    // Force a structural content re-evaluation to switch the status badge instantly
+    // Pull start configurations to check the status level live
     const saved = loadSunnahState();
     const daysSinceStart = getDaysSinceStart(saved.startDate || new Date().toISOString().split("T")[0]);
     const expectedPages = Math.min(daysSinceStart * TARGET_PAGES_PER_DAY, totalQuranPages);
@@ -117,9 +116,10 @@ function cleanSunnahInputRouter(e) {
         status = "🚀 Ahead";
     }
 
-    const statusEl = document.querySelector(".quran-progress p strong:nth-of-type(4)");
-    if (statusEl && statusEl.parentElement) {
-        statusEl.parentElement.innerHTML = `<strong>Status:</strong> ${status}`;
+    // 🎯 FIXED: Direct ID selection prevents layout element corruption
+    const statusTextSpan = document.getElementById("quran-status-text");
+    if (statusTextSpan) {
+        statusTextSpan.textContent = " " + status;
     }
 
     saveSunnahProgress({
@@ -137,7 +137,6 @@ function loadSunnahTracker() {
 
     const saved = loadSunnahState();
 
-    // Fixed: Pull local calendar values directly to bypass UTC evening rollover bugs
     let startDate = saved.startDate;
     if (!startDate) {
         const d = new Date();
@@ -152,11 +151,8 @@ function loadSunnahTracker() {
     const daysSinceStart = getDaysSinceStart(startDate);
 
     const expectedPages = Math.min(daysSinceStart * TARGET_PAGES_PER_DAY, totalQuranPages);
-    
-    // 🔥 FIXED: Floor calculation capped at 30 so page 604 reads as Juz 30 loading initial states
     const juz = Math.min(Math.floor(pages / pagesPerJuz), totalJuz);
 
-    // Fixed: Strict evaluation rules to align with a 1 page/day target profile
     let status = "🟢 On Track";
     if (pages < expectedPages) {
         status = "🟠 Behind";
@@ -167,6 +163,7 @@ function loadSunnahTracker() {
     const percentPages = Math.round((pages / totalQuranPages) * 100);
     const percentJuz = Math.round((juz / totalJuz) * 100);
 
+    // 🎯 STRUCTURE OPTIMIZED: Clean ID added for real-time tracking updates
     container.innerHTML = `
         <h2>🕌 Sunnah Tracker</h2>
 
@@ -174,7 +171,7 @@ function loadSunnahTracker() {
             <p><strong>Start Date:</strong> ${startDate}</p>
             <p><strong>Day:</strong> ${daysSinceStart}</p>
             <p><strong>Expected Pages:</strong> ${expectedPages}</p>
-            <p><strong>Status:</strong> ${status}</p>
+            <p><strong>Status:</strong><span id="quran-status-text"> ${status}</span></p>
 
             <label for="quran-pages">Pages Read</label>
             <input id="quran-pages"
@@ -211,4 +208,4 @@ function loadSunnahTracker() {
 // EXPORT
 // ===============================
 window.loadSunnahTracker = loadSunnahTracker;
-    
+        
