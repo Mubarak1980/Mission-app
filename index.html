@@ -108,6 +108,14 @@ function getCurrentGradeSafe() {
     if (window.UI && typeof window.UI.currentGrade !== 'undefined') {
         return window.UI.currentGrade;
     }
+    try {
+        const saved = JSON.parse(localStorage.getItem("ui_state"));
+        if (saved && saved.grade) {
+            return Number(saved.grade) || 9;
+        }
+    } catch (e) {
+        console.warn("Direct storage fallback preview evaluation failed:", e);
+    }
     return 9; // Perfect fallback to prevent script execution blockages offline
 }
 
@@ -156,6 +164,11 @@ function hideSplashScreen() {
 
     splash.classList.add("hide");
     app.style.display = "block";
+    
+    // Ensure the interface layout defaults explicitly to 'study' mode at viewport mount
+    if (typeof window.loadSection === "function") {
+        window.loadSection("study", getCurrentGradeSafe());
+    }
     
     setTimeout(() => {
         app.style.opacity = "1";
@@ -214,5 +227,4 @@ window.addEventListener("DOMContentLoaded", async () => {
 });
 </script>
 </body>
-    </html>
-    
+</html>
