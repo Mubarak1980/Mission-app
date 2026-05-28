@@ -333,7 +333,9 @@ function loadDashboard() {
           </p>
           <p style="margin: 0; display: flex; justify-content: space-between; flex-wrap: nowrap; padding-bottom: 4px;">
             <span style="color: #8b949e;">📌 Base Target:</span> 
-            <span style="color: #00d4ff; font-weight: 700; white-space: nowrap;">${isFreeTimeDay ? 0 : originalBaseTargetValue} pages</span>
+            <span style="color: #00d4ff; font-weight: 700; white-space: nowrap;">
+              ${isFreeTimeDay ? `${originalBaseTargetValue} pages (Reserved)` : `${originalBaseTargetValue} pages`}
+            </span>
           </p>
         </div>
 
@@ -373,4 +375,4 @@ function loadDashboard() {
 // EXPORT
 // =====================================================
 window.loadDashboard = loadDashboard;
-          
+        
