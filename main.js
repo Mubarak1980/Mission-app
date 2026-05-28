@@ -257,7 +257,7 @@ function getSmartCycle() {
 =============================== */
 const UI = {
   currentGrade: 9,
-  currentSection: "study",
+  currentSection: "study", // Default fallback initialization anchor
 
   save() {
     Storage.set(
@@ -271,10 +271,17 @@ const UI = {
 
   load() {
     const saved = Storage.get("ui_state", null);
-    if (!saved) return;
+    
+    // 🔒 Always force layout entry space back to Study Tracker on fresh system loads/refreshes
+    this.currentSection = "study";
 
+    if (!saved) {
+      this.currentGrade = 9;
+      return;
+    }
+
+    // Retain your active grade selection cleanly across initializations
     this.currentGrade = Number(saved.grade) || 9;
-    this.currentSection = saved.section || "study";
   }
 };
 
@@ -453,4 +460,4 @@ window.isRunningStandalone = function () {
 }
 
 })();
-     
+       
