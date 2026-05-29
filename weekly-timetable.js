@@ -1,73 +1,126 @@
 "use strict";
 
 // =====================================================================
-// 📅 WEEKLY TIMETABLE (BRIDGE-INTEGRATED & GRADE-AWARE)
+// 📅 WEEKLY TIMETABLE (TIMEZONE-SAFE PRODUCTION MATRIX - UNIFIED)
 // =====================================================================
 
-window.loadWeeklyTimetable = (grade) => {
+function loadWeeklyTimetable() {
   const container = document.getElementById("main-content");
-  if (!container) return;
+  if (!container) {
+    console.error('[System] Main content container missing.');
+    return;
+  }
 
-  // 🛡️ Ensure clean slate to prevent layout mixing
-  container.innerHTML = ""; 
+  // Clear top progress tracking bar layout safely
+  const bar = document.getElementById("grade-progress-bar");
+  if (bar) bar.innerHTML = "";
 
-  // 1. Unified State Access (Bridge-Aware)
-  // We access the master data object to get the shared studyState
-  const masterData = window.DataService.get();
-  const state = masterData.studyState || { 
-      startDate: new Date().toISOString().split("T")[0], 
-      missedDays: 0, 
-      lastVisit: new Date().toISOString().split("T")[0] 
+  // Dynamic maximum data extraction
+  const pages = window.maxPagesByGrade || {
+    9:  { Math: 300, Physics: 200, Chemistry: 200, Biology: 200, English: 200 },
+    10: { Math: 300, Physics: 200, Chemistry: 200, Biology: 200, English: 200 },
+    11: { Math: 300, Physics: 200, Chemistry: 200, Biology: 200, English: 200 },
+    12: { Math: 300, Physics: 200, Chemistry: 200, Biology: 200, English: 200 }
   };
 
-  // 2. Calculation Logic
-  const todayStr = new Date().toISOString().split("T")[0];
-  const diffTime = Math.abs(new Date() - new Date(state.lastVisit));
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-  
-  if (diffDays > 1) {
-      state.missedDays = (state.missedDays || 0) + (diffDays - 1);
-  }
-  state.lastVisit = todayStr;
+  const gradeDays = { 9: 17, 10: 22, 11: 27, 12: 24 };
 
-  // 3. Save state back to Unified Bridge
+  // ==========================================
+  // UNIFIED BRIDGE-AWARE STATE CALCULATION
+  // ==========================================
+  const todayStr = new Date().toISOString().split("T")[0];
+  
+  // Access Unified Bridge
+  const masterData = window.DataService.get();
+  const state = masterData.studyState || { startDate: todayStr, missedDays: 0, lastVisit: todayStr };
+
+  const daysBetween = (a, b) => {
+    const diff = new Date(b).getTime() - new Date(a).getTime();
+    return Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)));
+  };
+
+  const missed = daysBetween(state.lastVisit || todayStr, todayStr);
+  if (missed > 1) {
+    state.missedDays = (state.missedDays || 0) + (missed - 1);
+  }
+
+  state.lastVisit = todayStr;
+  
+  // Save back to Unified Bridge
   masterData.studyState = state;
   window.DataService.set(masterData);
 
-  // 4. Data Extraction
-  const DAILY_TARGET = 64 + ((state.missedDays || 0) * 8);
-  // Fallback to empty object if grade is invalid to prevent crash
-  const pages = window.maxPagesByGrade?.[grade] || { Math: 0, Physics: 0, Chemistry: 0, Biology: 0, English: 0 };
-  const total = Object.values(pages).reduce((a, b) => a + b, 0);
+  const BASE_TARGET = 64;
+  const DAILY_TARGET = BASE_TARGET + ((state.missedDays || 0) * 8);
 
-  // 5. Pacing Allocations
-  const mathP = total > 0 ? Math.round((pages.Math / total) * DAILY_TARGET) : 0;
-  const physicsP = total > 0 ? Math.round((pages.Physics / total) * DAILY_TARGET) : 0;
-  const chemistryP = total > 0 ? Math.round((pages.Chemistry / total) * DAILY_TARGET) : 0;
-  const biologyP = total > 0 ? Math.round((pages.Biology / total) * DAILY_TARGET) : 0;
-  const englishP = Math.max(0, DAILY_TARGET - (mathP + physicsP + chemistryP + biologyP));
+  // ===================================================
+  // PRODUCTION UI COMPONENT RENDERING
+  // ===================================================
+  let rowsHtml = "";
 
-  // 6. Generate UI
-  container.innerHTML = `
-    <h2>📅 Adaptive Distribution (Grade ${grade || 'N/A'})</h2>
-    <div class="weekly-table-wrapper" style="overflow-x: auto;">
-      <p>Target: <strong>${DAILY_TARGET} pages/day</strong> | Missed: <strong>${state.missedDays}</strong></p>
-      <table class="weekly-table" style="width: 100%; min-width: 400px; border-collapse: collapse;">
+  [9, 10, 11, 12].forEach(g => {
+    const d = pages[g];
+
+    if (!d) {
+      rowsHtml += `<tr><td style="font-weight: 700; color: var(--primary);">Grade ${g}</td><td colspan="8" style="color: #ff4d4d; font-style: italic;">No core track data available</td></tr>`;
+      return;
+    }
+
+    const days = gradeDays[g] || 0;
+    const math = Number(d.Math) || 0;
+    const physics = Number(d.Physics) || 0;
+    const chemistry = Number(d.Chemistry) || 0;
+    const biology = Number(d.Biology) || 0;
+    const english = Number(d.English) || 0;
+    const total = math + physics + chemistry + biology + english;
+
+    if (total === 0) {
+      rowsHtml += `<tr><td style="font-weight: 700; color: var(--primary);">Grade ${g}</td><td>${days} days</td><td colspan="7" style="color: var(--muted); font-style: italic;">No allocation values registered</td></tr>`;
+      return;
+    }
+
+    const mathP = Math.round((math / total) * DAILY_TARGET);
+    const physicsP = Math.round((physics / total) * DAILY_TARGET);
+    const chemistryP = Math.round((chemistry / total) * DAILY_TARGET);
+    const biologyP = Math.round((biology / total) * DAILY_TARGET);
+    let englishP = Math.max(0, DAILY_TARGET - (mathP + physicsP + chemistryP + biologyP));
+
+    rowsHtml += `
+      <tr>
+        <td style="font-weight: 700; color: var(--primary);">Grade ${g}</td>
+        <td style="color: #ffffff;">${days} days</td>
+        <td>${mathP} p.</td>
+        <td>${physicsP} p.</td>
+        <td>${chemistryP} p.</td>
+        <td>${biologyP} p.</td>
+        <td>${englishP} p.</td>
+        <td style="font-weight: 700; color: var(--primary); background: var(--primary-soft); text-align: center;">${DAILY_TARGET}</td>
+        <td style="color: var(--muted); font-weight: 600;">${total}</td>
+      </tr>
+    `;
+  });
+
+  const innerWrapper = document.createElement("div");
+  innerWrapper.className = "timetable-view-container";
+  innerWrapper.innerHTML = `
+    <h2>📅 Adaptive Daily Distribution Projections</h2>
+    <p style="color: var(--muted); text-align: center; font-size: 14px; margin-bottom: 20px;">
+      Velocity metrics are calculated relative to missed-day variables.
+    </p>
+    <div class="weekly-table-wrapper">
+      <table class="weekly-table" style="min-width: 500px;">
         <thead>
-          <tr style="background: #1f242c; text-align: left;">
-            <th style="padding: 10px;">Subject</th>
-            <th style="padding: 10px;">Pages</th>
+          <tr>
+            <th>Grade</th><th>Days</th><th>Math</th><th>Phys</th><th>Chem</th><th>Bio</th><th>Eng</th>
+            <th style="text-align: center; background: #007acc;">Target</th><th>Total</th>
           </tr>
         </thead>
-        <tbody>
-          <tr><td style="padding: 8px;">Math</td><td style="padding: 8px;">${mathP}</td></tr>
-          <tr><td style="padding: 8px;">Physics</td><td style="padding: 8px;">${physicsP}</td></tr>
-          <tr><td style="padding: 8px;">Chemistry</td><td style="padding: 8px;">${chemistryP}</td></tr>
-          <tr><td style="padding: 8px;">Biology</td><td style="padding: 8px;">${biologyP}</td></tr>
-          <tr><td style="padding: 8px;">English</td><td style="padding: 8px;">${englishP}</td></tr>
-        </tbody>
+        <tbody>${rowsHtml}</tbody>
       </table>
     </div>
   `;
-};
-        
+
+  container.replaceChildren(innerWrapper);
+}
+
+window.loadWeeklyTimetable = loadWeeklyTimetable;
