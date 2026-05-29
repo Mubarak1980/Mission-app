@@ -31,6 +31,8 @@
             background-color: #0b0f14 !important;
             margin: 0;
             padding: 0;
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
         }
     </style>
 </head>
@@ -48,12 +50,12 @@
     
     <h1 id="app-time-heading">MISSION</h1>
 
-    <div class="section-buttons">
-        <button onclick="if(typeof loadSection === 'function') { loadSection('study', getCurrentGradeSafe()); }">Study Tracker</button>
-        <button onclick="if(typeof loadSection === 'function') { loadSection('timetable'); }">Weekly Timetable</button>
-        <button onclick="if(typeof loadSection === 'function') { loadSection('dashboard'); }">Dashboard</button>
-        <button onclick="if(typeof loadSection === 'function') { loadSection('top-student'); }">Top Student Mode</button>
-        <button onclick="if(typeof loadSection === 'function') { loadSection('sunnah'); }">Sunnah Tracker</button>
+    <div id="app-navigation-container" class="section-buttons">
+        <button data-target="study">Study Tracker</button>
+        <button data-target="timetable">Weekly Timetable</button>
+        <button data-target="dashboard">Dashboard</button>
+        <button data-target="top-student">Top Student Mode</button>
+        <button data-target="sunnah">Sunnah Tracker</button>
     </div>
 
     <div style="width: 100%; box-sizing: border-box; padding: 0 4px;">
@@ -63,15 +65,15 @@
     <main id="main-content"></main>
 
     <div id="grade-nav">
-        <button onclick="if(typeof previousGrade === 'function') previousGrade();" id="prev-btn">Previous</button>
-        <button onclick="if(typeof nextGrade === 'function') nextGrade();" id="next-btn">Next</button>
+        <button id="prev-btn">Previous</button>
+        <button id="next-btn">Next</button>
     </div>
 </div>
 
 <script src="cordova.js"></script>
 
 <script src="./data.js"></script>
-<script src="./Study-tracker.js"></script>
+<script src="./Storage-bridge.js"></script> <script src="./Study-tracker.js"></script>
 <script src="./weekly-timetable.js"></script>
 <script src="./dashboard.js"></script>
 <script src="./top-student-mode.js"></script>
@@ -86,7 +88,6 @@
    ========================================================== */
 let deferredPrompt = null;
 let isRefreshing = false;
-let hasAutomatedPromptFired = false;
 
 /* ==========================================================
    📱 ELITE NATIVE STANDALONE REALM DETECTION
@@ -110,6 +111,13 @@ function getCurrentGradeSafe() {
     if (window.UI && typeof window.UI.currentGrade !== 'undefined') {
         return window.UI.currentGrade;
     }
+    
+    // Integrates seamlessly with your unified cross-platform engine layout
+    if (window.Storage && typeof window.Storage.get === "function") {
+        const state = window.Storage.get("ui_state", {});
+        return Number(state.grade) || 9;
+    }
+
     try {
         const saved = JSON.parse(localStorage.getItem("ui_state"));
         if (saved && saved.grade) {
@@ -122,24 +130,13 @@ function getCurrentGradeSafe() {
 }
 
 /* ==========================================================
-   🛑 INTERCEPT AUTOMATIC BROWSER INSTALLATION BLOCKS & AUTO-PROMPT
+   🛑 INTERCEPT AUTOMATIC BROWSER INSTALLATION BLOCKS
 ========================================================== */
 window.addEventListener("beforeinstallprompt", (e) => {
     e.preventDefault();
     if (isRunningStandalone()) return false;
-
     deferredPrompt = e;
-    if (!hasAutomatedPromptFired) {
-        hasAutomatedPromptFired = true;
-        setTimeout(() => {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                deferredPrompt.userChoice.then((choiceResult) => {
-                    if (choiceResult.outcome === "accepted") deferredPrompt = null;
-                }).catch(err => console.error("Auto prompt evaluation rejected:", err));
-            }
-        }, 800); 
-    }
+    // Auto-popups removed to eliminate input focus clipping bugs on high-end mobile devices
     return false;
 });
 
@@ -199,20 +196,55 @@ if ("serviceWorker" in navigator) {
 }
 
 /* ==========================================================
+   🛠️ SECURE CENTRAL ROUTER EVENT DELEGATION
+========================================================== */
+function initializeNavigationListeners() {
+    const navContainer = document.getElementById("app-navigation-container");
+    if (navContainer) {
+        navContainer.addEventListener("click", (e) => {
+            const btn = e.target.closest("button");
+            if (!btn || !btn.dataset.target) return;
+            
+            const target = btn.dataset.target;
+            if (typeof window.loadSection === "function") {
+                if (target === "study") {
+                    window.loadSection("study", getCurrentGradeSafe());
+                } else {
+                    window.loadSection(target);
+                }
+            }
+        });
+    }
+
+    const prevBtn = document.getElementById("prev-btn");
+    const nextBtn = document.getElementById("next-btn");
+
+    if (prevBtn) {
+        prevBtn.addEventListener("click", () => {
+            if (typeof window.previousGrade === "function") window.previousGrade();
+        });
+    }
+    if (nextBtn) {
+        nextBtn.addEventListener("click", () => {
+            if (typeof window.nextGrade === "function") window.nextGrade();
+        });
+    }
+}
+
+/* ==========================================================
    🚀 FRAMEWORK PIPELINE BOOTSTRAP INITIALIZATION
 ========================================================== */
 window.addEventListener("DOMContentLoaded", async () => {
     try {
+        initializeNavigationListeners();
         await registerServiceWorker();
         
-        // Handle physical hardware synchronization safely
         if (window.cordova) {
             document.addEventListener("deviceready", () => {
-                // Confirm tracking components are fully loaded before rendering the active layer
-                setTimeout(hideSplashScreen, 450);
+                setTimeout(hideSplashScreen, 350);
             }, false);
         } else {
-            setTimeout(hideSplashScreen, 450);
+            setTimeout(hideSplashScreen, 350);
         }
     } catch (err) {
         console.error("🛑 Operational startup aborted:", err);
