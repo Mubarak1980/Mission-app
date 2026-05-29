@@ -19,7 +19,7 @@ window.DataService = {
         startDate: new Date().toISOString().split("T")[0], 
         cycleNumber: 1, 
         pages: 0,
-        ui: { section: "study", grade: 9 } // Default UI state
+        ui: { section: "study", grade: 9 }
     });
   },
 
@@ -48,9 +48,11 @@ window.DataService = {
               const reader = new FileReader();
               reader.onloadend = function() {
                 if (this.result) {
-                  window.cachedNativeData = JSON.parse(this.result);
+                  try {
+                    window.cachedNativeData = JSON.parse(this.result);
+                  } catch (e) { window.cachedNativeData = {}; }
                   window.isNativeStorageReady = true;
-                  localStorage.setItem(window.DataService.STORAGE_KEY, JSON.stringify(window.cachedNativeData[window.DataService.STORAGE_KEY]));
+                  localStorage.setItem(window.DataService.STORAGE_KEY, JSON.stringify(window.cachedNativeData[window.DataService.STORAGE_KEY] || {}));
                 }
                 if (callback) callback();
               };
@@ -82,6 +84,38 @@ window.UI = {
 };
 
 /* ===============================
+   ROUTING & UI NAVIGATION
+=============================== */
+const SectionMap = {
+  study: "loadStudySection",
+  timetable: "loadWeeklyTimetable",
+  dashboard: "loadDashboard",
+  sunnah: "loadSunnahTracker"
+};
+
+window.updateNavUI = (type) => {
+    document.querySelectorAll('.nav-button').forEach(btn => btn.classList.remove('active'));
+    const activeBtn = document.querySelector(`[onclick*="${type}"]`);
+    if (activeBtn) activeBtn.classList.add('active');
+};
+
+window.loadSection = (type, grade) => {
+  const mainContent = document.getElementById("main-content");
+  if (!mainContent) return;
+
+  mainContent.innerHTML = ""; // 🛡️ Clear old content
+  const functionName = SectionMap[type];
+  
+  if (window[functionName]) {
+      window.UI.save(type, grade);
+      window.updateNavUI(type);
+      window[functionName](grade);
+  } else {
+      console.error(`Section ${type} not found.`);
+  }
+};
+
+/* ===============================
    BOOTSTRAP ENGINE
 =============================== */
 (() => {
@@ -94,25 +128,13 @@ window.UI = {
     };
 
     window.DataService.initNativeFileSystem(() => {
-        // Automatically restore the last section on boot
         const lastUI = window.UI.load();
         window.loadSection(lastUI.section, lastUI.grade);
     });
     
-    console.log("🚀 Engine Initialized: UI Persistence Active.");
+    console.log("🚀 Engine Initialized: Unified Bridge & UI Persistence Active.");
   } catch (err) {
     console.error("Critical Engine Failure:", err);
   }
 })();
-
-/* ===============================
-   ROUTING
-=============================== */
-window.loadSection = (type, grade) => {
-  const map = { study: "loadStudySection", dashboard: "loadDashboard", timetable: "loadWeeklyTimetable" };
-  if (window[map[type]]) {
-      window.UI.save(type, grade); // Persist selection
-      window[map[type]](grade);
-  }
-};
                
