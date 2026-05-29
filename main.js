@@ -1,35 +1,32 @@
 "use strict";
 
 /* =====================================================
-   📘 MAIN ENGINE (UNIFIED STORAGE BRIDGE)
-   Everything now runs through window.DataService
+   📘 MAIN ENGINE (UNIFIED STORAGE & UI PERSISTENCE)
 ===================================================== */
-
 window.NATIVE_FILE_NAME = "mission_app_progress.json";
 window.cachedNativeData = window.cachedNativeData || {}; 
 window.isNativeStorageReady = false;
 
 window.DataService = {
-  // Use a single Source of Truth
   STORAGE_KEY: "study_progress",
 
   get(fallback) {
-    // 1. Check if we have loaded native phone storage
     if (window.isNativeStorageReady && window.cachedNativeData[this.STORAGE_KEY]) {
       return window.cachedNativeData[this.STORAGE_KEY];
     }
-    // 2. Fallback to localStorage
     const raw = localStorage.getItem(this.STORAGE_KEY);
-    return raw ? JSON.parse(raw) : (fallback || { startDate: new Date().toISOString().split("T")[0], cycleNumber: 1, pages: 0 });
+    return raw ? JSON.parse(raw) : (fallback || { 
+        startDate: new Date().toISOString().split("T")[0], 
+        cycleNumber: 1, 
+        pages: 0,
+        ui: { section: "study", grade: 9 } // Default UI state
+    });
   },
 
   set(data) {
-    // Update local cache
     window.cachedNativeData[this.STORAGE_KEY] = data;
-    // Update localStorage
     localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
     
-    // Mirror to Native File System if on mobile
     if (window.isNativeStorageReady && window.cordova?.file) {
       const path = cordova.file.dataDirectory;
       window.resolveLocalFileSystemURL(path, (dir) => {
@@ -71,6 +68,20 @@ window.DataService = {
 };
 
 /* ===============================
+   UI STATE MANAGEMENT
+=============================== */
+window.UI = {
+    save(section, grade) {
+        const state = window.DataService.get();
+        state.ui = { section, grade };
+        window.DataService.set(state);
+    },
+    load() {
+        return window.DataService.get().ui || { section: "study", grade: 9 };
+    }
+};
+
+/* ===============================
    BOOTSTRAP ENGINE
 =============================== */
 (() => {
@@ -82,10 +93,26 @@ window.DataService = {
       12: { Math: 416, Physics: 177, Chemistry: 287, Biology: 354, English: 263 }
     };
 
-    window.DataService.initNativeFileSystem();
-    console.log("🚀 Engine Initialized: Modular Data Bridge Active.");
+    window.DataService.initNativeFileSystem(() => {
+        // Automatically restore the last section on boot
+        const lastUI = window.UI.load();
+        window.loadSection(lastUI.section, lastUI.grade);
+    });
+    
+    console.log("🚀 Engine Initialized: UI Persistence Active.");
   } catch (err) {
     console.error("Critical Engine Failure:", err);
   }
 })();
-  
+
+/* ===============================
+   ROUTING
+=============================== */
+window.loadSection = (type, grade) => {
+  const map = { study: "loadStudySection", dashboard: "loadDashboard", timetable: "loadWeeklyTimetable" };
+  if (window[map[type]]) {
+      window.UI.save(type, grade); // Persist selection
+      window[map[type]](grade);
+  }
+};
+               
