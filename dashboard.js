@@ -5,13 +5,10 @@ function loadDashboard() {
     const main = document.getElementById("main-content");
     if (!main) return;
 
-    // 1. Data Integrity: Using our new Bridge
     if (typeof window.maxPagesByGrade === 'undefined') {
         throw new Error("Grade configuration not loaded.");
     }
 
-    // 2. Data Retrieval via Bridge
-    const state = window.DataService.get(); 
     const subjects = ["Math", "Physics", "Chemistry", "Biology", "English"];
     const grades = [9, 10, 11, 12];
 
@@ -21,10 +18,13 @@ function loadDashboard() {
     subjects.forEach(subject => {
       let totalDone = 0, totalMax = 0;
       grades.forEach(grade => {
-        // Tracker still uses its specific keys, but we safely read them
-        const saved = JSON.parse(localStorage.getItem(`grade_${grade}_progress`) || "{}");
+        // FIXED: Using DataService instead of localStorage
+        const saved = window.DataService.get(`grade_${grade}_progress`) || {};
         const max = Number(window.maxPagesByGrade?.[grade]?.[subject]) || 0;
-        totalDone += Math.min(Number(saved?.[subject]) || 0, max);
+        
+        // Safety check to handle missing subject keys
+        const done = Math.min(Number(saved[subject]) || 0, max);
+        totalDone += done;
         totalMax += max;
       });
 
@@ -37,7 +37,7 @@ function loadDashboard() {
         </div>`;
     });
 
-    // 4. Metrics Render via Bridge
+    // 4. Metrics Render
     const metrics = (typeof window.getSmartCycle === "function") ? window.getSmartCycle() : { actualPages: 0, TOTAL_PAGES: 5705 };
     
     html += `</div>
@@ -55,3 +55,4 @@ function loadDashboard() {
 }
 
 window.loadDashboard = loadDashboard;
+      
