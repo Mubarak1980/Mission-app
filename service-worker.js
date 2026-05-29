@@ -1,8 +1,8 @@
 "use strict";
 
 // ==========================================================
-// 🚀 ENTERPRISE PRODUCTION SERVICE WORKER (V21.0 - GITHUB FIXED)
-// =====================================================
+// 🚀 ENTERPRISE PRODUCTION SERVICE WORKER (V21.1 - MOBILITY LOCKED)
+// ==========================================================
 
 const CACHE_NAME = "mission-cache-v67"; // Bumped version to force cache overwrite
 const LOG_STYLE = "color: #00d4ff; font-weight: bold; background: #0b0f14; padding: 2px 6px; border-radius: 4px;";
@@ -24,10 +24,8 @@ const APP_SHELL = [
   "./icon-512.png"
 ];
 
-// Helper to reliably create absolute URLs matching how caches store them
-function toAbsolute(url) {
-  return new URL(url, self.location.origin + self.location.pathname).toString().replace(/\/index\.html$/, "/");
-}
+// 🔒 FIXED: Base URL tracking scoped specifically to repo folder root instead of script path name location
+const BASE_URL_STR = new URL("./", self.location.href).toString();
 
 // ==========================================================
 // 📦 1. INSTALLATION EVENT (Pre-Caching)
@@ -39,9 +37,8 @@ self.addEventListener("install", (event) => {
     caches.open(CACHE_NAME).then((cache) => {
       console.log("%c[SW] Pre-caching core application shell bundle...", LOG_STYLE);
       
-      // Map everything safely using our base pathname strategy
       const absoluteUrls = APP_SHELL.map(resource => {
-        return new URL(resource, self.location.href).toString();
+        return new URL(resource, BASE_URL_STR).toString();
       });
       
       return Promise.all(
@@ -73,7 +70,6 @@ self.addEventListener("activate", (event) => {
         })
       );
     }).then(() => self.clients.claim().then(() => {
-      // Broadcast activation hook back to viewport layers cleanly
       return self.clients.matchAll().then((clients) => {
         clients.forEach((client) => {
           client.postMessage({ type: "SW_ACTIVATED" });
@@ -90,40 +86,39 @@ self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 
   const requestUrl = new URL(event.request.url);
-  
-  // Create a clean lookup URL path
   let lookupUrl = event.request.url;
 
   // 🎯 GITHUB SUBFOLDER MATCHING GUARANTEE
-  // If the app is requesting the root domain, the folder path, or index.html, match it directly to our cached base index
   if (
     requestUrl.pathname === "/Mission-app" || 
     requestUrl.pathname === "/Mission-app/" || 
     requestUrl.pathname === "/Mission-app/index.html"
   ) {
-    lookupUrl = new URL("./index.html", self.location.href).toString();
+    lookupUrl = new URL("./index.html", BASE_URL_STR).toString();
   }
 
   event.respondWith(
     caches.match(lookupUrl, { ignoreSearch: true }).then((cachedResponse) => {
       if (cachedResponse) {
-        return cachedResponse; // Instant load out of local hardware memory!
+        return cachedResponse; 
       }
 
-      // If it isn't in the cache shell, try to pull it from the network dynamically
       return fetch(event.request)
         .then((networkResponse) => {
           if (networkResponse && networkResponse.status === 200) {
             const responseToCache = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseToCache));
+            const responseUrl = new URL(networkResponse.url);
+            
+            // 🔒 FIXED: Restricts cache storage mutations strictly to your offline assets layout profile path boundaries
+            if (responseUrl.origin === self.location.origin && responseUrl.pathname.startsWith(requestUrl.pathname)) {
+               caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseToCache));
+            }
           }
           return networkResponse;
         })
         .catch((err) => {
           console.log("%c[SW] System offline. Invoking clean structural fallbacks.", WARN_STYLE);
-          
-          // Absolute fallback rule: if everything else fails, return the index file directly to avoid the browser error screen
-          return caches.match(new URL("./index.html", self.location.href).toString(), { ignoreSearch: true });
+          return caches.match(new URL("./index.html", BASE_URL_STR).toString(), { ignoreSearch: true });
         });
     })
   );
@@ -137,3 +132,4 @@ self.addEventListener("message", (event) => {
     self.skipWaiting();
   }
 });
+    
