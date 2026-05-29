@@ -1,459 +1,91 @@
 "use strict";
 
-// =====================================================
-// 📘 MAIN ENGINE (EXPOSED HARDWARE STORAGE PRODUCTION ARCHITECTURE)
-// =====================================================
+/* =====================================================
+   📘 MAIN ENGINE (UNIFIED STORAGE BRIDGE)
+   Everything now runs through window.DataService
+===================================================== */
 
-// Global Storage Allocation Bridge (Exposed globally BEFORE IIFE capsule)
 window.NATIVE_FILE_NAME = "mission_app_progress.json";
 window.cachedNativeData = window.cachedNativeData || {}; 
 window.isNativeStorageReady = false;
 
-window.Storage = {
-  // Read Data
-  get(key, fallback) {
-    if (window.isNativeStorageReady && window.cachedNativeData && window.cachedNativeData[key] !== undefined) {
-      return window.cachedNativeData[key];
+window.DataService = {
+  // Use a single Source of Truth
+  STORAGE_KEY: "study_progress",
+
+  get(fallback) {
+    // 1. Check if we have loaded native phone storage
+    if (window.isNativeStorageReady && window.cachedNativeData[this.STORAGE_KEY]) {
+      return window.cachedNativeData[this.STORAGE_KEY];
     }
-    try {
-      const raw = localStorage.getItem(key);
-      if (!raw) return fallback;
-      return JSON.parse(raw);
-    } catch {
-      return fallback;
-    }
+    // 2. Fallback to localStorage
+    const raw = localStorage.getItem(this.STORAGE_KEY);
+    return raw ? JSON.parse(raw) : (fallback || { startDate: new Date().toISOString().split("T")[0], cycleNumber: 1, pages: 0 });
   },
 
-  // Save Data
-  set(key, value) {
-    window.cachedNativeData[key] = value;
+  set(data) {
+    // Update local cache
+    window.cachedNativeData[this.STORAGE_KEY] = data;
+    // Update localStorage
+    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
     
-    try {
-      localStorage.setItem(key, JSON.stringify(value));
-    } catch (e) {
-      console.warn("Browser storage mirror backup skipped");
-    }
-
-    if (window.isNativeStorageReady && window.cordova && window.cordova.file) {
-      const dataStringToSave = JSON.stringify(window.cachedNativeData);
-      const path = cordova.file.dataDirectory; 
-
+    // Mirror to Native File System if on mobile
+    if (window.isNativeStorageReady && window.cordova?.file) {
+      const path = cordova.file.dataDirectory;
       window.resolveLocalFileSystemURL(path, (dir) => {
-        dir.getFile(window.NATIVE_FILE_NAME, { create: true, exclusive: false }, (fileEntry) => {
+        dir.getFile(window.NATIVE_FILE_NAME, { create: true }, (fileEntry) => {
           fileEntry.createWriter((fileWriter) => {
-            fileWriter.onwriteend = () => {
-              console.log("💾 SUCCESS: Progress saved directly to phone internal storage!");
-            };
-            fileWriter.onerror = (e) => console.error("Internal storage write failed:", e);
-
-            const blob = new Blob([dataStringToSave], { type: "text/plain" });
-            fileWriter.write(blob);
+            fileWriter.write(new Blob([JSON.stringify(window.cachedNativeData)], { type: "text/plain" }));
           });
         });
       });
     }
   },
 
-  // Read internal device storage hidden file on boot
   initNativeFileSystem(callback) {
-    let completed = false;
-    const executeCallbackOnce = () => {
-      if (!completed) {
-        completed = true;
-        if (typeof callback === "function") callback();
-      }
-    };
-
-    const loadFromHardwareFile = () => {
-      if (window.cordova && window.cordova.file) {
-        const path = cordova.file.dataDirectory;
-        window.resolveLocalFileSystemURL(path, (dir) => {
-          dir.getFile(window.NATIVE_FILE_NAME, { create: true, exclusive: false }, (fileEntry) => {
+    const load = () => {
+      if (window.cordova?.file) {
+        window.resolveLocalFileSystemURL(cordova.file.dataDirectory, (dir) => {
+          dir.getFile(window.NATIVE_FILE_NAME, { create: true }, (fileEntry) => {
             fileEntry.file((file) => {
               const reader = new FileReader();
               reader.onloadend = function() {
-                try {
-                  if (this.result) {
-                    window.cachedNativeData = JSON.parse(this.result);
-                    window.isNativeStorageReady = true;
-                    console.log("📥 SUCCESS: Loaded progress from phone internal storage.");
-                    
-                    for (const key in window.cachedNativeData) {
-                      localStorage.setItem(key, JSON.stringify(window.cachedNativeData[key]));
-                    }
-                  } else {
-                    window.isNativeStorageReady = true;
-                  }
-                } catch (e) {
-                  console.error("Error parsing internal file data:", e);
-                  window.isNativeStorageReady = true; 
+                if (this.result) {
+                  window.cachedNativeData = JSON.parse(this.result);
+                  window.isNativeStorageReady = true;
+                  localStorage.setItem(window.DataService.STORAGE_KEY, JSON.stringify(window.cachedNativeData[window.DataService.STORAGE_KEY]));
                 }
-                executeCallbackOnce();
+                if (callback) callback();
               };
               reader.readAsText(file);
             });
-          }, () => { window.isNativeStorageReady = true; executeCallbackOnce(); });
-        }, () => { window.isNativeStorageReady = true; executeCallbackOnce(); });
+          });
+        });
       } else {
-        window.isNativeStorageReady = false; 
-        executeCallbackOnce();
+        window.isNativeStorageReady = true;
+        if (callback) callback();
       }
     };
-
-    // 🔒 FIXED: Safety thread verification loop checks for pre-fired device conditions
-    if (window.cordova) {
-      if (window.cordova.file) {
-         loadFromHardwareFile();
-      } else {
-         document.addEventListener("deviceready", loadFromHardwareFile, false);
-      }
-    } else {
-      // Extended browser safe execution delay window prevents state sync overrides
-      setTimeout(() => {
-        if (!window.isNativeStorageReady) {
-          console.log("ℹ️ Running in browser standard storage environment.");
-          executeCallbackOnce();
-        }
-      }, 150);
-    }
+    window.cordova ? document.addEventListener("deviceready", load, false) : load();
   }
 };
 
+/* ===============================
+   BOOTSTRAP ENGINE
+=============================== */
 (() => {
+  try {
+    window.maxPagesByGrade = {
+      9: { Math: 363, Physics: 174, Chemistry: 175, Biology: 164, English: 223 },
+      10: { Math: 385, Physics: 249, Chemistry: 298, Biology: 174, English: 316 },
+      11: { Math: 479, Physics: 329, Chemistry: 330, Biology: 284, English: 283 },
+      12: { Math: 416, Physics: 177, Chemistry: 287, Biology: 354, English: 263 }
+    };
 
-try {
-
-/* ===============================
-   🔒 STORAGE PROTECTION ENGINE (PERSISTENT API TIER)
-=============================== */
-async function enforceDataPersistence() {
-    try {
-        if (navigator.storage && navigator.storage.persist) {
-            let alreadyPersisted = await navigator.storage.persisted();
-            if (!alreadyPersisted) {
-                alreadyPersisted = await navigator.storage.persist();
-            }
-            if (alreadyPersisted) {
-                console.log("🔒 Storage Protection: ACTIVE.");
-            }
-        }
-    } catch (error) {
-        console.error("Persistence Engine failed to initialize:", error);
-    }
-}
-
-/* ===============================
-   MAX PAGES DATA
-=============================== */
-window.maxPagesByGrade = window.maxPagesByGrade && Object.keys(window.maxPagesByGrade).length ? window.maxPagesByGrade : {
-  9: { Math: 363, Physics: 174, Chemistry: 175, Biology: 164, English: 223 },
-  10: { Math: 385, Physics: 249, Chemistry: 298, Biology: 174, English: 316 },
-  11: { Math: 479, Physics: 329, Chemistry: 330, Biology: 284, English: 283 },
-  12: { Math: 416, Physics: 177, Chemistry: 287, Biology: 354, English: 263 }
-};
-
-/* ===============================
-   CONSTANTS
-=============================== */
-const GRADES = [9, 10, 11, 12];
-const SUBJECTS = ["Math", "Physics", "Chemistry", "Biology", "English"];
-const TOTAL_DAYS = 90;
-const TOTAL_PAGES = 5705;
-
-/* ===============================
-   DATE UTIL (LOCAL-SAFE TIMEZONE ADJUSTMENT)
-=============================== */
-function todayISO() {
-  const d = new Date();
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-/* ===============================
-   CYCLE ENGINE
-=============================== */
-function getCycleState() {
-  const today = todayISO();
-  // 🔒 FIXED: Storage profile aligned to "studyState" key to ensure structural harmony with dashboard.js
-  const state = window.Storage.get("studyState", { startDate: today, cycleNumber: 1 });
-  const start = new Date(state.startDate);
-  const now = new Date(today);
-
-  const diffDays = Math.floor(
-    (Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) -
-     Date.UTC(start.getFullYear(), start.getMonth(), start.getDate())) / 86400000
-  );
-
-  const cycleDay = Math.min(Math.max(1, diffDays + 1), TOTAL_DAYS);
-  const result = {
-    ...state,
-    cycleDay,
-    remainingDays: Math.max(0, TOTAL_DAYS - cycleDay)
-  };
-
-  window.Storage.set("studyState", result);
-  return result;
-}
-
-/* ===============================
-   EXPECTED PROGRESS
-=============================== */
-function getExpectedProgress() {
-  const cycle = getCycleState();
-  return {
-    cycleDay: Number(cycle.cycleDay) || 1,
-    remainingDays: Number(cycle.remainingDays) || 0,
-    expectedPages: Math.round(((Number(cycle.cycleDay) || 1) / TOTAL_DAYS) * TOTAL_PAGES)
-  };
-}
-
-/* ===============================
-   ACTUAL PROGRESS
-=============================== */
-function getActualProgress() {
-  let total = 0;
-  for (const grade of GRADES) {
-    const saved = window.Storage.get(`grade_${grade}_progress`, {});
-    for (const subject of SUBJECTS) {
-      const value = Number(saved?.[subject]);
-      total += isNaN(value) ? 0 : value;
-    }
+    window.DataService.initNativeFileSystem();
+    console.log("🚀 Engine Initialized: Modular Data Bridge Active.");
+  } catch (err) {
+    console.error("Critical Engine Failure:", err);
   }
-  return Math.max(0, Math.round(total));
-}
-
-/* ===============================
-   DELAY STATUS
-=============================== */
-function getDelayStatus() {
-  const expected = getExpectedProgress();
-  const actual = getActualProgress();
-  const gap = actual - expected.expectedPages;
-
-  let status = "🟢 ON TRACK";
-  if (gap >= 300) status = "🟢 AHEAD 🚀";
-  else if (gap >= 0) status = "🟢 ON TRACK";
-  else if (gap >= -150) status = "🟡 SLIGHTLY BEHIND";
-  else if (gap >= -400) status = "🟠 BEHIND";
-  else status = "🔴 CRITICAL";
-
-  return { ...expected, actualPages: actual, gap, status };
-}
-
-/* ===============================
-   SMART CYCLE ENGINE
-=============================== */
-function getSmartCycle() {
-  const cycle = getDelayStatus();
-  const remainingDays = Math.max(1, TOTAL_DAYS - cycle.cycleDay);
-  const gap = Number(cycle.gap) || 0;
-  const baseTarget = TOTAL_PAGES / TOTAL_DAYS;
-
-  let catchUpPerDay = 0;
-  if (gap < -50) {
-    catchUpPerDay = Math.ceil(Math.abs(gap) / remainingDays);
-  }
-  catchUpPerDay = Math.min(catchUpPerDay, 40);
-
-  let dailyTarget = baseTarget + catchUpPerDay;
-  dailyTarget = Math.max(25, Math.min(dailyTarget, 90));
-
-  let intensity = "SAFE";
-  if (dailyTarget > 75) intensity = "HIGH";
-  else if (dailyTarget > 60) intensity = "MODERATE";
-
-  let pressure = "ON_TRACK";
-  if (gap < -500) pressure = "CRITICAL";
-  else if (gap < -250) pressure = "HIGH";
-  else if (gap < -50) pressure = "LOW_BACKLOG";
-
-  const structuralBase = Math.round(baseTarget);
-  const actualPages = cycle.actualPages || 0;
-  const totalPagesPercentage = Math.min(100, Math.max(0, parseFloat(((actualPages / TOTAL_PAGES) * 100).toFixed(1))));
-  const remainingPages = Math.max(0, TOTAL_PAGES - actualPages);
-
-  return {
-    ...cycle,
-    remainingDays,
-    catchUpPerDay,
-    dailyTarget: Math.round(dailyTarget),
-    intensity,
-    pressure,
-    baseTarget: structuralBase > 0 ? structuralBase : 63,
-    TOTAL_PAGES,
-    totalPagesPercentage,
-    remainingPages
-  };
-}
-
-/* ===============================
-   UI STATE
-=============================== */
-const UI = {
-  currentGrade: 9,
-  currentSection: "study",
-
-  save() {
-    window.Storage.set("ui_state", { grade: this.currentGrade, section: this.currentSection });
-  },
-
-  load() {
-    const saved = window.Storage.get("ui_state", null);
-    this.currentSection = "study";
-    if (!saved) {
-      this.currentGrade = 9;
-      return;
-    }
-    this.currentGrade = Number(saved.grade) || 9;
-  }
-};
-
-/* ===============================
-   NAVIGATION INTERFACE HOOKS
-=============================== */
-const Nav = {
-  nav: null, prev: null, next: null,
-  init() {
-    this.nav = document.getElementById("grade-nav");
-    this.prev = document.getElementById("prev-btn");
-    this.next = document.getElementById("next-btn");
-  },
-  update() {
-    if (!this.nav || !this.prev || !this.next) return;
-    if (UI.currentSection === "study") {
-      this.nav.style.display = "flex";
-      this.prev.disabled = UI.currentGrade <= 9;
-      this.next.disabled = UI.currentGrade >= 12;
-    } else {
-      this.nav.style.display = "none";
-    }
-  }
-};
-
-/* ===============================
-   SAFE EXTERNAL VIEW INTERACTION CALLS
-=============================== */
-function safeCall(fnName, message) {
-  if (typeof window[fnName] !== "function") {
-    const main = document.getElementById("main-content");
-    if (main) {
-      main.innerHTML = `<p style="padding:20px; color:#ff4d4d; text-align:center; font-weight: bold;">${message}</p>`;
-    }
-    console.error(`Missing function: ${fnName}`);
-    return false;
-  }
-  return true;
-}
-
-/* ===============================
-   SECTION ROUTER MAP
-=============================== */
-const SectionMap = {
-  study: () => {
-    if (!safeCall("loadStudySection", "Study Tracker failed to load")) return;
-    window.loadStudySection(UI.currentGrade);
-  },
-  timetable: () => {
-    if (!safeCall("loadWeeklyTimetable", "Weekly Timetable failed to load")) return;
-    window.loadWeeklyTimetable();
-  },
-  dashboard: () => {
-    if (!safeCall("loadDashboard", "Dashboard failed to load")) return;
-    window.loadDashboard();
-  },
-  "top-student": () => {
-    if (!safeCall("loadTopStudentMode", "Top Student Mode failed to load")) return;
-    window.loadTopStudentMode();
-  },
-  sunnah: () => {
-    if (!safeCall("loadSunnahTracker", "Sunnah Tracker failed to load")) return;
-    window.loadSunnahTracker();
-  }
-};
-
-/* ===============================
-   LOAD GLOBAL SECTION LAYER
-=============================== */
-function loadSection(type, grade) {
-  if (typeof type !== "string") type = "study";
-  UI.currentSection = type;
-  const parsedGrade = Number(grade);
-
-  if (!isNaN(parsedGrade)) {
-    UI.currentGrade = Math.min(12, Math.max(9, parsedGrade));
-  }
-
-  UI.save();
-  Nav.update();
-
-  if (typeof SectionMap[type] === "function") SectionMap[type]();
-}
-
-function nextGrade() { if (UI.currentGrade < 12) loadSection("study", UI.currentGrade + 1); }
-function previousGrade() { if (UI.currentGrade > 9) loadSection("study", UI.currentGrade - 1); }
-
-/* ===============================
-   INITIALIZE CORE APPLICATION WORKSPACE
-=============================== */
-let initialized = false;
-
-function initApp() {
-  if (initialized) return;
-  initialized = true;
-
-  window.Storage.initNativeFileSystem(() => {
-    UI.load();
-    Nav.init();
-    getCycleState();
-    enforceDataPersistence();
-
-    console.log("🚀 Mission App Ready: HYBRID HARDWARE TRACKING ACTIVE");
-
-    requestAnimationFrame(() => {
-      loadSection(UI.currentSection, UI.currentGrade);
-    });
-  });
-}
-
-/* ===============================
-   SERVICE WORKER CONTROL INTERACTION MESSAGES
-=============================== */
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.addEventListener("message", (event) => {
-    if (event.data?.type === "SW_ACTIVATED") {
-      console.log("✅ Service Worker Updated");
-    }
-  });
-}
-
-/* ===============================
-   BOOTSTRAP INTERFACE TRIGGER
-=============================== */
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", initApp);
-} else {
-  initApp();
-}
-
-/* ===============================
-   EXPORTS
-=============================== */
-window.loadSection = loadSection;
-window.nextGrade = nextGrade;
-window.previousGrade = previousGrade;
-window.UI = UI;
-window.getCurrentGradeSafe = () => UI.currentGrade || 9;
-window.getSmartCycle = getSmartCycle;
-window.getCycleState = getCycleState;
-window.getExpectedProgress = getExpectedProgress;
-window.getActualProgress = getActualProgress;
-window.isRunningStandalone = () => true;
-
-} catch (err) {
-  console.error("🔥 Main engine crashed:", err);
-}
-
 })();
-       
+  
