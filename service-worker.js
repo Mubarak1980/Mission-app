@@ -2,7 +2,7 @@
 
 // ==========================================================
 // 🚀 ENTERPRISE PRODUCTION SERVICE WORKER (V21.0 - GITHUB FIXED)
-// ==========================================================
+// =====================================================
 
 const CACHE_NAME = "mission-cache-v64"; // Bumped version to force cache overwrite
 const LOG_STYLE = "color: #00d4ff; font-weight: bold; background: #0b0f14; padding: 2px 6px; border-radius: 4px;";
@@ -72,7 +72,14 @@ self.addEventListener("activate", (event) => {
           }
         })
       );
-    }).then(() => self.clients.claim())
+    }).then(() => self.clients.claim().then(() => {
+      // Broadcast activation hook back to viewport layers cleanly
+      return self.clients.matchAll().then((clients) => {
+        clients.forEach((client) => {
+          client.postMessage({ type: "SW_ACTIVATED" });
+        });
+      });
+    }))
   );
 });
 
@@ -130,4 +137,3 @@ self.addEventListener("message", (event) => {
     self.skipWaiting();
   }
 });
-            
