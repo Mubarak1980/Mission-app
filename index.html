@@ -11,30 +11,15 @@
     <link rel="apple-touch-icon" href="./icon-192.png" />
 
     <meta name="theme-color" content="#0b0f14" />
-    <meta name="background-color" content="#0b0f14" />
-    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Mission App">
-    <meta name="application-name" content="Mission App">
-    <meta name="format-detection" content="telephone=no">
-
-    <style>
-        html, body {
-            background-color: #0b0f14 !important;
-            margin: 0;
-            padding: 0;
-            overflow-x: hidden;
-            -webkit-tap-highlight-color: transparent;
-        }
-    </style>
 </head>
 <body>
 
 <div id="splash-screen">
     <div class="splash-content">
         <h1>📘 Mission App</h1>
-        <p style="color: #8b949e; font-weight: 500; letter-spacing: 0.5px;">Initializing Dashboard Workspace...</p>
+        <p style="color: #8b949e; font-weight: 500;">Initializing Dashboard...</p>
         <div class="loader"></div>
     </div>
 </div>
@@ -42,13 +27,13 @@
 <div id="app" style="display: none; opacity: 0; transition: opacity 0.25s ease;">
     <h1 id="app-time-heading">MISSION</h1>
 
-    <div id="app-navigation-container" class="section-buttons">
-        <button data-target="study">Study Tracker</button>
-        <button data-target="timetable">Weekly Timetable</button>
-        <button data-target="dashboard">Dashboard</button>
-        <button data-target="top-student">Top Student Mode</button>
-        <button data-target="sunnah">Sunnah Tracker</button>
-    </div>
+    <nav id="app-navigation-container" class="section-buttons">
+        <button data-target="study" class="nav-button">Study Tracker</button>
+        <button data-target="timetable" class="nav-button">Weekly Timetable</button>
+        <button data-target="dashboard" class="nav-button">Dashboard</button>
+        <button data-target="top-student" class="nav-button">Top Student Mode</button>
+        <button data-target="sunnah" class="nav-button">Sunnah Tracker</button>
+    </nav>
 
     <div style="width: 100%; box-sizing: border-box; padding: 0 4px;">
         <div id="grade-progress-bar"></div>
@@ -75,60 +60,39 @@
 <script>
 "use strict";
 
-function isRunningStandalone() {
-    if (window.cordova) return true;
-    return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
-}
-
-function getCurrentGradeSafe() {
-    if (window.UI) {
-        const state = window.UI.load();
-        return state.grade || 9;
-    }
-    return 9; 
-}
-
-function hideSplashScreen() {
-    const splash = document.getElementById("splash-screen");
-    const app = document.getElementById("app");
-    if (!splash || !app) return;
-
-    splash.classList.add("hide");
-    app.style.display = "block";
-    
-    if (typeof window.loadSection === "function") {
-        const lastUI = window.UI ? window.UI.load() : { section: "study", grade: 9 };
-        window.loadSection(lastUI.section, lastUI.grade);
-    }
-    
-    setTimeout(() => { app.style.opacity = "1"; }, 50);
-    setTimeout(() => { if (splash.parentNode) splash.remove(); }, 300);
-}
-
-function initializeNavigationListeners() {
+// Initialization Logic
+window.addEventListener("DOMContentLoaded", async () => {
+    // 1. Initialize Nav Listeners
     const navContainer = document.getElementById("app-navigation-container");
     if (navContainer) {
         navContainer.addEventListener("click", (e) => {
             const btn = e.target.closest("button");
-            if (!btn || !btn.dataset.target) return;
-            
-            const target = btn.dataset.target;
-            // FIXED: Always pass the current grade to every section load
-            if (typeof window.loadSection === "function") {
-                window.loadSection(target, getCurrentGradeSafe());
+            if (btn && btn.dataset.target) {
+                // Ensure UI persistence and routing
+                window.loadSection(btn.dataset.target, window.UI.load().grade);
             }
         });
     }
-}
 
-window.addEventListener("DOMContentLoaded", async () => {
-    initializeNavigationListeners();
+    // 2. Splash Screen Logic
+    const hideSplash = () => {
+        const splash = document.getElementById("splash-screen");
+        const app = document.getElementById("app");
+        if (splash && app) {
+            splash.classList.add("hide");
+            app.style.display = "block";
+            setTimeout(() => { app.style.opacity = "1"; }, 50);
+            setTimeout(() => { splash.remove(); }, 300);
+        }
+    };
+
     if (window.cordova) {
-        document.addEventListener("deviceready", () => setTimeout(hideSplashScreen, 350), false);
+        document.addEventListener("deviceready", hideSplash, false);
     } else {
-        setTimeout(hideSplashScreen, 350);
+        setTimeout(hideSplash, 350);
     }
 });
 </script>
 </body>
-</html>
+    </html>
+    
