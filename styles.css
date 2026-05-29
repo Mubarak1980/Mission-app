@@ -1,477 +1,125 @@
 /* ==========================================================
-   🌐 ENTERPRISE DESIGN SYSTEM SYSTEM SHIELD VARIABLES
+   🌐 ENTERPRISE DESIGN SYSTEM: MISSION APP
    ========================================================== */
 :root {
   --bg: #0b0f14;
   --card: #121821;
   --border: #1f2a36;
   --primary: #00d4ff;
+  --secondary: #00ffa6;
   --primary-soft: rgba(0, 212, 255, 0.12);
   --text: #e6edf3;
   --muted: #8b949e;
   --border-radius-main: 16px;
   --transition-speed: 0.22s;
-  
-  /* System font stack utilized by elite cross-platform engines */
-  --font-stack: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  --font-stack: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 /* ==========================================================
-   ⚠️ DEFENSIVE NATIVE SYSTEM RESET KEYS
+   ⚠️ DEFENSIVE SYSTEM RESET
    ========================================================== */
-* {
-  box-sizing: border-box;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
 html, body {
   background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-stack);
   margin: 0;
-  
-  /* Forces rendering layouts to span full physical screen boundaries */
   width: 100vw;
   min-height: 100vh;
-  min-height: -webkit-fill-available; /* Resolves mobile viewport scaling bugs */
-  
-  /* Dynamic environmental safe area paddings mapping past notches */
-  padding-top: env(safe-area-inset-top, 16px);
-  padding-bottom: env(safe-area-inset-bottom, 16px);
-  padding-left: env(safe-area-inset-left, 16px);
-  padding-right: env(safe-area-inset-right, 16px);
-  
-  color: var(--text);
-  font-family: var(--font-stack);
-  
-  /* Disables accidental layout breaks and double-tap zoom loops */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   overflow-x: hidden;
-  overscroll-behavior-y: none; /* Disables browser pulling-refresh bugs */
-  -webkit-tap-highlight-color: transparent;
-  -webkit-text-size-adjust: 100%;
 }
 
-#main-content {
-  width: 100%;
-  animation: viewTransition 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-}
+#app { max-width: 600px; margin: 0 auto; padding: 16px; }
 
 /* ==========================================================
-   📱 PREMIUM NAVIGATION MODULE LAYOUTS
+   📱 NAVIGATION & LAYOUT
    ========================================================== */
 .section-buttons, #grade-nav {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
   gap: 10px;
-  flex-wrap: wrap;
   margin-bottom: 20px;
-  margin-top: 0;
 }
 
-.section-buttons button, #grade-nav button {
-  flex: 1;
-  min-width: 110px;
-  padding: 14px 16px;
-  border-radius: 14px;
-  border: 1px solid var(--border);
-  background: var(--card);
-  color: var(--text);
-  font-weight: 600;
-  font-size: 0.9rem;
-  letter-spacing: 0.3px;
-  cursor: pointer;
-  transition: transform 0.1s ease, background var(--transition-speed) ease, border-color var(--transition-speed) ease, box-shadow var(--transition-speed) ease;
-  text-align: center;
-  user-select: none;
-  touch-action: manipulation;
-}
-
-/* Interaction States */
-.section-buttons button:hover, #grade-nav button:not(:disabled):hover {
-  background: var(--primary-soft);
-  border-color: var(--primary);
-  color: var(--primary);
-}
-
-.section-buttons button:active, #grade-nav button:not(:disabled):active {
-  transform: scale(0.97);
-}
-
-/* High-Profile Active Tabs Configuration */
-.section-buttons button.active, #grade-nav button.active {
-  background: linear-gradient(135deg, #007acc, var(--primary)) !important;
-  color: #ffffff !important;
-  border-color: var(--primary) !important;
-  box-shadow: 0 4px 14px rgba(0, 212, 255, 0.25);
-  transform: none;
-}
-
-#grade-nav button {
-  background: linear-gradient(135deg, #005a9e, #007acc);
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-#grade-nav button:disabled {
-  opacity: 0.25;
-  cursor: not-allowed;
-  transform: none !important;
-  pointer-events: none;
-}
-
-/* ==========================================================
-   📦 ARCHITECTURAL CONTAINER CARDS
-   ========================================================== */
-.subject, .quran-progress, .top-student-card, .dashboard-subject {
-  background: var(--card);
-  border-radius: var(--border-radius-main);
-  padding: 20px;
-  border: 1px solid var(--border);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
-  margin-bottom: 16px;
-  transition: border-color var(--transition-speed) ease, box-shadow var(--transition-speed) ease, transform var(--transition-speed) ease;
-  position: relative;
-}
-
-.subject:hover, .quran-progress:hover, .top-student-card:hover, .dashboard-subject:hover {
-  border-color: rgba(0, 212, 255, 0.4);
-  box-shadow: 0 6px 24px rgba(0, 212, 255, 0.08);
-}
-
-/* Typography Synchronisation */
-h1 {
-  text-align: center;
-  font-size: 24px;
-  margin-top: 8px;
-  margin-bottom: 20px;
-  color: var(--primary);
-  letter-spacing: 1.2px;
-  font-weight: 700;
-}
-
-h2, h3, .subject h3, .dashboard-subject h3, .top-student-card h3 {
-  margin-top: 0;
-  margin-bottom: 14px;
-  color: var(--primary);
-  font-size: 18px;
-  font-weight: 600;
-  letter-spacing: 0.4px;
-}
-
-/* ==========================================================
-   ✍️ PRODUCTION FORMS & INPUT LAYOUT DESIGN
-   ========================================================== */
-label {
-  display: block;
-  margin-bottom: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--primary);
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-}
-
-input[type="number"], input[type="text"], .subject input, .quran-progress input {
-  width: 100%;
-  padding: 14px;
+button {
+  padding: 12px;
   border-radius: 12px;
   border: 1px solid var(--border);
-  background: #06090e; 
+  background: var(--card);
   color: var(--text);
-  font-family: var(--font-stack);
-  font-size: 1rem;
   font-weight: 600;
-  margin-top: 4px;
-  margin-bottom: 16px;
-  outline: none;
-  transition: border var(--transition-speed) ease, box-shadow var(--transition-speed) ease;
+  cursor: pointer;
+  transition: all var(--transition-speed) ease;
 }
 
-input[type="number"]:focus, input[type="text"]:focus {
+button.active {
+  background: linear-gradient(135deg, #007acc, var(--primary));
+  color: #fff;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px var(--primary-soft);
-}
-
-input[readonly] {
-  background: rgba(255, 255, 255, 0.01) !important;
-  color: var(--muted) !important;
-  border-style: dashed !important;
-  cursor: not-allowed;
-  opacity: 0.7;
+  box-shadow: 0 4px 14px rgba(0, 212, 255, 0.25);
 }
 
 /* ==========================================================
-   📊 TRACKING METRIC PROGRESS BARS (FIXED RENDER STANDARD)
+   📊 TRACKING CARDS & METRICS
    ========================================================== */
-progress {
-  display: block;
-  width: 100% !important;
-  height: 12px !important; /* FIXED: Strict encapsulation enforces layout sizes */
-  border-radius: 10px;
-  overflow: hidden;
-  border: none;
-  background: #19222d !important; /* FIXED: Changed to subtle gray to reveal the 0% empty rail state */
-  margin-top: 8px;
-  margin-bottom: 8px;
-  
-  /* FIXED: Resets native system render limits on hybrid devices */
-  appearance: none;
-  -webkit-appearance: none;
+#grade-progress-bar {
+  background: var(--card);
+  padding: 16px;
+  border-radius: var(--border-radius-main);
+  border: 1px solid var(--border);
+  text-align: center;
+  font-weight: 700;
+  margin-bottom: 20px;
+  color: var(--primary);
 }
 
-progress::-webkit-progress-bar {
-  background: #19222d; /* FIXED: Synchronized track rail layer */
-  border-radius: 10px;
+.subject, .dashboard-subject, .top-student-card {
+  background: var(--card);
+  padding: 20px;
+  border-radius: var(--border-radius-main);
+  border: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+
+progress {
+  width: 100%;
+  height: 12px;
+  border-radius: 6px;
+  appearance: none;
+  background: #19222d;
 }
 
 progress::-webkit-progress-value {
-  background: linear-gradient(90deg, #00d4ff, #00ffa6) !important;
-  border-radius: 10px;
-}
-
-progress::-moz-progress-bar {
-  background: linear-gradient(90deg, #00d4ff, #00ffa6) !important;
-  border-radius: 10px;
-}
-
-.subject p, .quran-progress p, .dashboard-subject p {
-  margin-top: 6px;
-  margin-bottom: 0;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--muted);
-  text-align: right;
+  background: linear-gradient(90deg, var(--primary), var(--secondary));
+  border-radius: 6px;
 }
 
 /* ==========================================================
-   📅 RESPONSIVE TABLES & GRIDS
+   ✍️ INPUTS & TABLES
    ========================================================== */
-.table-wrapper, .weekly-table-wrapper {
-  overflow-x: auto;
+input {
   width: 100%;
-  border-radius: 12px;
+  background: #06090e;
   border: 1px solid var(--border);
-  margin-bottom: 16px;
-  background: var(--card);
-  -webkit-overflow-scrolling: touch;
+  color: white;
+  padding: 14px;
+  border-radius: 12px;
+  margin: 8px 0;
+  font-size: 1rem;
 }
 
-table, .weekly-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13.5px;
-  min-width: 500px;
-}
-
-thead {
-  background: #007acc;
-}
-
-th {
-  padding: 14px 12px;
-  color: #ffffff;
-  font-weight: 600;
-  text-align: left;
-  letter-spacing: 0.3px;
-}
-
-td {
-  padding: 14px 12px;
-  border-top: 1px solid var(--border);
-  color: var(--text);
-}
-
-tr:nth-child(even) {
-  background: rgba(255, 255, 255, 0.01);
-}
-
-/* Dashboard Engine Grid System */
-.dashboard-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 16px;
-  margin-top: 16px;
-}
-
-.dashboard-subject {
-  margin-bottom: 0;
-  overflow: hidden;
-}
-
-.dashboard-subject::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 4px;
-  width: 100%;
-  background: linear-gradient(90deg, var(--primary), #00ffa6);
-}
+table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+th, td { padding: 12px; border-bottom: 1px solid var(--border); text-align: left; }
 
 /* ==========================================================
-   🧠 TOP STUDENT MODULE OVERRIDES
-   ========================================================== */
-.top-student-container {
-  max-width: 900px;
-  margin: 0 auto;
-}
-
-.top-student-intro {
-  text-align: center;
-  color: var(--muted);
-  font-size: 14px;
-  margin-bottom: 20px;
-  line-height: 1.6;
-}
-
-.top-student-card ul {
-  padding-left: 20px;
-  margin: 0;
-}
-
-.top-student-card li {
-  margin-bottom: 10px;
-  color: var(--text);
-  line-height: 1.6;
-}
-
-.top-student-card p {
-  color: var(--muted);
-  font-size: 13.5px;
-  line-height: 1.6;
-  text-align: left;
-}
-
-.highlight-card {
-  background: linear-gradient(135deg, #006a9e, #00d4ff) !important;
-  color: #ffffff !important;
-  border: none !important;
-}
-
-.highlight-card h3, .highlight-card p, .highlight-card li {
-  color: #ffffff !important;
-}
-
-/* ==========================================================
-   ⏳ FLUID SPLASH SYSTEMS
+   ⏳ PERFORMANCE & SPLASH
    ========================================================== */
 #splash-screen {
-  position: fixed;
-  inset: 0;
-  background: var(--bg);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 99999;
-  opacity: 1;
-  visibility: visible;
-  transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.25s ease;
+  position: fixed; inset: 0; background: var(--bg);
+  display: flex; justify-content: center; align-items: center; z-index: 9999;
 }
 
-#splash-screen.hide {
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-}
-
-.splash-content {
-  text-align: center;
-}
-
-.loader {
-  width: 44px;
-  height: 44px;
-  margin: 20px auto 0;
-  border: 4px solid var(--border);
-  border-top: 4px solid var(--primary);
-  border-radius: 50%;
-  animation: spin 0.85s linear infinite;
-}
-
-/* ==========================================================
-   🎭 PERFORMANCE ANIMATIONS
-   ========================================================== */
-@keyframes viewTransition {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-/* ==========================================================
-   📱 MOBILE ADAPTATION SYSTEM (MEDIA QUERIES)
-   ========================================================== */
-@media (max-width: 500px) {
-  body {
-    padding-top: calc(12px + env(safe-area-inset-top, 0px));
-    padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
-    padding-left: calc(12px + env(safe-area-inset-left, 0px));
-    padding-right: calc(12px + env(safe-area-inset-right, 0px));
-  }
-  
-  /* Solid structural boundary lock for injected strings */
-  #main-content {
-    padding-left: 0;
-    padding-right: 0;
-    box-sizing: border-box;
-    width: 100%;
-  }
-
-  /* High-precision text layout: Blocks wrap naturally without overlapping lines */
-  #main-content h2,
-  #main-content h3 {
-    font-size: 16px;
-    font-weight: 600;
-    display: block;
-    width: 100%;
-  }
-
-  #main-content p,
-  #main-content span,
-  #main-content li {
-    font-size: 14px;
-    font-weight: 500;
-    line-height: 1.5;
-  }
-
-  /* Padding adjustments tailored for high-level text containers */
-  #main-content > h1,
-  #main-content > h2,
-  #main-content > p {
-    padding-left: 4px; 
-    padding-right: 4px;
-    box-sizing: border-box;
-    display: block;
-    width: 100%;
-  }
-  
-  h1 {
-    font-size: 20px;
-    margin-bottom: 16px;
-    text-align: center;
-  }
-
-  th, td {
-    font-size: 12px;
-    padding: 10px 8px;
-  }
-
-  .dashboard-container {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-  
-  .section-buttons button, #grade-nav button {
-    padding: 12px 10px;
-    font-size: 13px;
-    border-radius: 12px;
-  }
-
-  /* Standardizes card tracking spaces cleanly without text clip overflow */
-  .subject, .quran-progress, .top-student-card, .dashboard-subject {
-    padding: 16px;
-    margin-bottom: 12px;
-    width: 100%;
-    box-sizing: border-box;
-  }
-   }
+@keyframes spin { to { transform: rotate(360deg); } }
+.loader { width: 44px; height: 44px; border: 4px solid var(--border); border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 0.85s linear infinite; }
