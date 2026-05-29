@@ -2,14 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <meta
-        name="viewport"
-        content="width=device-width,
-        initial-scale=1.0,
-        maximum-scale=1.0,
-        user-scalable=no,
-        viewport-fit=cover"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>Mission App</title>
 
     <link rel="manifest" href="./manifest.json">
@@ -47,7 +40,6 @@
 </div>
 
 <div id="app" style="display: none; opacity: 0; transition: opacity 0.25s ease;">
-    
     <h1 id="app-time-heading">MISSION</h1>
 
     <div id="app-navigation-container" class="section-buttons">
@@ -71,9 +63,9 @@
 </div>
 
 <script src="cordova.js"></script>
-
 <script src="./data.js"></script>
-<script src="./Storage-bridge.js"></script> <script src="./Study-tracker.js"></script>
+<script src="./Storage-bridge.js"></script> 
+<script src="./Study-tracker.js"></script>
 <script src="./weekly-timetable.js"></script>
 <script src="./dashboard.js"></script>
 <script src="./top-student-mode.js"></script>
@@ -83,70 +75,19 @@
 <script>
 "use strict";
 
-/* ==========================================================
-   📦 ARCHITECTURAL GLOBAL STATE CONTROL KEYS
-   ========================================================== */
-let deferredPrompt = null;
-let isRefreshing = false;
-
-/* ==========================================================
-   📱 ELITE NATIVE STANDALONE REALM DETECTION
-   ========================================================== */
 function isRunningStandalone() {
     if (window.cordova) return true;
-
-    const isStandaloneMode = window.matchMedia("(display-mode: standalone)").matches ||
-                             window.matchMedia("(display-mode: fullscreen)").matches ||
-                             window.matchMedia("(display-mode: minimal-ui)").matches;
-                             
-    const isNavStandalone = window.navigator.standalone === true;
-    const isAndroidReferrer = document.referrer.includes("android-app://");
-    const isPWAQuery = window.location.search.includes("utm_source=pwa");
-    const isPWAWindow = (window.screen.height - window.innerHeight < 120);
-
-    return (isStandaloneMode || isNavStandalone || isAndroidReferrer || isPWAQuery || isPWAWindow);
+    return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
 }
 
 function getCurrentGradeSafe() {
-    if (window.UI && typeof window.UI.currentGrade !== 'undefined') {
-        return window.UI.currentGrade;
-    }
-    
-    // Integrates seamlessly with your unified cross-platform engine layout
-    if (window.Storage && typeof window.Storage.get === "function") {
-        const state = window.Storage.get("ui_state", {});
-        return Number(state.grade) || 9;
-    }
-
-    try {
-        const saved = JSON.parse(localStorage.getItem("ui_state"));
-        if (saved && saved.grade) {
-            return Number(saved.grade) || 9;
-        }
-    } catch (e) {
-        console.warn("Direct storage fallback preview evaluation failed:", e);
+    if (window.UI) {
+        const state = window.UI.load();
+        return state.grade || 9;
     }
     return 9; 
 }
 
-/* ==========================================================
-   🛑 INTERCEPT AUTOMATIC BROWSER INSTALLATION BLOCKS
-========================================================== */
-window.addEventListener("beforeinstallprompt", (e) => {
-    e.preventDefault();
-    if (isRunningStandalone()) return false;
-    deferredPrompt = e;
-    // Auto-popups removed to eliminate input focus clipping bugs on high-end mobile devices
-    return false;
-});
-
-window.addEventListener("appinstalled", () => {
-    deferredPrompt = null;
-});
-
-/* ==========================================================
-   ⏳ HARDWARE ACCELERATED SPLASH TRANSITION VIEW
-========================================================== */
 function hideSplashScreen() {
     const splash = document.getElementById("splash-screen");
     const app = document.getElementById("app");
@@ -156,48 +97,14 @@ function hideSplashScreen() {
     app.style.display = "block";
     
     if (typeof window.loadSection === "function") {
-        window.loadSection("study", getCurrentGradeSafe());
+        const lastUI = window.UI ? window.UI.load() : { section: "study", grade: 9 };
+        window.loadSection(lastUI.section, lastUI.grade);
     }
     
-    setTimeout(() => {
-        app.style.opacity = "1";
-    }, 50);
-
-    setTimeout(() => {
-        if (splash.parentNode) splash.remove();
-    }, 300);
+    setTimeout(() => { app.style.opacity = "1"; }, 50);
+    setTimeout(() => { if (splash.parentNode) splash.remove(); }, 300);
 }
 
-/* ==========================================================
-   🌐 ENTERPRISE SERVICE WORKER SYNC CONTROL
-========================================================== */
-async function registerServiceWorker() {
-    if (window.cordova || !("serviceWorker" in navigator)) {
-        return;
-    }
-    try {
-        const registration = await navigator.serviceWorker.register("./service-worker.js");
-        setInterval(() => {
-            if (navigator.onLine) {
-                registration.update().catch(() => console.log("SW Sync skipped working offline."));
-            }
-        }, 1000 * 60 * 30);
-    } catch (err) {
-        console.error("❌ Service Worker registration failure:", err);
-    }
-}
-
-if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.addEventListener("controllerchange", () => {
-        if (isRefreshing) return;
-        isRefreshing = true;
-        window.location.reload();
-    });
-}
-
-/* ==========================================================
-   🛠️ SECURE CENTRAL ROUTER EVENT DELEGATION
-========================================================== */
 function initializeNavigationListeners() {
     const navContainer = document.getElementById("app-navigation-container");
     if (navContainer) {
@@ -206,48 +113,20 @@ function initializeNavigationListeners() {
             if (!btn || !btn.dataset.target) return;
             
             const target = btn.dataset.target;
+            // FIXED: Always pass the current grade to every section load
             if (typeof window.loadSection === "function") {
-                if (target === "study") {
-                    window.loadSection("study", getCurrentGradeSafe());
-                } else {
-                    window.loadSection(target);
-                }
+                window.loadSection(target, getCurrentGradeSafe());
             }
-        });
-    }
-
-    const prevBtn = document.getElementById("prev-btn");
-    const nextBtn = document.getElementById("next-btn");
-
-    if (prevBtn) {
-        prevBtn.addEventListener("click", () => {
-            if (typeof window.previousGrade === "function") window.previousGrade();
-        });
-    }
-    if (nextBtn) {
-        nextBtn.addEventListener("click", () => {
-            if (typeof window.nextGrade === "function") window.nextGrade();
         });
     }
 }
 
-/* ==========================================================
-   🚀 FRAMEWORK PIPELINE BOOTSTRAP INITIALIZATION
-========================================================== */
 window.addEventListener("DOMContentLoaded", async () => {
-    try {
-        initializeNavigationListeners();
-        await registerServiceWorker();
-        
-        if (window.cordova) {
-            document.addEventListener("deviceready", () => {
-                setTimeout(hideSplashScreen, 350);
-            }, false);
-        } else {
-            setTimeout(hideSplashScreen, 350);
-        }
-    } catch (err) {
-        console.error("🛑 Operational startup aborted:", err);
+    initializeNavigationListeners();
+    if (window.cordova) {
+        document.addEventListener("deviceready", () => setTimeout(hideSplashScreen, 350), false);
+    } else {
+        setTimeout(hideSplashScreen, 350);
     }
 });
 </script>
