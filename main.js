@@ -90,20 +90,21 @@ const SectionMap = {
   study: "loadStudySection",
   timetable: "loadWeeklyTimetable",
   dashboard: "loadDashboard",
+  topstudent: "loadTopStudentMode",
   sunnah: "loadSunnahTracker"
 };
 
 window.updateNavUI = (type) => {
-    document.querySelectorAll('.nav-button').forEach(btn => btn.classList.remove('active'));
-    const activeBtn = document.querySelector(`[onclick*="${type}"]`);
-    if (activeBtn) activeBtn.classList.add('active');
+    document.querySelectorAll('.nav-button').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.target === type);
+    });
 };
 
 window.loadSection = (type, grade) => {
   const mainContent = document.getElementById("main-content");
   if (!mainContent) return;
 
-  mainContent.innerHTML = ""; // 🛡️ Clear old content
+  mainContent.innerHTML = ""; 
   const functionName = SectionMap[type];
   
   if (window[functionName]) {
@@ -127,6 +128,21 @@ window.loadSection = (type, grade) => {
       12: { Math: 416, Physics: 177, Chemistry: 287, Biology: 354, English: 263 }
     };
 
+    // Navigation Listeners for Grade Switching
+    document.addEventListener("DOMContentLoaded", () => {
+        document.getElementById("next-btn")?.addEventListener("click", () => {
+            const state = window.UI.load();
+            const nextGrade = Math.min(state.grade + 1, 12);
+            window.loadSection(state.section, nextGrade);
+        });
+
+        document.getElementById("prev-btn")?.addEventListener("click", () => {
+            const state = window.UI.load();
+            const prevGrade = Math.max(state.grade - 1, 9);
+            window.loadSection(state.section, prevGrade);
+        });
+    });
+
     window.DataService.initNativeFileSystem(() => {
         const lastUI = window.UI.load();
         window.loadSection(lastUI.section, lastUI.grade);
@@ -137,4 +153,3 @@ window.loadSection = (type, grade) => {
     console.error("Critical Engine Failure:", err);
   }
 })();
-               
