@@ -4,7 +4,7 @@
 // 🚀 ENTERPRISE PRODUCTION SERVICE WORKER (V21.0 - GITHUB FIXED)
 // ==========================================================
 
-const CACHE_NAME = "mission-cache-v63"; // Bumped version to force cache overwrite
+const CACHE_NAME = "mission-cache-v64"; // Bumped version to force cache overwrite
 const LOG_STYLE = "color: #00d4ff; font-weight: bold; background: #0b0f14; padding: 2px 6px; border-radius: 4px;";
 const WARN_STYLE = "color: #e5c158; font-weight: bold; background: #0b0f14; padding: 2px 6px; border-radius: 4px;";
 
