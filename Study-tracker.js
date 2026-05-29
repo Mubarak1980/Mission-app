@@ -13,23 +13,25 @@ let activeStudySavedData = null;
 // BRIDGE-AWARE LOADING
 // ===============================
 function loadProgress(grade) {
-    // We utilize our unified DataService bridge
-    return window.DataService.get(`grade_${grade}_progress`) || {};
+    // Access the unified master data from the DataService bridge
+    const masterData = window.DataService.get();
+    // Ensure the studyProgress object exists
+    if (!masterData.studyProgress) masterData.studyProgress = {};
+    return masterData.studyProgress[grade] || {};
 }
 
 // ===============================
 // BRIDGE-AWARE SAVING
 // ===============================
 function saveProgress(grade, data) {
-    // 1. Update the grade-specific storage
-    window.DataService.set(`grade_${grade}_progress`, data || {});
-
-    // 2. Sync Master Metrics
-    // By updating the master state, we ensure the Dashboard engine 
-    // always has the most recent page counts available.
-    if (typeof window.getSmartCycle === "function") {
-        console.log("🔄 Syncing Master Engine metrics...");
-    }
+    const masterData = window.DataService.get();
+    if (!masterData.studyProgress) masterData.studyProgress = {};
+    
+    // Save the grade-specific progress into the master object
+    masterData.studyProgress[grade] = data;
+    
+    // Push the entire updated object back to the DataService
+    window.DataService.set(masterData);
 }
 
 // ===============================
@@ -165,4 +167,4 @@ function updateGradeSummary(grade) {
 }
 
 window.loadStudySection = loadStudySection;
-        
+                    
