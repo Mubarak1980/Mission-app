@@ -229,12 +229,10 @@ function loadDashboard() {
     const totalYearDaysElapsed = ((runningCycleNum - 1) * 90) + cleanCycleDay;
     const yearTotalTargetWindow = 360;
 
-    // Layout visibility constraints for Day 1
     const yearProgressRawPct = (totalYearDaysElapsed / yearTotalTargetWindow) * 100;
     const yearProgressVisiblePct = totalYearDaysElapsed > 0 ? Math.max(1.5, yearProgressRawPct) : 0;
     const roundedYearProgressLabel = (totalYearDaysElapsed / yearTotalTargetWindow * 100).toFixed(1);
 
-    // Hard baseline validation
     let baseTargetValue = 63;
     if (typeof window.getSmartCycle === "function") {
       const smart = window.getSmartCycle();
@@ -276,7 +274,6 @@ function loadDashboard() {
       baseTargetValue = 0;
     }
 
-    // Status context layout variables
     let targetSubtextLabel = `<span style="white-space: nowrap; color: #8b949e;">Allocation Window: ${baseTargetValue} pages</span>`;
     if (isFreeTimeDay) {
        targetSubtextLabel = `<span style="color: #2ecc71; font-weight: bold; white-space: nowrap;">⚡ SCHEDULED REST RECOVERY ACTIVE</span>`;
@@ -309,7 +306,6 @@ function loadDashboard() {
       }
     }
 
-    // Priority allocation builder
     individualTargets.forEach(item => {
       const weightScore = exponentialWeights[item.subject];
       let priorityAlertIndicator = "";
@@ -338,13 +334,13 @@ function loadDashboard() {
       `;
     });
 
+    // Close the list element completely
+    structuralPriorityHTML += `</ul>`;
+
     // ====================================================================
-    // 🎛️ INTEGRATED MACRO METRIC PROGRESS TRACKS (MOVED UNDER LIST)
+    // 🎛️ INTEGRATED PROGRESS TRACKS (MOVED INSIDE OPERATIONAL PRIORITIES)
     // ====================================================================
     structuralPriorityHTML += `
-      </ul>
-      
-      <!-- 🎯 INLINE MASTER PAGES PROGRESS TRACK -->
       <div style="margin-top: 20px; padding: 12px; background: rgba(0, 212, 255, 0.02); border: 1px solid #1f2a36; border-radius: 10px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 0.82rem;">
           <span style="color: #8b949e; font-weight: 600;">🎯 Master Pages Completion</span>
@@ -359,7 +355,6 @@ function loadDashboard() {
         </div>
       </div>
 
-      <!-- 📅 INLINE YEAR TIMELINE PROGRESS TRACK -->
       <div style="margin-top: 12px; padding: 12px; background: rgba(46, 204, 113, 0.02); border: 1px solid #1f2a36; border-radius: 10px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 0.82rem;">
           <span style="color: #8b949e; font-weight: 600;">📅 Overall Year Timeline</span>
@@ -373,8 +368,7 @@ function loadDashboard() {
           <span style="color: #ff4d4d;">${Math.max(0, yearTotalTargetWindow - totalYearDaysElapsed)} left</span>
         </div>
       </div>
-
-    </div>`;
+    </div>`; // Closes Operational Daily Priorities card wrapper
 
     // =====================================================
     // 🧠 SMART STUDY ENGINE CONTAINER ASSEMBLY
@@ -427,3 +421,4 @@ function loadDashboard() {
 // EXPORT
 // =====================================================
 window.loadDashboard = loadDashboard;
+            
