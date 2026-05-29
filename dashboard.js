@@ -1,82 +1,26 @@
 // ==========================================================
-// 📊 CENTRAL METRIC DASHBOARD ENGINE (REPAIR OPTIMIZED)
+// 📊 CENTRAL METRIC DASHBOARD ENGINE (ORIGINAL)
 // ==========================================================
 
 "use strict";
 
 function loadDashboard() {
   const mainContent = document.getElementById('main-content');
-  if (!mainContent) {
-    console.error("[System Error] Critical layout root '#main-content' is missing.");
-    return;
-  }
+  if (!mainContent) return;
 
-  // 🔒 FIXED: Safety gate to read state from the centralized storage layer smoothly
-  const state = window.Storage 
-    ? window.Storage.get("studyState", { startDate: "Not Started", cycleNumber: 1 }) 
-    : { startDate: "Not Started", cycleNumber: 1 };
+  const gradeBar = document.getElementById('grade-progress-bar');
+  if (gradeBar) gradeBar.innerHTML = '';
 
-  // 🔒 FIXED: Robust fallback metric schema to guarantee the UI renders even during async script delays
-  const defaultMetrics = {
-    status: "SYSTEM INITIALIZING",
-    cycleDay: 0,
-    remainingDays: 90,
-    expectedPages: 0,
-    actualPages: 0,
-    gap: 0,
-    baseTarget: 64,
-    catchUpPerDay: 0,
-    dailyTarget: 64,
-    TOTAL_PAGES: 1422, // Automatically paired to match your overall curriculum limits
-    totalPagesPercentage: 0
-  };
-
-  let metrics = defaultMetrics;
-
-  try {
-    if (typeof window.getSmartCycle === "function") {
-      metrics = window.getSmartCycle();
-    } else {
-      console.warn("[System Warn] 'window.getSmartCycle' engine missing. Utilizing core layout fallbacks.");
-      
-      // Dynamic fallback calculations to keep the UI active if the engine is temporarily unlinked
-      if (state.startDate && state.startDate !== "Not Started") {
-        const start = new Date(state.startDate);
-        const today = new Date();
-        const diffTime = Math.abs(today - start);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        
-        metrics.cycleDay = Math.min(90, diffDays);
-        metrics.remainingDays = Math.max(0, 90 - metrics.cycleDay);
-        metrics.expectedPages = metrics.cycleDay * metrics.baseTarget;
-        
-        // Safely extract cross-grade progress if available
-        let aggregatePages = 0;
-        [9, 10, 11, 12].forEach(g => {
-          const prog = window.Storage ? window.Storage.get(`grade_${g}_progress`, {}) : {};
-          Object.values(prog).forEach(v => { aggregatePages += (Number(v) || 0); });
-        });
-        
-        metrics.actualPages = aggregatePages;
-        metrics.gap = metrics.actualPages - metrics.expectedPages;
-        metrics.totalPagesPercentage = Math.min(100, parseFloat(((metrics.actualPages / metrics.TOTAL_PAGES) * 100).toFixed(1))) || 0;
-        
-        if (metrics.gap < -150) metrics.status = "CRITICAL DELAY DETECTED";
-        else if (metrics.gap < 0) metrics.status = "BEHIND TARGET SCHEDULE";
-        else metrics.status = "OPTIMAL STABLE PACE";
-      }
-    }
-  } catch (err) {
-    console.error("[System Engine Exception] Failed to evaluate smart cycle calculation paths:", err);
-  }
-
-  // Assign metric notification tags matching your design variables
-  let statusColor = "#00ffa6"; 
-  if (metrics.status.includes("CRITICAL")) statusColor = "#ff4d4d";
-  else if (metrics.status.includes("BEHIND")) statusColor = "#ff9f43";
+  const metrics = window.getSmartCycle();
+  const state = window.Storage.get("studyState", { startDate: "Not Configured", cycleNumber: 1 });
 
   const container = document.createElement("div");
   container.className = "dashboard-wrapper";
+
+  let statusColor = "#00ffa6";
+  if (metrics.status.includes("CRITICAL")) statusColor = "#ff4d4d";
+  else if (metrics.status.includes("BEHIND")) statusColor = "#ff9f43";
+  else if (metrics.status.includes("SLIGHTLY")) statusColor = "#f1c40f";
 
   container.innerHTML = `
     <h2>📊 Strategic Metrics Dashboard</h2>
@@ -129,7 +73,7 @@ function loadDashboard() {
           Base Run Rate: <strong style="color:#fff;">${metrics.baseTarget} Pages / Day</strong>
         </p>
         <p style="text-align: left; margin-bottom: 8px; font-size: 14px;">
-          Backlog Amortization: <strong style="color:#ff9f43;">+${metrics.catchUpPerDay || 0} Pages / Day</strong>
+          Backlog Amortization: <strong style="color:#ff9f43;">+${metrics.catchUpPerDay} Pages / Day</strong>
         </p>
         <p style="text-align: left; margin-bottom: 8px; font-size: 14px;">
           Required Target: <strong style="color:var(--primary); font-size: 16px;">${metrics.dailyTarget} Pages / Day</strong>
@@ -152,7 +96,7 @@ function loadDashboard() {
         Resetting starts a new 90-day cycle. This action keeps your tracked study page records safe while updating the calendar schedule.
       </p>
       <button 
-        style="background: #1f141a; border: 1px solid #ff4d4d; color: #ff4d4d; padding: 12px 24px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: 0.2s; -webkit-tap-highlight-color: transparent;"
+        style="background: #1f141a; border: 1px solid #ff4d4d; color: #ff4d4d; padding: 12px 24px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: 0.2s;"
         onmouseover="this.style.background='#ff4d4d'; this.style.color='#fff';"
         onmouseout="this.style.background='#1f141a'; this.style.color='#ff4d4d';"
         onclick="window.rotateStrategicQuarterlyCycle()"
@@ -162,7 +106,6 @@ function loadDashboard() {
     </div>
   `;
 
-  // Safe DOM swapping injection to secure display outputs instantly
   mainContent.replaceChildren(container);
 }
 
@@ -181,9 +124,7 @@ function rotateStrategicQuarterlyCycle() {
 
   const newCycleState = {
     startDate: todayISO,
-    cycleNumber: nextCycleNumber,
-    missedDays: 0,
-    lastVisit: todayISO
+    cycleNumber: nextCycleNumber
   };
 
   window.Storage.set("studyState", newCycleState);
@@ -191,7 +132,6 @@ function rotateStrategicQuarterlyCycle() {
   loadDashboard();
 }
 
-// Global runtime execution matrix exposure
 window.loadDashboard = loadDashboard;
 window.rotateStrategicQuarterlyCycle = rotateStrategicQuarterlyCycle;
-              
+                              
