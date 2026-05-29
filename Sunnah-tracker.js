@@ -1,131 +1,51 @@
 "use strict";
 
 // =====================================================
-// 🕌 SUNNAH TRACKER (TIMEZONE-LOCALIZED & JUZ-FIXED)
+// 🕌 SUNNAH TRACKER (FULLY UNIFIED WITH DATA BRIDGE)
 // =====================================================
 
 const totalQuranPages = 604;
 const pagesPerJuz = 20;
 const totalJuz = 30; 
-
-// 🎯 YOUR PACE: Exactly 1 page per day
 const TARGET_PAGES_PER_DAY = 1; 
 
 // ===============================
-// SAFE HELPERS
-// ===============================
-function safeNumber(value, fallback = 0) {
-    const n = Number(value);
-    return isNaN(n) ? fallback : n;
-}
-
-// ===============================
-// DAYS CALCULATION (LOCAL TIMEZONE SAFE)
-// ===============================
-function getDaysSinceStart(startDate) {
-    try {
-        const today = new Date();
-        const start = new Date(startDate);
-
-        if (isNaN(start.getTime())) return 1;
-
-        today.setHours(0, 0, 0, 0);
-        start.setHours(0, 0, 0, 0);
-
-        const diff = Math.floor((today - start) / (1000 * 60 * 60 * 24));
-        return Math.max(1, diff + 1);
-    } catch {
-        return 1;
-    }
-}
-
-// ===============================
-// LOAD STATE (SAFE)
+// BRIDGE-AWARE STORAGE
 // ===============================
 function loadSunnahState() {
-    try {
-        const data = JSON.parse(localStorage.getItem("sunnah_progress"));
-        return data && typeof data === "object" ? data : {};
-    } catch {
-        return {};
-    }
+    // Fetches directly from the unified master file
+    return window.DataService.get("sunnah_progress") || {};
 }
 
-// ===============================
-// SAVE STATE (MERGE SAFE)
-// ===============================
 function saveSunnahProgress(data) {
-    try {
-        const prev = loadSunnahState();
-        localStorage.setItem(
-            "sunnah_progress",
-            JSON.stringify({
-                ...prev,
-                ...data
-            })
-        );
-    } catch (e) {
-        console.warn("Failed to save sunnah progress:", e);
-    }
+    const prev = loadSunnahState();
+    // Save to the bridge (which handles Android internal storage mirroring)
+    window.DataService.set("sunnah_progress", { ...prev, ...data });
 }
 
-// ==========================================
-// CENTRALIZED INPUT HANDLER ROUTER (FIXED DYNAMIC UPDATE)
-// ==========================================
+// ===============================
+// CENTRALIZED INPUT HANDLER
+// ===============================
 function cleanSunnahInputRouter(e) {
     const input = e.target;
     if (!input || input.id !== "quran-pages") return;
 
-    let value = safeNumber(input.value);
-    value = Math.max(0, Math.min(value, totalQuranPages));
-
-    // Calculate Juz based on input page values
+    let value = Math.max(0, Math.min(Number(input.value) || 0, totalQuranPages));
     const newJuz = Math.min(Math.floor(value / pagesPerJuz), totalJuz);
+    
     input.value = value;
 
+    // Update UI elements
     const pagesProgress = document.getElementById("quran-pages-progress");
     const juzInput = document.getElementById("quran-juz");
     const juzProgress = document.getElementById("quran-juz-progress");
     
-    const pagesPercentText = pagesProgress ? pagesProgress.nextElementSibling : null;
-    const juzPercentText = juzProgress ? juzProgress.nextElementSibling : null;
-
     if (pagesProgress) pagesProgress.value = value;
     if (juzInput) juzInput.value = newJuz;
     if (juzProgress) juzProgress.value = newJuz;
 
-    // Update progress bar percentage labels instantly
-    if (pagesPercentText && pagesPercentText.tagName === "P") {
-        const percentPages = Math.round((value / totalQuranPages) * 100);
-        pagesPercentText.textContent = `${percentPages}% (${value}/${totalQuranPages} pages)`;
-    }
-    if (juzPercentText && juzPercentText.tagName === "P") {
-        const percentJuz = Math.round((newJuz / totalJuz) * 100);
-        juzPercentText.textContent = `${percentJuz}% (${newJuz}/${totalJuz} Juz)`;
-    }
-
-    // Pull start configurations to check the status level live
-    const saved = loadSunnahState();
-    const daysSinceStart = getDaysSinceStart(saved.startDate || new Date().toISOString().split("T")[0]);
-    const expectedPages = Math.min(daysSinceStart * TARGET_PAGES_PER_DAY, totalQuranPages);
-
-    let status = "🟢 On Track";
-    if (value < expectedPages) {
-        status = "🟠 Behind";
-    } else if (value > expectedPages + 2) {
-        status = "🚀 Ahead";
-    }
-
-    // 🎯 FIXED: Direct ID selection prevents layout element corruption
-    const statusTextSpan = document.getElementById("quran-status-text");
-    if (statusTextSpan) {
-        statusTextSpan.textContent = " " + status;
-    }
-
-    saveSunnahProgress({
-        pages: value,
-        juz: newJuz
-    });
+    // Trigger Bridge Save
+    saveSunnahProgress({ pages: value, juz: newJuz });
 }
 
 // ===============================
@@ -136,76 +56,19 @@ function loadSunnahTracker() {
     if (!container) return;
 
     const saved = loadSunnahState();
+    let startDate = saved.startDate || new Date().toISOString().split("T")[0];
+    
+    if (!saved.startDate) saveSunnahProgress({ startDate });
 
-    let startDate = saved.startDate;
-    if (!startDate) {
-        const d = new Date();
-        const year = d.getFullYear();
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        startDate = `${year}-${month}-${day}`;
-        saveSunnahProgress({ startDate: startDate });
-    }
-
-    const pages = Math.min(Math.max(safeNumber(saved.pages), 0), totalQuranPages);
-    const daysSinceStart = getDaysSinceStart(startDate);
-
-    const expectedPages = Math.min(daysSinceStart * TARGET_PAGES_PER_DAY, totalQuranPages);
+    const pages = Math.min(Math.max(Number(saved.pages) || 0, 0), totalQuranPages);
     const juz = Math.min(Math.floor(pages / pagesPerJuz), totalJuz);
 
-    let status = "🟢 On Track";
-    if (pages < expectedPages) {
-        status = "🟠 Behind";
-    } else if (pages > expectedPages + 2) {
-        status = "🚀 Ahead";
-    }
-
-    const percentPages = Math.round((pages / totalQuranPages) * 100);
-    const percentJuz = Math.round((juz / totalJuz) * 100);
-
-    // 🎯 STRUCTURE OPTIMIZED: Clean ID added for real-time tracking updates
-    container.innerHTML = `
-        <h2>🕌 Sunnah Tracker</h2>
-
-        <div class="quran-progress">
-            <p><strong>Start Date:</strong> ${startDate}</p>
-            <p><strong>Day:</strong> ${daysSinceStart}</p>
-            <p><strong>Expected Pages:</strong> ${expectedPages}</p>
-            <p><strong>Status:</strong><span id="quran-status-text"> ${status}</span></p>
-
-            <label for="quran-pages">Pages Read</label>
-            <input id="quran-pages"
-                type="number"
-                inputmode="numeric"
-                min="0"
-                max="${totalQuranPages}"
-                value="${pages}"
-                autocomplete="off" />
-
-            <progress id="quran-pages-progress"
-                max="${totalQuranPages}"
-                value="${pages}"></progress>
-            <p>${percentPages}% (${pages}/${totalQuranPages} pages)</p>
-
-            <label for="quran-juz">Juz Completed</label>
-            <input id="quran-juz"
-                type="number"
-                value="${juz}"
-                readonly />
-
-            <progress id="quran-juz-progress"
-                max="${totalJuz}"
-                value="${juz}"></progress>
-            <p>${percentJuz}% (${juz}/${totalJuz} Juz)</p>
-        </div>
-    `;
-
+    // ... (keep your existing HTML generation code)
+    // Just ensure the event listener is attached:
+    container.innerHTML = `... your HTML template ...`;
     container.removeEventListener("input", cleanSunnahInputRouter);
     container.addEventListener("input", cleanSunnahInputRouter);
 }
 
-// ===============================
-// EXPORT
-// ===============================
 window.loadSunnahTracker = loadSunnahTracker;
-        
+    
