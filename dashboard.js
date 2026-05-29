@@ -159,9 +159,7 @@ function loadDashboard() {
       html += `
         <div class="dashboard-subject">
           <h3>${subject}</h3>
-          <div style="width: 100%; height: 6px; background: #1f2a36; border-radius: 4px; overflow: hidden; margin: 8px 0;">
-            <div style="width: ${accurateAvg}%; height: 100%; background: #388bfd; border-radius: 4px;"></div>
-          </div>
+          <progress max="${totalAbsoluteMax}" value="${totalAbsoluteDone}" style="width: 100%; height: 12px; background: #19222d; border-radius: 10px; appearance: none; -webkit-appearance: none; border: none; margin: 8px 0; display: block; overflow: hidden;"></progress>
           <p style="margin: 8px 0 0 0; display: flex !important; align-items: center !important; justify-content: space-between !important; flex-wrap: nowrap !important; gap: 8px !important;">
             <span style="font-weight: 600; white-space: nowrap;">${accurateAvg}% progress</span>
             <span style="font-size:0.85em; color:#8b949e; white-space: nowrap; text-align: right;">
@@ -346,9 +344,7 @@ function loadDashboard() {
           <span style="color: #8b949e; font-weight: 600;">🎯 Master Pages Completion</span>
           <span style="color: #00d4ff; font-weight: 700;">${masterMetrics.totalPagesPercentage}% Done</span>
         </div>
-        <div style="width: 100%; height: 6px; background: #1f2a36; border-radius: 3px; overflow: hidden; margin-bottom: 6px;">
-          <div style="width: ${masterMetrics.totalPagesPercentage}%; height: 100%; background: linear-gradient(90deg, #005f73, #00d4ff); border-radius: 3px;"></div>
-        </div>
+        <progress max="${masterMetrics.TOTAL_PAGES}" value="${masterMetrics.actualPages}" style="width: 100%; height: 12px; background: #19222d; border-radius: 10px; appearance: none; -webkit-appearance: none; border: none; margin-bottom: 6px; display: block; overflow: hidden;"></progress>
         <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; color: #8b949e;">
           <span>Completed: <strong>${masterMetrics.actualPages.toLocaleString()} / ${masterMetrics.TOTAL_PAGES.toLocaleString()}</strong> pgs</span>
           <span style="color: #e5c158;">${masterMetrics.remainingPages.toLocaleString()} left</span>
@@ -360,9 +356,7 @@ function loadDashboard() {
           <span style="color: #8b949e; font-weight: 600;">📅 Overall Year Timeline</span>
           <span style="color: #2ecc71; font-weight: 700;">${roundedYearProgressLabel}% Elapsed</span>
         </div>
-        <div style="width: 100%; height: 6px; background: #1f2a36; border-radius: 3px; overflow: hidden; margin-bottom: 6px;">
-          <div style="width: ${yearProgressVisiblePct}%; height: 100%; background: linear-gradient(90deg, #1e7e34, #2ecc71); border-radius: 3px;"></div>
-        </div>
+        <progress max="${yearTotalTargetWindow}" value="${totalYearDaysElapsed}" style="width: 100%; height: 12px; background: #19222d; border-radius: 10px; appearance: none; -webkit-appearance: none; border: none; margin-bottom: 6px; display: block; overflow: hidden;"></progress>
         <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; color: #8b949e;">
           <span>Elapsed Time: <strong>${totalYearDaysElapsed.toLocaleString()} / ${yearTotalTargetWindow.toLocaleString()}</strong> days</span>
           <span style="color: #ff4d4d;">${Math.max(0, yearTotalTargetWindow - totalYearDaysElapsed)} left</span>
