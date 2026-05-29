@@ -56,6 +56,14 @@ window.Storage = {
 
   // Read internal device storage hidden file on boot
   initNativeFileSystem(callback) {
+    let completed = false;
+    const executeCallbackOnce = () => {
+      if (!completed) {
+        completed = true;
+        if (typeof callback === "function") callback();
+      }
+    };
+
     const loadFromHardwareFile = () => {
       if (window.cordova && window.cordova.file) {
         const path = cordova.file.dataDirectory;
@@ -80,28 +88,33 @@ window.Storage = {
                   console.error("Error parsing internal file data:", e);
                   window.isNativeStorageReady = true; 
                 }
-                if (typeof callback === "function") callback();
+                executeCallbackOnce();
               };
               reader.readAsText(file);
             });
-          }, () => { window.isNativeStorageReady = true; if (typeof callback === "function") callback(); });
-        }, () => { window.isNativeStorageReady = true; if (typeof callback === "function") callback(); });
+          }, () => { window.isNativeStorageReady = true; executeCallbackOnce(); });
+        }, () => { window.isNativeStorageReady = true; executeCallbackOnce(); });
       } else {
         window.isNativeStorageReady = false; 
-        if (typeof callback === "function") callback();
+        executeCallbackOnce();
       }
     };
 
+    // 🔒 FIXED: Safety thread verification loop checks for pre-fired device conditions
     if (window.cordova) {
-      document.addEventListener("deviceready", loadFromHardwareFile, false);
+      if (window.cordova.file) {
+         loadFromHardwareFile();
+      } else {
+         document.addEventListener("deviceready", loadFromHardwareFile, false);
+      }
     } else {
-      document.addEventListener("deviceready", loadFromHardwareFile, false);
+      // Extended browser safe execution delay window prevents state sync overrides
       setTimeout(() => {
         if (!window.isNativeStorageReady) {
           console.log("ℹ️ Running in browser standard storage environment.");
-          if (typeof callback === "function") callback();
+          executeCallbackOnce();
         }
-      }, 500);
+      }, 150);
     }
   }
 };
@@ -163,7 +176,8 @@ function todayISO() {
 =============================== */
 function getCycleState() {
   const today = todayISO();
-  const state = window.Storage.get("cycleState", { startDate: today });
+  // 🔒 FIXED: Storage profile aligned to "studyState" key to ensure structural harmony with dashboard.js
+  const state = window.Storage.get("studyState", { startDate: today, cycleNumber: 1 });
   const start = new Date(state.startDate);
   const now = new Date(today);
 
@@ -179,7 +193,7 @@ function getCycleState() {
     remainingDays: Math.max(0, TOTAL_DAYS - cycleDay)
   };
 
-  window.Storage.set("cycleState", result);
+  window.Storage.set("studyState", result);
   return result;
 }
 
@@ -325,7 +339,7 @@ function safeCall(fnName, message) {
   if (typeof window[fnName] !== "function") {
     const main = document.getElementById("main-content");
     if (main) {
-      main.innerHTML = `<p style="padding:20px; color:red; text-align:center;">${message}</p>`;
+      main.innerHTML = `<p style="padding:20px; color:#ff4d4d; text-align:center; font-weight: bold;">${message}</p>`;
     }
     console.error(`Missing function: ${fnName}`);
     return false;
@@ -442,3 +456,4 @@ window.isRunningStandalone = () => true;
 }
 
 })();
+       
