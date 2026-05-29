@@ -199,30 +199,36 @@ input[readonly] {
 }
 
 /* ==========================================================
-   📊 TRACKING METRIC PROGRESS BARS
+   📊 TRACKING METRIC PROGRESS BARS (FIXED RENDER STANDARD)
    ========================================================== */
 progress {
   display: block;
-  width: 100%;
-  height: 12px;
+  width: 100% !important;
+  height: 12px !important; /* FIXED: Strict encapsulation enforces layout sizes */
   border-radius: 10px;
   overflow: hidden;
   border: none;
-  background: #06090e;
+  background: #06090e !important;
+  margin-top: 8px;
   margin-bottom: 8px;
+  
+  /* FIXED: Resets native system render limits on hybrid devices */
+  appearance: none;
+  -webkit-appearance: none;
 }
 
 progress::-webkit-progress-bar {
   background: #06090e;
+  border-radius: 10px;
 }
 
 progress::-webkit-progress-value {
-  background: linear-gradient(90deg, #00d4ff, #00ffa6);
+  background: linear-gradient(90deg, #00d4ff, #00ffa6) !important;
   border-radius: 10px;
 }
 
 progress::-moz-progress-bar {
-  background: linear-gradient(90deg, #00d4ff, #00ffa6);
+  background: linear-gradient(90deg, #00d4ff, #00ffa6) !important;
   border-radius: 10px;
 }
 
