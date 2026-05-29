@@ -1,41 +1,41 @@
+// =====================================================================
+// 📅 WEEKLY TIMETABLE (TIMEZONE-SAFE PRODUCTION MATRIX - COMPLETE)
+// =====================================================================
+
 "use strict";
 
-// =====================================================
-// 📅 WEEKLY TIMETABLE (TIMEZONE-SAFE PRODUCTION METRICS)
-// =====================================================
-
 function loadWeeklyTimetable() {
+  const container = document.getElementById("main-content");
+  if (!container) {
+    console.error('[System] Main content container missing.');
+    return;
+  }
 
-  const pages = window.maxPagesByGrade || {};
+  // Clear top progress tracking bar layout safely
+  const bar = document.getElementById("grade-progress-bar");
+  if (bar) bar.innerHTML = "";
 
-  const gradeDays = {
-    9: 17,
-    10: 22,
-    11: 27,
-    12: 24
+  // Dynamic maximum data extraction from global schema tracking tables
+  const pages = window.maxPagesByGrade || {
+    9:  { Math: 300, Physics: 200, Chemistry: 200, Biology: 200, English: 200 },
+    10: { Math: 300, Physics: 200, Chemistry: 200, Biology: 200, English: 200 },
+    11: { Math: 300, Physics: 200, Chemistry: 200, Biology: 200, English: 200 },
+    12: { Math: 300, Physics: 200, Chemistry: 200, Biology: 200, English: 200 }
   };
 
-  const container = document.getElementById("main-content");
-  if (!container) return;
+  const gradeDays = { 9: 17, 10: 22, 11: 27, 12: 24 };
 
   // ==========================================
   // SAFE BACKGROUND STATE CALCULATION ENGINE
   // ==========================================
   const today = new Date();
-  
-  // Fixed: Pulls local calendar dates directly to stay aligned with EAT timezone rules
   const year = today.getFullYear();
   const month = String(today.getMonth() + 1).padStart(2, '0');
   const day = String(today.getDate()).padStart(2, '0');
   const todayStr = `${year}-${month}-${day}`;
 
-  let state;
-
-  try {
-    state = JSON.parse(localStorage.getItem("studyState") || "{}");
-  } catch {
-    state = {};
-  }
+  const defaultState = { startDate: todayStr, missedDays: 0, lastVisit: todayStr };
+  const state = window.Storage ? window.Storage.get("studyState", defaultState) : defaultState;
 
   if (!state.startDate) {
     state.startDate = todayStr;
@@ -48,61 +48,37 @@ function loadWeeklyTimetable() {
   };
 
   const missed = daysBetween(state.lastVisit || todayStr, todayStr);
-
   if (missed > 1) {
     state.missedDays = (state.missedDays || 0) + (missed - 1);
   }
 
   state.lastVisit = todayStr;
-
-  try {
-    localStorage.setItem("studyState", JSON.stringify(state));
-  } catch {}
+  if (window.Storage) {
+    window.Storage.set("studyState", state);
+  }
 
   const BASE_TARGET = 64;
   const DAILY_TARGET = BASE_TARGET + ((state.missedDays || 0) * 8);
 
   // ===================================================
-  // UI START (REPETITIVE LABELS & HEADINGS TRUNCATED)
+  // PRODUCTION UI COMPONENT RENDERING
   // ===================================================
-  let html = `
-    <div class="weekly-table-wrapper" style="overflow-x: auto; width: 100%; -webkit-overflow-scrolling: touch; margin-top: 15px;">
-      <table class="weekly-table" style="width: 100%; border-collapse: collapse; text-align: left; min-width: 600px;">
-        <thead>
-          <tr style="background-color: #00a8ff; color: #fff;">
-            <th style="padding: 12px 10px;">Grade</th>
-            <th style="padding: 12px 10px;">Days</th>
-            <th style="padding: 12px 10px;">Math</th>
-            <th style="padding: 12px 10px;">Physics</th>
-            <th style="padding: 12px 10px;">Chemistry</th>
-            <th style="padding: 12px 10px;">Biology</th>
-            <th style="padding: 12px 10px;">English</th>
-            <th style="padding: 12px 10px; background-color: #00d4ff; color: #000;">Total/Day</th>
-            <th style="padding: 12px 10px;">Total Pages</th>
-          </tr>
-        </thead>
-        <tbody>
-  `;
+  let rowsHtml = "";
 
-  // ==========================================
-  // TABLE DATA LOOPING
-  // ==========================================
   [9, 10, 11, 12].forEach(g => {
-
     const d = pages[g];
 
     if (!d) {
-      html += `
-        <tr style="border-bottom: 1px solid #222;">
-          <td style="padding: 10px;"><b>Grade ${g}</b></td>
-          <td colspan="8" style="color:#ff4d4d; padding: 10px; font-style: italic;">No data available</td>
+      rowsHtml += `
+        <tr>
+          <td style="font-weight: 700; color: var(--primary);">Grade ${g}</td>
+          <td colspan="8" style="color: #ff4d4d; font-style: italic;">No core track data available</td>
         </tr>
       `;
       return;
     }
 
     const days = gradeDays[g] || 0;
-
     const math = Number(d.Math) || 0;
     const physics = Number(d.Physics) || 0;
     const chemistry = Number(d.Chemistry) || 0;
@@ -112,16 +88,17 @@ function loadWeeklyTimetable() {
     const total = math + physics + chemistry + biology + english;
 
     if (total === 0) {
-      html += `
-        <tr style="border-bottom: 1px solid #222;">
-          <td style="padding: 10px;"><b>Grade ${g}</b></td>
-          <td style="padding: 10px;">${days}</td>
-          <td colspan="7" style="padding: 10px; color: #777;">No subject data available</td>
+      rowsHtml += `
+        <tr>
+          <td style="font-weight: 700; color: var(--primary);">Grade ${g}</td>
+          <td>${days} days</td>
+          <td colspan="7" style="color: var(--muted); font-style: italic;">No allocation values registered</td>
         </tr>
       `;
       return;
     }
 
+    // Dynamic mathematical proportional pacing allocations
     const mathP = Math.round((math / total) * DAILY_TARGET);
     const physicsP = Math.round((physics / total) * DAILY_TARGET);
     const chemistryP = Math.round((chemistry / total) * DAILY_TARGET);
@@ -130,35 +107,53 @@ function loadWeeklyTimetable() {
     let englishP = DAILY_TARGET - (mathP + physicsP + chemistryP + biologyP);
     if (englishP < 0) englishP = 0;
 
-    html += `
-      <tr style="border-bottom: 1px solid #222;">
-        <td style="padding: 12px 10px; font-weight: bold; color: #00d4ff;">Grade ${g}</td>
-        <td style="padding: 12px 10px; color: #fff;">${days} days</td>
-        <td style="padding: 12px 10px; color: #ccc;">${mathP} p.</td>
-        <td style="padding: 12px 10px; color: #ccc;">${physicsP} p.</td>
-        <td style="padding: 12px 10px; color: #ccc;">${chemistryP} p.</td>
-        <td style="padding: 12px 10px; color: #ccc;">${biologyP} p.</td>
-        <td style="padding: 12px 10px; color: #ccc;">${englishP} p.</td>
-        <td style="padding: 12px 10px; font-weight: bold; color: #00d4ff; background-color: rgba(0, 212, 255, 0.05);">${DAILY_TARGET}</td>
-        <td style="padding: 12px 10px; font-weight: bold; color: #888;">${total}</td>
+    rowsHtml += `
+      <tr>
+        <td style="font-weight: 700; color: var(--primary);">Grade ${g}</td>
+        <td style="color: #ffffff;">${days} days</td>
+        <td>${mathP} p.</td>
+        <td>${physicsP} p.</td>
+        <td>${chemistryP} p.</td>
+        <td>${biologyP} p.</td>
+        <td>${englishP} p.</td>
+        <td style="font-weight: 700; color: var(--primary); background: var(--primary-soft); text-align: center;">${DAILY_TARGET}</td>
+        <td style="color: var(--muted); font-weight: 600;">${total}</td>
       </tr>
     `;
   });
 
-  html += `
+  // Structural design wrapping matching enterprise styles.css definitions
+  const innerWrapper = document.createElement("div");
+  innerWrapper.className = "timetable-view-container";
+  innerWrapper.innerHTML = `
+    <h2>📅 Adaptive Daily Distribution Projections</h2>
+    <p style="color: var(--muted); text-align: center; font-size: 14px; margin-bottom: 20px;">
+      Velocity metrics are calculated relative to missed-day variables using local timezone parameters.
+    </p>
+    <div class="weekly-table-wrapper">
+      <table class="weekly-table" style="min-width: 500px;">
+        <thead>
+          <tr>
+            <th>Grade Tree</th>
+            <th>Duration</th>
+            <th>Math</th>
+            <th>Physics</th>
+            <th>Chemistry</th>
+            <th>Biology</th>
+            <th>English</th>
+            <th style="text-align: center; background: #007acc;">Target/Day</th>
+            <th>Total Pages</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHtml}
         </tbody>
       </table>
     </div>
   `;
 
-  container.innerHTML = html;
-
-  const bar = document.getElementById("grade-progress-bar");
-  if (bar) bar.innerHTML = "";
+  container.replaceChildren(innerWrapper);
 }
 
-// ==========================================
-// EXPORT
-// ==========================================
+// Global runtime execution routing binding
 window.loadWeeklyTimetable = loadWeeklyTimetable;
-                          
