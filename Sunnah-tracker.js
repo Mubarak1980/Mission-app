@@ -6,21 +6,31 @@
 
 const totalQuranPages = 604;
 const pagesPerJuz = 20;
-const totalJuz = 30; 
-const TARGET_PAGES_PER_DAY = 1; 
+const totalJuz = 30;
 
 // ===============================
-// BRIDGE-AWARE STORAGE
+// BRIDGE-AWARE LOADING
 // ===============================
 function loadSunnahState() {
-    // Fetches directly from the unified master file
-    return window.DataService.get("sunnah_progress") || {};
+    const masterData = window.DataService.get();
+    // Ensure the sunnahProgress object exists within the master state
+    if (!masterData.sunnahProgress) masterData.sunnahProgress = { 
+        pages: 0, 
+        juz: 0, 
+        startDate: new Date().toISOString().split("T")[0] 
+    };
+    return masterData.sunnahProgress;
 }
 
+// ===============================
+// BRIDGE-AWARE SAVING
+// ===============================
 function saveSunnahProgress(data) {
-    const prev = loadSunnahState();
-    // Save to the bridge (which handles Android internal storage mirroring)
-    window.DataService.set("sunnah_progress", { ...prev, ...data });
+    const masterData = window.DataService.get();
+    // Merge new data into the master object
+    masterData.sunnahProgress = { ...(masterData.sunnahProgress || {}), ...data };
+    // Persist through the unified bridge
+    window.DataService.set(masterData);
 }
 
 // ===============================
@@ -33,42 +43,49 @@ function cleanSunnahInputRouter(e) {
     let value = Math.max(0, Math.min(Number(input.value) || 0, totalQuranPages));
     const newJuz = Math.min(Math.floor(value / pagesPerJuz), totalJuz);
     
-    input.value = value;
+    // Save to the bridge
+    saveSunnahProgress({ pages: value, juz: newJuz });
 
-    // Update UI elements
+    // Update UI components
     const pagesProgress = document.getElementById("quran-pages-progress");
-    const juzInput = document.getElementById("quran-juz");
+    const juzDisplay = document.getElementById("quran-juz");
     const juzProgress = document.getElementById("quran-juz-progress");
     
     if (pagesProgress) pagesProgress.value = value;
-    if (juzInput) juzInput.value = newJuz;
+    if (juzDisplay) juzDisplay.innerText = newJuz;
     if (juzProgress) juzProgress.value = newJuz;
-
-    // Trigger Bridge Save
-    saveSunnahProgress({ pages: value, juz: newJuz });
 }
 
 // ===============================
 // MAIN TRACKER COMPONENT
 // ===============================
-function loadSunnahTracker() {
+window.loadSunnahTracker = (grade) => {
     const container = document.getElementById("main-content");
     if (!container) return;
 
-    const saved = loadSunnahState();
-    let startDate = saved.startDate || new Date().toISOString().split("T")[0];
-    
-    if (!saved.startDate) saveSunnahProgress({ startDate });
+    // 🛡️ Ensure clean slate
+    container.innerHTML = "";
 
+    const saved = loadSunnahState();
     const pages = Math.min(Math.max(Number(saved.pages) || 0, 0), totalQuranPages);
     const juz = Math.min(Math.floor(pages / pagesPerJuz), totalJuz);
 
-    // ... (keep your existing HTML generation code)
-    // Just ensure the event listener is attached:
-    container.innerHTML = `... your HTML template ...`;
+    container.innerHTML = `
+        <h2>🕌 Sunnah & Quran Tracker</h2>
+        <div class="sunnah-container" style="padding: 20px;">
+            <label for="quran-pages">Quran Pages Read (Total: ${totalQuranPages})</label>
+            <input type="number" id="quran-pages" value="${pages}" min="0" max="${totalQuranPages}" 
+                   style="width: 100%; padding: 10px; margin: 10px 0; border-radius: 6px;">
+            
+            <progress id="quran-pages-progress" value="${pages}" max="${totalQuranPages}" style="width: 100%;"></progress>
+            
+            <div style="margin-top: 20px;">
+                <p>Current Juz: <span id="quran-juz">${juz}</span> / ${totalJuz}</p>
+                <progress id="quran-juz-progress" value="${juz}" max="${totalJuz}" style="width: 100%;"></progress>
+            </div>
+        </div>
+    `;
+
     container.removeEventListener("input", cleanSunnahInputRouter);
     container.addEventListener("input", cleanSunnahInputRouter);
-}
-
-window.loadSunnahTracker = loadSunnahTracker;
-    
+};
