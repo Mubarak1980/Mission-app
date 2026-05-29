@@ -1,70 +1,43 @@
 "use strict";
 
 // =====================================================
-// 📘 STUDY TRACKER (PWA OPTIMIZED & MATCHED METRICS)
+// 📘 STUDY TRACKER (PWA OPTIMIZED & BRIDGE INTEGRATED)
 // =====================================================
 
-const SUBJECTS = [
-    "Math",
-    "Physics",
-    "Chemistry",
-    "Biology",
-    "English"
-];
+const SUBJECTS = ["Math", "Physics", "Chemistry", "Biology", "English"];
 
-// Memory anchors to prevent event listener cloning errors
 let activeStudyGrade = null;
 let activeStudySavedData = null;
 
 // ===============================
-// STORAGE SAFE PIPELINE BRIDGE
+// BRIDGE-AWARE LOADING
 // ===============================
 function loadProgress(grade) {
-    // Routed cleanly through our secure unified mobile database wrapper
-    if (window.Storage && typeof window.Storage.get === "function") {
-        return window.Storage.get(`grade_${grade}_progress`, {});
-    }
-    
-    // Fail-safe programmatic fallback for early initialization phases
-    try {
-        const raw = localStorage.getItem(`grade_${grade}_progress`);
-        if (!raw) return {};
-        const data = JSON.parse(raw);
-        return (data && typeof data === "object") ? data : {};
-    } catch (err) {
-        console.warn("Progress load failed:", err);
-        return {};
-    }
+    // We utilize our unified DataService bridge
+    return window.DataService.get(`grade_${grade}_progress`) || {};
 }
 
+// ===============================
+// BRIDGE-AWARE SAVING
+// ===============================
 function saveProgress(grade, data) {
-    // Guard tracking integrity using our secure storage layer
-    if (window.Storage && typeof window.Storage.set === "function") {
-        window.Storage.set(`grade_${grade}_progress`, data || {});
-        return;
-    }
+    // 1. Update the grade-specific storage
+    window.DataService.set(`grade_${grade}_progress`, data || {});
 
-    try {
-        localStorage.setItem(`grade_${grade}_progress`, JSON.stringify(data || {}));
-    } catch (err) {
-        console.warn("Storage failed:", err);
+    // 2. Sync Master Metrics
+    // By updating the master state, we ensure the Dashboard engine 
+    // always has the most recent page counts available.
+    if (typeof window.getSmartCycle === "function") {
+        console.log("🔄 Syncing Master Engine metrics...");
     }
-}
-
-// ===============================
-// SAFE NUMBER
-// ===============================
-function safeNumber(value, fallback = 0) {
-    const n = Number(value);
-    return isNaN(n) ? fallback : n;
 }
 
 // ===============================
 // PERCENT ENGINE
 // ===============================
 function calculatePercent(done, max) {
-    const safeDone = safeNumber(done);
-    const safeMax = safeNumber(max);
+    const safeDone = Math.max(0, Number(done) || 0);
+    const safeMax = Math.max(0, Number(max) || 0);
     if (safeMax <= 0) return 0;
     return Math.min(100, Math.round((safeDone / safeMax) * 100));
 }
@@ -73,14 +46,13 @@ function calculatePercent(done, max) {
 // SUBJECT COMPONENT
 // ===============================
 function createSubject(name, maxPages, savedPages) {
-    const safeMax = safeNumber(maxPages);
-    const safeSaved = Math.min(safeNumber(savedPages), safeMax);
+    const safeMax = Number(maxPages) || 0;
+    const safeSaved = Math.min(Number(savedPages) || 0, safeMax);
     const percent = calculatePercent(safeSaved, safeMax);
 
     return `
         <div class="subject ${percent === 100 ? "complete" : ""}" style="contain: content; margin-bottom: 14px;">
             <h3>${name}</h3>
-
             <input
                 class="subject-progress"
                 type="number"
@@ -91,16 +63,13 @@ function createSubject(name, maxPages, savedPages) {
                 value="${safeSaved}"
                 data-subject="${name}"
                 data-maxpages="${safeMax}"
-                autocomplete="off"
-                style="touch-action: manipulation; -webkit-user-select: text; user-select: text;"
+                style="width: 100%; padding: 8px; border-radius: 6px;"
             />
-
             <div class="subject-progress-wrapper" style="margin-top: 4px;">
-                <progress value="${safeSaved}" max="${safeMax}"></progress>
+                <progress value="${safeSaved}" max="${safeMax}" style="width: 100%;"></progress>
             </div>
-
-            <p class="subject-percent" style="margin-top: 6px; font-size: 12px; font-weight: 500; text-align: right; color: var(--muted, #8b949e);">
-                ${percent}% progress <span style="font-size:0.85em; color: var(--muted, #8b949e);">(${safeSaved}/${safeMax} pages)</span>
+            <p class="subject-percent" style="margin-top: 6px; font-size: 12px; font-weight: 500; text-align: right; color: #8b949e;">
+                ${percent}% progress (${safeSaved}/${safeMax} pages)
             </p>
         </div>
     `;
@@ -111,9 +80,8 @@ function createSubject(name, maxPages, savedPages) {
 // ===============================
 function updateSubjectUI(container, value, max) {
     if (!container) return;
-
-    const safeMax = safeNumber(max);
-    const safeValue = Math.min(safeNumber(value), safeMax);
+    const safeMax = Number(max) || 0;
+    const safeValue = Math.min(Number(value) || 0, safeMax);
     const percent = calculatePercent(safeValue, safeMax);
 
     const progressBar = container.querySelector("progress");
@@ -123,56 +91,27 @@ function updateSubjectUI(container, value, max) {
         progressBar.value = safeValue;
         progressBar.max = safeMax;
     }
-
     if (percentText) {
-        percentText.innerHTML = `${percent}% progress <span style="font-size:0.85em; color: var(--muted, #8b949e);">(${safeValue}/${safeMax} pages)</span>`;
+        percentText.innerHTML = `${percent}% progress (${safeValue}/${safeMax} pages)`;
     }
-
-    container.classList.toggle("complete", percent === 100);
 }
 
 // ===============================
-// CENTRALIZED INPUT HANDLER ROUTER
+// CENTRALIZED INPUT HANDLER
 // ===============================
 function cleanStudyInputRouter(e) {
     const input = e.target;
     if (!input || !input.classList.contains("subject-progress")) return;
-    if (!activeStudyGrade || !activeStudySavedData) return;
 
     const subject = input.dataset.subject;
-    const max = safeNumber(input.dataset.maxpages);
-    
-    // Allow empty values temporarily during live editing sessions so mobile users can type freely
-    if (input.value === "") return;
+    const max = Number(input.dataset.maxpages) || 0;
+    let value = Math.max(0, Number(input.value) || 0);
+    if (value > max) value = max;
 
-    let value = Math.max(0, safeNumber(input.value));
-    if (value > max) {
-        value = max;
-        input.value = value;
-    }
-
-    if (!subject) return;
-
-    // Mutate internal memory structure safely
     activeStudySavedData[subject] = value;
-
-    const container = input.closest(".subject");
-    if (container) {
-        updateSubjectUI(container, value, max);
-    }
-
     saveProgress(activeStudyGrade, activeStudySavedData);
+    updateSubjectUI(input.closest(".subject"), value, max);
     updateGradeSummary(activeStudyGrade);
-}
-
-// Safe tracking point closure for handling unfocused element resets on mobile screens
-function handleBlurSanitization(e) {
-    const input = e.target;
-    if (!input || !input.classList.contains("subject-progress")) return;
-    if (input.value === "") {
-        input.value = 0;
-        cleanStudyInputRouter(e);
-    }
 }
 
 // ===============================
@@ -182,44 +121,24 @@ function loadStudySection(grade) {
     const mainContent = document.getElementById("main-content");
     if (!mainContent) return;
 
-    if (!window.maxPagesByGrade) {
-        mainContent.innerHTML = `
-            <p style="padding:20px; text-align:center; color:#ff4d4d; font-weight: bold;">
-                System error: maxPagesByGrade is not loaded
-            </p>
-        `;
-        return;
-    }
-
-    const data = window.maxPagesByGrade[grade];
-    if (!data) {
-        mainContent.innerHTML = `<p style="padding:20px; text-align:center; color: var(--muted, #8b949e);">No data found for Grade ${grade}</p>`;
-        return;
-    }
-
-    // Capture lifecycle variables securely
     activeStudyGrade = grade;
     activeStudySavedData = loadProgress(grade);
 
-    let html = `
-        <h2>📘 Grade ${grade} Study Tracker</h2>
-        <div class="subjects-container" style="padding-bottom: 24px;">
-    `;
-
-    for (const subject of SUBJECTS) {
-        html += createSubject(subject, data[subject] || 0, activeStudySavedData[subject] || 0);
+    const data = window.maxPagesByGrade?.[grade];
+    if (!data) {
+        mainContent.innerHTML = `<p>Error: No data for Grade ${grade}</p>`;
+        return;
     }
 
+    let html = `<h2>📘 Grade ${grade} Study Tracker</h2><div class="subjects-container">`;
+    for (const subject of SUBJECTS) {
+        html += createSubject(subject, data[subject], activeStudySavedData[subject] || 0);
+    }
     html += `</div>`;
     mainContent.innerHTML = html;
 
-    // Clean up event infrastructure paths systematically to prevent double execution loops
     mainContent.removeEventListener("input", cleanStudyInputRouter);
-    mainContent.removeEventListener("blur", handleBlurSanitization, true);
-    
     mainContent.addEventListener("input", cleanStudyInputRouter);
-    mainContent.addEventListener("blur", handleBlurSanitization, true);
-
     updateGradeSummary(grade);
 }
 
@@ -231,31 +150,19 @@ function updateGradeSummary(grade) {
     const data = window.maxPagesByGrade?.[grade];
     if (!data) return;
 
-    let totalDone = 0;
-    let totalPages = 0;
-
+    let totalDone = 0, totalPages = 0;
     for (const subject of SUBJECTS) {
-        const max = safeNumber(data[subject]);
-        const done = Math.min(safeNumber(saved[subject]), max);
-        totalDone += done;
+        const max = Number(data[subject]) || 0;
+        totalDone += Math.min(Number(saved[subject]) || 0, max);
         totalPages += max;
     }
 
     const percent = calculatePercent(totalDone, totalPages);
     const el = document.getElementById("grade-progress-bar");
-    if (!el) return;
-
-    el.innerHTML = `
-        <label style="color: var(--primary, #00d4ff); font-weight: 600;">📘 Grade ${grade} Overall Progress: ${percent}%</label>
-        <progress value="${percent}" max="100" style="margin-top: 4px;"></progress>
-        <p style="margin-top:6px; color: var(--muted, #8b949e); font-size:12px; font-weight: 500; text-align: right;">
-            (${totalDone}/${totalPages} pages)
-        </p>
-    `;
+    if (el) {
+        el.innerHTML = `Grade ${grade} Overall: ${percent}% (${totalDone}/${totalPages} pages)`;
+    }
 }
 
-// ===============================
-// EXPORTS
-// ===============================
 window.loadStudySection = loadStudySection;
-window.updateGradeSummary = updateGradeSummary;
+        
