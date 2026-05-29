@@ -17,9 +17,15 @@ let activeStudyGrade = null;
 let activeStudySavedData = null;
 
 // ===============================
-// STORAGE SAFE
+// STORAGE SAFE PIPELINE BRIDGE
 // ===============================
 function loadProgress(grade) {
+    // Routed cleanly through our secure unified mobile database wrapper
+    if (window.Storage && typeof window.Storage.get === "function") {
+        return window.Storage.get(`grade_${grade}_progress`, {});
+    }
+    
+    // Fail-safe programmatic fallback for early initialization phases
     try {
         const raw = localStorage.getItem(`grade_${grade}_progress`);
         if (!raw) return {};
@@ -32,6 +38,12 @@ function loadProgress(grade) {
 }
 
 function saveProgress(grade, data) {
+    // Guard tracking integrity using our secure storage layer
+    if (window.Storage && typeof window.Storage.set === "function") {
+        window.Storage.set(`grade_${grade}_progress`, data || {});
+        return;
+    }
+
     try {
         localStorage.setItem(`grade_${grade}_progress`, JSON.stringify(data || {}));
     } catch (err) {
@@ -66,27 +78,29 @@ function createSubject(name, maxPages, savedPages) {
     const percent = calculatePercent(safeSaved, safeMax);
 
     return `
-        <div class="subject ${percent === 100 ? "complete" : ""}">
+        <div class="subject ${percent === 100 ? "complete" : ""}" style="contain: content; margin-bottom: 14px;">
             <h3>${name}</h3>
 
             <input
                 class="subject-progress"
                 type="number"
                 inputmode="numeric"
+                pattern="[0-9]*"
                 min="0"
                 max="${safeMax}"
                 value="${safeSaved}"
                 data-subject="${name}"
                 data-maxpages="${safeMax}"
                 autocomplete="off"
+                style="touch-action: manipulation; -webkit-user-select: text; user-select: text;"
             />
 
-            <div class="subject-progress-wrapper">
+            <div class="subject-progress-wrapper" style="margin-top: 4px;">
                 <progress value="${safeSaved}" max="${safeMax}"></progress>
             </div>
 
-            <p class="subject-percent">
-                ${percent}% progress <span style="font-size:0.85em; color:#888;">(${safeSaved}/${safeMax} pages)</span>
+            <p class="subject-percent" style="margin-top: 6px; font-size: 12px; font-weight: 500; text-align: right; color: var(--muted, #8b949e);">
+                ${percent}% progress <span style="font-size:0.85em; color: var(--muted, #8b949e);">(${safeSaved}/${safeMax} pages)</span>
             </p>
         </div>
     `;
@@ -111,7 +125,7 @@ function updateSubjectUI(container, value, max) {
     }
 
     if (percentText) {
-        percentText.innerHTML = `${percent}% progress <span style="font-size:0.85em; color:#888;">(${safeValue}/${safeMax} pages)</span>`;
+        percentText.innerHTML = `${percent}% progress <span style="font-size:0.85em; color: var(--muted, #8b949e);">(${safeValue}/${safeMax} pages)</span>`;
     }
 
     container.classList.toggle("complete", percent === 100);
@@ -128,13 +142,18 @@ function cleanStudyInputRouter(e) {
     const subject = input.dataset.subject;
     const max = safeNumber(input.dataset.maxpages);
     
+    // Allow empty values temporarily during live editing sessions so mobile users can type freely
+    if (input.value === "") return;
+
     let value = Math.max(0, safeNumber(input.value));
-    value = Math.min(value, max);
-    input.value = value;
+    if (value > max) {
+        value = max;
+        input.value = value;
+    }
 
     if (!subject) return;
 
-    // Direct context mutation
+    // Mutate internal memory structure safely
     activeStudySavedData[subject] = value;
 
     const container = input.closest(".subject");
@@ -146,6 +165,16 @@ function cleanStudyInputRouter(e) {
     updateGradeSummary(activeStudyGrade);
 }
 
+// Safe tracking point closure for handling unfocused element resets on mobile screens
+function handleBlurSanitization(e) {
+    const input = e.target;
+    if (!input || !input.classList.contains("subject-progress")) return;
+    if (input.value === "") {
+        input.value = 0;
+        cleanStudyInputRouter(e);
+    }
+}
+
 // ===============================
 // LOAD STUDY SECTION
 // ===============================
@@ -155,7 +184,7 @@ function loadStudySection(grade) {
 
     if (!window.maxPagesByGrade) {
         mainContent.innerHTML = `
-            <p style="padding:20px; text-align:center; color:red;">
+            <p style="padding:20px; text-align:center; color:#ff4d4d; font-weight: bold;">
                 System error: maxPagesByGrade is not loaded
             </p>
         `;
@@ -164,17 +193,17 @@ function loadStudySection(grade) {
 
     const data = window.maxPagesByGrade[grade];
     if (!data) {
-        mainContent.innerHTML = `<p style="padding:20px; text-align:center;">No data found for Grade ${grade}</p>`;
+        mainContent.innerHTML = `<p style="padding:20px; text-align:center; color: var(--muted, #8b949e);">No data found for Grade ${grade}</p>`;
         return;
     }
 
-    // Capture states accurately
+    // Capture lifecycle variables securely
     activeStudyGrade = grade;
     activeStudySavedData = loadProgress(grade);
 
     let html = `
         <h2>📘 Grade ${grade} Study Tracker</h2>
-        <div class="subjects-container">
+        <div class="subjects-container" style="padding-bottom: 24px;">
     `;
 
     for (const subject of SUBJECTS) {
@@ -184,9 +213,12 @@ function loadStudySection(grade) {
     html += `</div>`;
     mainContent.innerHTML = html;
 
-    // Safely remove structural duplicates before rebinding
+    // Clean up event infrastructure paths systematically to prevent double execution loops
     mainContent.removeEventListener("input", cleanStudyInputRouter);
+    mainContent.removeEventListener("blur", handleBlurSanitization, true);
+    
     mainContent.addEventListener("input", cleanStudyInputRouter);
+    mainContent.addEventListener("blur", handleBlurSanitization, true);
 
     updateGradeSummary(grade);
 }
@@ -214,9 +246,9 @@ function updateGradeSummary(grade) {
     if (!el) return;
 
     el.innerHTML = `
-        <label>📘 Grade ${grade} Overall Progress: ${percent}%</label>
-        <progress value="${percent}" max="100"></progress>
-        <p style="margin-top:6px; color:#888; font-size:0.9em;">
+        <label style="color: var(--primary, #00d4ff); font-weight: 600;">📘 Grade ${grade} Overall Progress: ${percent}%</label>
+        <progress value="${percent}" max="100" style="margin-top: 4px;"></progress>
+        <p style="margin-top:6px; color: var(--muted, #8b949e); font-size:12px; font-weight: 500; text-align: right;">
             (${totalDone}/${totalPages} pages)
         </p>
     `;
@@ -227,4 +259,3 @@ function updateGradeSummary(grade) {
 // ===============================
 window.loadStudySection = loadStudySection;
 window.updateGradeSummary = updateGradeSummary;
-    
