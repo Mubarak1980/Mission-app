@@ -1,31 +1,20 @@
 "use strict";
 
 // =====================================================
-// 📘 MAIN ENGINE (CASE-ALIGNED & TIMEZONE-SAFE PRODUCTION VERSION)
+// 📘 MAIN ENGINE (EXPOSED HARDWARE STORAGE PRODUCTION ARCHITECTURE)
 // =====================================================
 
-(() => {
+// Global Storage Allocation Bridge (Exposed globally BEFORE IIFE capsule)
+window.NATIVE_FILE_NAME = "mission_app_progress.json";
+window.cachedNativeData = window.cachedNativeData || {}; 
+window.isNativeStorageReady = false;
 
-/* ===============================
-   SAFETY WRAPPER
-=============================== */
-try {
-
-/* =====================================================
-   💾 TRUE NATIVE STORAGE ENGINE (HYBRID INTERNAL STORAGE)
-===================================================== */
-const NATIVE_FILE_NAME = "mission_app_progress.json";
-window.cachedNativeData = {}; 
-window.isNativeStorageReady = false; // Safety bridge flag
-
-const Storage = {
+window.Storage = {
   // Read Data
   get(key, fallback) {
-    // If native hardware file is ready, read from memory cache
     if (window.isNativeStorageReady && window.cachedNativeData && window.cachedNativeData[key] !== undefined) {
       return window.cachedNativeData[key];
     }
-    // Fallback to standard browser storage if native hardware isn't ready yet
     try {
       const raw = localStorage.getItem(key);
       if (!raw) return fallback;
@@ -37,23 +26,20 @@ const Storage = {
 
   // Save Data
   set(key, value) {
-    // 1. Always update memory cache instantly
     window.cachedNativeData[key] = value;
     
-    // 2. Always write to localStorage as a quick backup tier
     try {
       localStorage.setItem(key, JSON.stringify(value));
     } catch (e) {
       console.warn("Browser storage mirror backup skipped");
     }
 
-    // 3. If native hardware is ready, write directly to the phone's internal storage chip
     if (window.isNativeStorageReady && window.cordova && window.cordova.file) {
       const dataStringToSave = JSON.stringify(window.cachedNativeData);
-      const path = cordova.file.dataDirectory; // Secure internal storage folder
+      const path = cordova.file.dataDirectory; 
 
       window.resolveLocalFileSystemURL(path, (dir) => {
-        dir.getFile(NATIVE_FILE_NAME, { create: true, exclusive: false }, (fileEntry) => {
+        dir.getFile(window.NATIVE_FILE_NAME, { create: true, exclusive: false }, (fileEntry) => {
           fileEntry.createWriter((fileWriter) => {
             fileWriter.onwriteend = () => {
               console.log("💾 SUCCESS: Progress saved directly to phone internal storage!");
@@ -68,13 +54,13 @@ const Storage = {
     }
   },
 
-  // Read the hidden file from internal storage when phone boots up
+  // Read internal device storage hidden file on boot
   initNativeFileSystem(callback) {
     const loadFromHardwareFile = () => {
       if (window.cordova && window.cordova.file) {
         const path = cordova.file.dataDirectory;
         window.resolveLocalFileSystemURL(path, (dir) => {
-          dir.getFile(NATIVE_FILE_NAME, { create: true, exclusive: false }, (fileEntry) => {
+          dir.getFile(window.NATIVE_FILE_NAME, { create: true, exclusive: false }, (fileEntry) => {
             fileEntry.file((file) => {
               const reader = new FileReader();
               reader.onloadend = function() {
@@ -84,12 +70,10 @@ const Storage = {
                     window.isNativeStorageReady = true;
                     console.log("📥 SUCCESS: Loaded progress from phone internal storage.");
                     
-                    // Sync internal storage data back to localStorage layer just in case
                     for (const key in window.cachedNativeData) {
                       localStorage.setItem(key, JSON.stringify(window.cachedNativeData[key]));
                     }
                   } else {
-                    // File is empty, mark ready anyway to allow writing
                     window.isNativeStorageReady = true;
                   }
                 } catch (e) {
@@ -103,16 +87,14 @@ const Storage = {
           }, () => { window.isNativeStorageReady = true; if (typeof callback === "function") callback(); });
         }, () => { window.isNativeStorageReady = true; if (typeof callback === "function") callback(); });
       } else {
-        window.isNativeStorageReady = false; // Not running in Cordova shell package
+        window.isNativeStorageReady = false; 
         if (typeof callback === "function") callback();
       }
     };
 
-    // Safety Bridge: Wait for device hardware to be fully ready before touching files
     if (window.cordova) {
       document.addEventListener("deviceready", loadFromHardwareFile, false);
     } else {
-      // If running inside a normal web browser testing environment, boot up immediately
       document.addEventListener("deviceready", loadFromHardwareFile, false);
       setTimeout(() => {
         if (!window.isNativeStorageReady) {
@@ -123,6 +105,10 @@ const Storage = {
     }
   }
 };
+
+(() => {
+
+try {
 
 /* ===============================
    🔒 STORAGE PROTECTION ENGINE (PERSISTENT API TIER)
@@ -177,7 +163,7 @@ function todayISO() {
 =============================== */
 function getCycleState() {
   const today = todayISO();
-  const state = Storage.get("cycleState", { startDate: today });
+  const state = window.Storage.get("cycleState", { startDate: today });
   const start = new Date(state.startDate);
   const now = new Date(today);
 
@@ -193,7 +179,7 @@ function getCycleState() {
     remainingDays: Math.max(0, TOTAL_DAYS - cycleDay)
   };
 
-  Storage.set("cycleState", result);
+  window.Storage.set("cycleState", result);
   return result;
 }
 
@@ -215,7 +201,7 @@ function getExpectedProgress() {
 function getActualProgress() {
   let total = 0;
   for (const grade of GRADES) {
-    const saved = Storage.get(`grade_${grade}_progress`, {});
+    const saved = window.Storage.get(`grade_${grade}_progress`, {});
     for (const subject of SUBJECTS) {
       const value = Number(saved?.[subject]);
       total += isNaN(value) ? 0 : value;
@@ -296,11 +282,11 @@ const UI = {
   currentSection: "study",
 
   save() {
-    Storage.set("ui_state", { grade: this.currentGrade, section: this.currentSection });
+    window.Storage.set("ui_state", { grade: this.currentGrade, section: this.currentSection });
   },
 
   load() {
-    const saved = Storage.get("ui_state", null);
+    const saved = window.Storage.get("ui_state", null);
     this.currentSection = "study";
     if (!saved) {
       this.currentGrade = 9;
@@ -403,14 +389,13 @@ function initApp() {
   if (initialized) return;
   initialized = true;
 
-  // Hybrid file loader: safe loading tier loop integration
-  Storage.initNativeFileSystem(() => {
+  window.Storage.initNativeFileSystem(() => {
     UI.load();
     Nav.init();
     getCycleState();
     enforceDataPersistence();
 
-    console.log("🚀 Mission App Ready: HYBRID HARWARE TRACKING ACTIVE");
+    console.log("🚀 Mission App Ready: HYBRID HARDWARE TRACKING ACTIVE");
 
     requestAnimationFrame(() => {
       loadSection(UI.currentSection, UI.currentGrade);
