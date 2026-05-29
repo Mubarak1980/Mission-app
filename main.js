@@ -12,9 +12,34 @@
 try {
 
 /* ===============================
+   🔒 STORAGE PROTECTION ENGINE (PERSISTENT API)
+=============================== */
+async function enforceDataPersistence() {
+    try {
+        if (navigator.storage && navigator.storage.persist) {
+            // Check if it is already locked first
+            let alreadyPersisted = await navigator.storage.persisted();
+            
+            if (!alreadyPersisted) {
+                // Request Chrome to lock the storage tier
+                alreadyPersisted = await navigator.storage.persist();
+            }
+
+            if (alreadyPersisted) {
+                console.log("🔒 Storage Protection: ACTIVE. Chrome has locked your database against automated cache cleans.");
+            } else {
+                console.warn("⚠️ Storage Protection: RESTRICTED. Chrome is handling data in standard tier.");
+            }
+        }
+    } catch (error) {
+        console.error("Persistence Engine failed to initialize:", error);
+    }
+}
+
+/* ===============================
    MAX PAGES DATA
 =============================== */
-// Refined: Ensuring object keys do not get overwritten if data.js loads late
+// Refened: Ensuring object keys do not get overwritten if data.js loads late
 window.maxPagesByGrade = window.maxPagesByGrade && Object.keys(window.maxPagesByGrade).length ? window.maxPagesByGrade : {
   9: {
     Math: 363,
@@ -415,8 +440,11 @@ function initApp() {
   UI.load();
   Nav.init();
   getCycleState();
+  
+  // Fire storage protection query immediately upon execution
+  enforceDataPersistence();
 
-  console.log("✅ Mission App Ready");
+  console.log("✅ Mission App Ready with Storage Protection");
 
   requestAnimationFrame(() => {
     loadSection(UI.currentSection, UI.currentGrade);
