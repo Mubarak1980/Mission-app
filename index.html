@@ -68,19 +68,15 @@
     </div>
 </div>
 
-<!-- ==========================================================
-   🔌 NATIVE PHONE HARDWARE INJECTION BRIDGE
-========================================================== -->
 <script src="cordova.js"></script>
 
-<!-- Core Tracking Assets -->
-<script src="./data.js" defer></script>
-<script src="./Study-tracker.js" defer></script>
-<script src="./weekly-timetable.js" defer></script>
-<script src="./dashboard.js" defer></script>
-<script src="./top-student-mode.js" defer></script>
-<script src="./Sunnah-tracker.js" defer></script>
-<script src="./main.js" defer></script>
+<script src="./data.js"></script>
+<script src="./Study-tracker.js"></script>
+<script src="./weekly-timetable.js"></script>
+<script src="./dashboard.js"></script>
+<script src="./top-student-mode.js"></script>
+<script src="./Sunnah-tracker.js"></script>
+<script src="./main.js"></script>
 
 <script>
 "use strict";
@@ -96,7 +92,6 @@ let hasAutomatedPromptFired = false;
    📱 ELITE NATIVE STANDALONE REALM DETECTION
    ========================================================== */
 function isRunningStandalone() {
-    // Return true automatically if running natively inside the app container
     if (window.cordova) return true;
 
     const isStandaloneMode = window.matchMedia("(display-mode: standalone)").matches ||
@@ -180,7 +175,6 @@ function hideSplashScreen() {
    🌐 ENTERPRISE SERVICE WORKER SYNC CONTROL
 ========================================================== */
 async function registerServiceWorker() {
-    // If running natively inside an APK shell, don't spin up redundant browser service workers
     if (window.cordova || !("serviceWorker" in navigator)) {
         return;
     }
@@ -211,9 +205,10 @@ window.addEventListener("DOMContentLoaded", async () => {
     try {
         await registerServiceWorker();
         
-        // If native cordova is present, wait for hardware device readiness before removing the splash screen
+        // Handle physical hardware synchronization safely
         if (window.cordova) {
             document.addEventListener("deviceready", () => {
+                // Confirm tracking components are fully loaded before rendering the active layer
                 setTimeout(hideSplashScreen, 450);
             }, false);
         } else {
@@ -225,5 +220,4 @@ window.addEventListener("DOMContentLoaded", async () => {
 });
 </script>
 </body>
-    </html>
-    
+</html>
