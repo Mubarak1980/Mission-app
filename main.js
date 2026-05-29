@@ -11,8 +11,96 @@
 =============================== */
 try {
 
+/* =====================================================
+   💾 TRUE NATIVE STORAGE ENGINE (LOCAL DIRECT FILE-SYSTEM)
+===================================================== */
+const NATIVE_FILE_NAME = "mission_app_progress.json";
+window.cachedNativeData = {}; // Fast running in-memory data mirror
+
+const Storage = {
+  // Synchronous read for core application engine runtime loops
+  get(key, fallback) {
+    if (window.cachedNativeData && window.cachedNativeData[key] !== undefined) {
+      return window.cachedNativeData[key];
+    }
+    // Fallback to legacy localstorage if native disk hasn't loaded to cache memory yet
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return fallback;
+      return JSON.parse(raw);
+    } catch {
+      return fallback;
+    }
+  },
+
+  // Native asynchronous direct hard-drive writing portal
+  set(key, value) {
+    // 1. Update running memory layer cache instantly
+    window.cachedNativeData[key] = value;
+    
+    // 2. Mirror copy to localStorage as a redundant secondary backup tier
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch (e) {
+      console.warn("Local storage mirror sync skipped");
+    }
+
+    // 3. Commit write natively straight to Android Storage chip hardware
+    document.addEventListener("deviceready", () => {
+      if (window.cordova && window.cordova.file) {
+        const dataStringToSave = JSON.stringify(window.cachedNativeData);
+        const path = cordova.file.dataDirectory; // App's secure private folder (Immune to Chrome cleans)
+
+        window.resolveLocalFileSystemURL(path, (dir) => {
+          dir.getFile(NATIVE_FILE_NAME, { create: true, exclusive: false }, (fileEntry) => {
+            fileEntry.createWriter((fileWriter) => {
+              fileWriter.onwriteend = () => {
+                console.log("💾 SUCCESS: Progress written directly to device hard drive!");
+              };
+              fileWriter.onerror = (e) => console.error("Native storage commit failed:", e);
+
+              const blob = new Blob([dataStringToSave], { type: "text/plain" });
+              fileWriter.write(blob);
+            });
+          });
+        });
+      }
+    }, false);
+  },
+
+  // Runs on application boot sequence to read tracking datasets back from hardware
+  initNativeFileSystem(callback) {
+    document.addEventListener("deviceready", () => {
+      if (window.cordova && window.cordova.file) {
+        const path = cordova.file.dataDirectory;
+        window.resolveLocalFileSystemURL(path, (dir) => {
+          dir.getFile(NATIVE_FILE_NAME, { create: true, exclusive: false }, (fileEntry) => {
+            fileEntry.file((file) => {
+              const reader = new FileReader();
+              reader.onloadend = function() {
+                try {
+                  if (this.result) {
+                    window.cachedNativeData = JSON.parse(this.result);
+                    console.log("📥 SUCCESS: Re-loaded progress database from physical hardware storage.");
+                  }
+                } catch (e) {
+                  console.error("Error breaking down native file dictionary structures:", e);
+                }
+                if (typeof callback === "function") callback();
+              };
+              reader.readAsText(file);
+            });
+          }, () => { if (typeof callback === "function") callback(); });
+        }, () => { if (typeof callback === "function") callback(); });
+      } else {
+        if (typeof callback === "function") callback();
+      }
+    }, false);
+  }
+};
+
 /* ===============================
-   🔒 STORAGE PROTECTION ENGINE (PERSISTENT API)
+   🔒 STORAGE PROTECTION ENGINE (PERSISTENT API TIER)
 =============================== */
 async function enforceDataPersistence() {
     try {
@@ -39,7 +127,7 @@ async function enforceDataPersistence() {
 /* ===============================
    MAX PAGES DATA
 =============================== */
-// Refened: Ensuring object keys do not get overwritten if data.js loads late
+// Refined: Ensuring object keys do not get overwritten if data.js loads late
 window.maxPagesByGrade = window.maxPagesByGrade && Object.keys(window.maxPagesByGrade).length ? window.maxPagesByGrade : {
   9: {
     Math: 363,
@@ -90,31 +178,6 @@ const SUBJECTS = [
 const TOTAL_DAYS = 90;
 
 const TOTAL_PAGES = 5705;
-
-/* ===============================
-   STORAGE
-=============================== */
-const Storage = {
-
-  get(key, fallback) {
-    try {
-      const raw = localStorage.getItem(key);
-      if (!raw) return fallback;
-      return JSON.parse(raw);
-    } catch (err) {
-      console.warn("Storage read failed:", key, err);
-      return fallback;
-    }
-  },
-
-  set(key, value) {
-    try {
-      localStorage.setItem(key, JSON.stringify(value));
-    } catch (err) {
-      console.warn("Storage write failed:", key, err);
-    }
-  }
-};
 
 /* ===============================
    DATE UTIL (LOCAL-SAFE TIMEZONE ADJUSTMENT)
@@ -437,17 +500,20 @@ function initApp() {
   if (initialized) return;
   initialized = true;
 
-  UI.load();
-  Nav.init();
-  getCycleState();
-  
-  // Fire storage protection query immediately upon execution
-  enforceDataPersistence();
+  // Intercept boot flow: Read physical file configurations from hardware space first
+  Storage.initNativeFileSystem(() => {
+    UI.load();
+    Nav.init();
+    getCycleState();
+    
+    // Fire storage protection loop
+    enforceDataPersistence();
 
-  console.log("✅ Mission App Ready with Storage Protection");
+    console.log("🚀 Mission App Ready: HARDWARE TRACKING MODE ACTIVE");
 
-  requestAnimationFrame(() => {
-    loadSection(UI.currentSection, UI.currentGrade);
+    requestAnimationFrame(() => {
+      loadSection(UI.currentSection, UI.currentGrade);
+    });
   });
 }
 
@@ -483,17 +549,11 @@ window.getSmartCycle = getSmartCycle;
 window.getCycleState = getCycleState;
 window.getExpectedProgress = getExpectedProgress;
 window.getActualProgress = getActualProgress;
-
-window.isRunningStandalone = function () {
-  return (
-    window.matchMedia("(display-mode: standalone)").matches ||
-    window.navigator.standalone === true ||
-    document.referrer.includes("android-app://")
-  );
-};
+window.isRunningStandalone = () => true;
 
 } catch (err) {
   console.error("🔥 Main engine crashed:", err);
 }
 
 })();
+                              
