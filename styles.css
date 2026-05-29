@@ -208,7 +208,7 @@ progress {
   border-radius: 10px;
   overflow: hidden;
   border: none;
-  background: #06090e !important;
+  background: #19222d !important; /* FIXED: Changed to subtle gray to reveal the 0% empty rail state */
   margin-top: 8px;
   margin-bottom: 8px;
   
@@ -218,7 +218,7 @@ progress {
 }
 
 progress::-webkit-progress-bar {
-  background: #06090e;
+  background: #19222d; /* FIXED: Synchronized track rail layer */
   border-radius: 10px;
 }
 
@@ -474,4 +474,4 @@ tr:nth-child(even) {
     width: 100%;
     box-sizing: border-box;
   }
-}
+   }
