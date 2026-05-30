@@ -79,7 +79,7 @@
         canLogProgress() { return this.getCurrentState() === "ACTIVE_STUDY"; }
     };
 
-    // 3. SMART CYCLE ENGINE (Adaptive Velocity Logic)
+    // 3. SMART CYCLE ENGINE
     window.SmartEngine = {
       getOverallStats() {
         const masterData = window.DataService.get();
@@ -98,7 +98,6 @@
         return { remaining: Math.max(0, 90 - daysPassed), percent: Math.min(Math.round((daysPassed / 90) * 100), 100) };
       },
 
-      // ADAPTIVE VELOCITY MODEL: Recalculates daily targets based on actual progress
       getAdaptiveTarget() {
           const stats = this.getOverallStats();
           const TOTAL_GOAL = 4648; 
@@ -107,20 +106,9 @@
           return {
               dailyTarget: Math.ceil(pagesRemaining / daysRemaining),
               pagesRemaining: pagesRemaining,
-              daysRemaining: daysRemaining
+              daysRemaining: daysRemaining,
+              status: (stats.pagePercent < (Math.floor((new Date() - new Date(window.DataService.get().startDate)) / 86400000) / 90 * 100) - 10) ? "🚨 Needs Sprint" : "✅ On Track"
           };
-      },
-
-      getSuggestedDailyWorkload() {
-        const adaptive = this.getAdaptiveTarget();
-        const t = adaptive.dailyTarget;
-        return {
-            totalTarget: t,
-            Math: Math.round(t * 0.40),
-            Physics: Math.round(t * 0.20),
-            Chemistry: Math.round(t * 0.20),
-            Biology: Math.round(t * 0.20)
-        };
       },
 
       getWorkloadStatus(pageP, timeP) {
@@ -128,13 +116,13 @@
       }
     };
 
-    // 4. UI CONTROLLER
+    // 4. UI CONTROLLER & GLOBAL REGISTRY
     window.UI = {
         save(section, grade) { const s = window.DataService.get(); s.ui = { section, grade }; window.DataService.set(s); },
         load() { return window.DataService.get().ui || { section: "study", grade: 9 }; }
     };
 
-    const SectionMap = { 
+    window.SectionMap = { 
         study: "loadStudySection", 
         timetable: "loadWeeklyTimetable", 
         dashboard: "loadDashboard", 
@@ -145,12 +133,17 @@
     window.loadSection = (type, grade) => {
       const main = document.getElementById("main-content");
       if (!main) return;
-      main.innerHTML = "";
-      const fn = SectionMap[type];
-      if (window[fn]) {
+      
+      const fnName = window.SectionMap[type];
+      
+      if (typeof window[fnName] === 'function') {
+          main.innerHTML = "";
           window.UI.save(type, grade);
           document.querySelectorAll('.nav-button').forEach(b => b.classList.toggle('active', b.dataset.target === type));
-          window[fn](grade);
+          window[fnName](grade); 
+      } else {
+          console.error(`Missing function: ${fnName}`);
+          main.innerHTML = `<div style="padding:20px; color:white;">Error: Module ${type} is still initializing...</div>`;
       }
     };
 
@@ -161,8 +154,8 @@
             const lastUI = window.UI.load();
             setTimeout(() => window.loadSection(lastUI.section, lastUI.grade), 100);
         });
-        console.log("🚀 Mission Engine Initialized. Mode:", window.StateEngine.getCurrentState());
+        console.log("🚀 Engine Initialized. Mode:", window.StateEngine.getCurrentState());
     });
   } catch (err) { console.error("Critical Engine Failure:", err); }
 })();
-                                  
+      
