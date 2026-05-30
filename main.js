@@ -102,13 +102,15 @@ window.updateNavUI = (type) => {
 
 window.loadSection = (type, grade) => {
   const mainContent = document.getElementById("main-content");
-  const progressBar = document.getElementById("grade-progress-bar");
+  const gradeNav = document.getElementById("grade-nav"); 
+  const progContainer = document.getElementById("grade-progress-container");
+  
   if (!mainContent) return;
 
-  // Manage Progress Bar Visibility: Show ONLY for study section
-  if (progressBar) {
-      progressBar.style.display = (type === 'study') ? 'block' : 'none';
-  }
+  // Visibility Logic: Only show for Study Tracker
+  const isStudy = (type === 'study');
+  if (gradeNav) gradeNav.style.display = isStudy ? 'flex' : 'none';
+  if (progContainer) progContainer.style.display = isStudy ? 'block' : 'none';
 
   mainContent.innerHTML = ""; 
   const functionName = SectionMap[type];
@@ -134,7 +136,6 @@ window.loadSection = (type, grade) => {
       12: { Math: 416, Physics: 177, Chemistry: 287, Biology: 354, English: 263 }
     };
 
-    // Navigation Listeners for Grade Switching
     document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("next-btn")?.addEventListener("click", () => {
             const state = window.UI.load();
@@ -159,4 +160,4 @@ window.loadSection = (type, grade) => {
     console.error("Critical Engine Failure:", err);
   }
 })();
-                                                
+                    
