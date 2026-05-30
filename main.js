@@ -78,8 +78,9 @@
       }
     };
 
-    // 🧠 SMART CYCLE ENGINE: Dynamically re-balances workload
+    // 🧠 SMART CYCLE ENGINE: Dynamically re-balances workload & mastery
     window.SmartEngine = {
+      // Automatic Dynamic Target (Cycle Based)
       calculateDynamicTarget() {
         const masterData = window.DataService.get();
         const TOTAL_CYCLE_PAGES = 4638;
@@ -98,6 +99,43 @@
         const pagesRemaining = Math.max(0, TOTAL_CYCLE_PAGES - totalCompleted);
 
         return Math.round(pagesRemaining / daysRemaining);
+      },
+
+      // Workload Distribution (Subject Balancing)
+      // Math = 40%, Physics/Chem/Bio = 20% each
+      getSubjectDistribution() {
+        const dailyTarget = this.calculateDynamicTarget();
+        return {
+          Math: Math.round(dailyTarget * 0.40),
+          Physics: Math.round(dailyTarget * 0.20),
+          Chemistry: Math.round(dailyTarget * 0.20),
+          Biology: Math.round(dailyTarget * 0.20)
+        };
+      },
+
+      // Global Mastery and Status
+      getOverallStats() {
+        const masterData = window.DataService.get();
+        const YEARLY_GOAL_PAGES = 18552; // 4638 * 4
+        const YEARLY_GOAL_DAYS = 360;
+        
+        let totalCompleted = 0;
+        if (masterData.studyProgress) {
+            Object.values(masterData.studyProgress).forEach(gradeData => {
+                Object.values(gradeData).forEach(pages => totalCompleted += Number(pages) || 0);
+            });
+        }
+
+        const startDate = new Date(masterData.startDate);
+        const daysPassed = Math.min(Math.floor((new Date() - startDate) / (1000 * 60 * 60 * 24)), YEARLY_GOAL_DAYS);
+        
+        return {
+          totalRead: totalCompleted,
+          pagePercent: Math.min(Math.round((totalCompleted / YEARLY_GOAL_PAGES) * 100), 100),
+          timePercent: Math.min(Math.round((daysPassed / YEARLY_GOAL_DAYS) * 100), 100),
+          daysPassed: daysPassed,
+          daysLeft: YEARLY_GOAL_DAYS - daysPassed
+        };
       },
 
       getWorkloadStatus(pagePercent, timePercent) {
@@ -170,4 +208,3 @@
     console.error("Critical Engine Failure:", err);
   }
 })();
-            
