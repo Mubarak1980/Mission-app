@@ -1,6 +1,16 @@
 "use strict";
 
-const SUBJECTS = ["Math", "Physics", "Chemistry", "Biology", "English"];
+// 1. Updated Subject List
+const SUBJECTS = ["Math", "Physics", "Chemistry", "Biology"];
+
+// 2. Verified Master Configuration
+window.maxPagesByGrade = {
+    9:  { Math: 363, Physics: 174, Chemistry: 175, Biology: 164 },
+    10: { Math: 385, Physics: 249, Chemistry: 298, Biology: 174 },
+    11: { Math: 479, Physics: 329, Chemistry: 330, Biology: 284 },
+    12: { Math: 416, Physics: 177, Chemistry: 287, Biology: 354 }
+};
+
 let activeStudyGrade = null;
 let activeStudySavedData = null;
 
@@ -18,10 +28,10 @@ function saveProgress(grade, data) {
 }
 
 function calculatePercent(done, max) {
-    const safeDone = Math.max(0, Number(done) || 0);
     const safeMax = Math.max(0, Number(max) || 0);
+    const safeDone = Math.max(0, Math.min(Number(done) || 0, safeMax));
     if (safeMax <= 0) return 0;
-    return Math.min(100, Math.round((safeDone / safeMax) * 100));
+    return Math.round((safeDone / safeMax) * 100);
 }
 
 function createSubject(name, maxPages, savedPages) {
@@ -30,7 +40,7 @@ function createSubject(name, maxPages, savedPages) {
     const percent = calculatePercent(safeSaved, safeMax);
 
     return `
-        <div class="subject">
+        <div class="subject" style="margin-bottom: 20px;">
             <h3>${name}</h3>
             <input
                 class="subject-progress"
@@ -42,9 +52,12 @@ function createSubject(name, maxPages, savedPages) {
                 value="${safeSaved}"
                 data-subject="${name}"
                 data-maxpages="${safeMax}"
+                style="width: 100%; padding: 10px; border-radius: 6px; margin-bottom: 5px;"
             />
-            <progress value="${safeSaved}" max="${safeMax}"></progress>
-            <p class="subject-percent">${percent}% (${safeSaved}/${safeMax} pages)</p>
+            <progress value="${safeSaved}" max="${safeMax}" style="width: 100%; height: 12px;"></progress>
+            <p class="subject-percent" style="font-size: 13px; color: #8b949e; margin-top: 5px;">
+                ${percent}% (${safeSaved}/${safeMax} pages)
+            </p>
         </div>
     `;
 }
@@ -60,14 +73,12 @@ function updateSubjectUI(container, value, max) {
 
     if (progressBar) {
         progressBar.value = safeValue;
-        progressBar.max = safeMax;
     }
     if (percentText) {
         percentText.innerHTML = `${percent}% (${safeValue}/${safeMax} pages)`;
     }
 }
 
-// Optimized Router: Fixes leading zeros and ensures input integrity
 function cleanStudyInputRouter(e) {
     const input = e.target;
     if (!input || !input.classList.contains("subject-progress")) return;
@@ -75,19 +86,13 @@ function cleanStudyInputRouter(e) {
     const subject = input.dataset.subject;
     const max = Number(input.dataset.maxpages) || 0;
 
-    // 1. Sanitize: Remove non-numeric, cap at 4 digits
     let valStr = input.value.replace(/[^0-9]/g, '');
     if (valStr.length > 4) valStr = valStr.slice(0, 4);
     
-    // 2. Convert to number (this automatically strips leading zeros)
     let value = Number(valStr);
     if (isNaN(value)) value = 0;
-    
-    // 3. Enforce the max limit
     if (value > max) value = max;
 
-    // 4. Update the input display specifically to the integer value
-    // This forces "045" to become "45"
     input.value = value; 
 
     activeStudySavedData[subject] = value;
@@ -106,7 +111,7 @@ function loadStudySection(grade) {
     const data = window.maxPagesByGrade?.[grade];
     if (!data) return;
 
-    let html = `<div class="subjects-container">`;
+    let html = `<h2>📚 Grade ${grade} Study Tracker</h2><div class="subjects-container">`;
     for (const subject of SUBJECTS) {
         html += createSubject(subject, data[subject], activeStudySavedData[subject] || 0);
     }
@@ -135,13 +140,12 @@ function updateGradeSummary(grade) {
     if (el) {
         el.innerHTML = `
             <div class="subject">
-                <h3>Grade ${grade} Overall Progress</h3>
-                <progress value="${totalDone}" max="${totalPages}"></progress>
-                <p class="subject-percent">${percent}% (${totalDone}/${totalPages} pages)</p>
+                <h3>Overall Grade ${grade} Progress</h3>
+                <progress value="${totalDone}" max="${totalPages}" style="width: 100%; height: 16px;"></progress>
+                <p style="text-align: center; margin-top: 5px;">${percent}% (${totalDone}/${totalPages} pages)</p>
             </div>
         `;
     }
 }
 
 window.loadStudySection = loadStudySection;
-    
