@@ -1,9 +1,7 @@
 "use strict";
 
-// 1. Updated Subject List
 const SUBJECTS = ["Math", "Physics", "Chemistry", "Biology"];
 
-// 2. Verified Master Configuration
 window.maxPagesByGrade = {
     9:  { Math: 363, Physics: 174, Chemistry: 175, Biology: 164 },
     10: { Math: 385, Physics: 249, Chemistry: 298, Biology: 174 },
@@ -14,24 +12,26 @@ window.maxPagesByGrade = {
 let activeStudyGrade = null;
 let activeStudySavedData = null;
 
+// SAFE DATA ACCESS
 function loadProgress(grade) {
-    const masterData = window.DataService.get();
+    if (!window.DataService) return {};
+    const masterData = window.DataService.get() || {};
     if (!masterData.studyProgress) masterData.studyProgress = {};
     return masterData.studyProgress[grade] || {};
 }
 
 function saveProgress(grade, data) {
-    const masterData = window.DataService.get();
-    if (!masterData.studyProgress) masterData.studyProgress = {};
+    if (!window.DataService) return;
+    const masterData = window.DataService.get() || { studyProgress: {} };
     masterData.studyProgress[grade] = data;
     window.DataService.set(masterData);
 }
 
+// UI HELPERS (Unchanged logic)
 function calculatePercent(done, max) {
     const safeMax = Math.max(0, Number(max) || 0);
     const safeDone = Math.max(0, Math.min(Number(done) || 0, safeMax));
-    if (safeMax <= 0) return 0;
-    return Math.round((safeDone / safeMax) * 100);
+    return safeMax <= 0 ? 0 : Math.round((safeDone / safeMax) * 100);
 }
 
 function createSubject(name, maxPages, savedPages) {
@@ -42,18 +42,8 @@ function createSubject(name, maxPages, savedPages) {
     return `
         <div class="subject" style="margin-bottom: 20px;">
             <h3>${name}</h3>
-            <input
-                class="subject-progress"
-                type="number"
-                inputmode="numeric"
-                pattern="[0-9]*"
-                min="0"
-                max="${safeMax}"
-                value="${safeSaved}"
-                data-subject="${name}"
-                data-maxpages="${safeMax}"
-                style="width: 100%; padding: 10px; border-radius: 6px; margin-bottom: 5px;"
-            />
+            <input class="subject-progress" type="number" value="${safeSaved}" data-subject="${name}" data-maxpages="${safeMax}"
+                style="width: 100%; padding: 10px; border-radius: 6px; margin-bottom: 5px;"/>
             <progress value="${safeSaved}" max="${safeMax}" style="width: 100%; height: 12px;"></progress>
             <p class="subject-percent" style="font-size: 13px; color: #8b949e; margin-top: 5px;">
                 ${percent}% (${safeSaved}/${safeMax} pages)
@@ -62,76 +52,61 @@ function createSubject(name, maxPages, savedPages) {
     `;
 }
 
-function updateSubjectUI(container, value, max) {
-    if (!container) return;
-    const safeMax = Number(max) || 0;
-    const safeValue = Math.min(Number(value) || 0, safeMax);
-    const percent = calculatePercent(safeValue, safeMax);
-
-    const progressBar = container.querySelector("progress");
-    const percentText = container.querySelector(".subject-percent");
-
-    if (progressBar) {
-        progressBar.value = safeValue;
-    }
-    if (percentText) {
-        percentText.innerHTML = `${percent}% (${safeValue}/${safeMax} pages)`;
-    }
-}
-
-// 🧠 INTEGRATED VELOCITY LOGIC
+// CORE FUNCTIONS
 function cleanStudyInputRouter(e) {
     const input = e.target;
-    if (!input || !input.classList.contains("subject-progress")) return;
+    if (!input.classList.contains("subject-progress")) return;
 
     const subject = input.dataset.subject;
-    const max = Number(input.dataset.maxpages) || 0;
+    const max = Number(input.dataset.maxpages);
+    let value = Math.min(Math.max(0, Number(input.value)), max);
 
-    let valStr = input.value.replace(/[^0-9]/g, '');
-    if (valStr.length > 4) valStr = valStr.slice(0, 4);
-    
-    let value = Number(valStr);
-    if (isNaN(value)) value = 0;
-    if (value > max) value = max;
-
-    input.value = value; 
-
-    // Log velocity: Calculate pages added since last save
-    const previousValue = activeStudySavedData[subject] || 0;
-    const pagesAdded = value - previousValue;
-
-    if (pagesAdded > 0) {
-        window.DataService.logVelocity(subject, pagesAdded);
-    }
-
+    input.value = value;
     activeStudySavedData[subject] = value;
     saveProgress(activeStudyGrade, activeStudySavedData);
-    updateSubjectUI(input.closest(".subject"), value, max);
+    
+    // Update individual UI
+    const container = input.closest(".subject");
+    const percent = calculatePercent(value, max);
+    container.querySelector("progress").value = value;
+    container.querySelector(".subject-percent").innerHTML = `${percent}% (${value}/${max} pages)`;
+    
     updateGradeSummary(activeStudyGrade);
 }
 
-function loadStudySection(grade) {
+window.loadStudySection = function(grade) {
     const mainContent = document.getElementById("main-content");
+    const gradeNum = parseInt(grade);
     if (!mainContent) return;
 
-    activeStudyGrade = grade;
-    activeStudySavedData = loadProgress(grade);
+    activeStudyGrade = gradeNum;
+    activeStudySavedData = loadProgress(gradeNum);
+    const data = window.maxPagesByGrade?.[gradeNum];
 
-    const data = window.maxPagesByGrade?.[grade];
-    if (!data) return;
+    if (!data) {
+        mainContent.innerHTML = `<p style="padding:20px;">Configuration for Grade ${gradeNum} not found.</p>`;
+        return;
+    }
 
-    let html = `<h2>📚 Grade ${grade} Study Tracker</h2><div class="subjects-container">`;
+    let html = `<h2>📚 Grade ${gradeNum} Study Tracker</h2><div class="subjects-container">`;
     for (const subject of SUBJECTS) {
         html += createSubject(subject, data[subject], activeStudySavedData[subject] || 0);
     }
-    // Added container for the Summary
     html += `</div><div id="grade-progress-bar"></div>`;
-    mainContent.innerHTML = html;
 
+    // NAVIGATION BUTTONS RESTORED HERE
+    html += `
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <button onclick="loadStudySection(${Math.max(9, gradeNum - 1)})" style="flex:1; padding:15px;">Previous</button>
+            <button onclick="loadStudySection(${Math.min(12, gradeNum + 1)})" style="flex:1; padding:15px;">Next</button>
+        </div>
+    `;
+
+    mainContent.innerHTML = html;
     mainContent.removeEventListener("input", cleanStudyInputRouter);
     mainContent.addEventListener("input", cleanStudyInputRouter);
-    updateGradeSummary(grade);
-}
+    updateGradeSummary(gradeNum);
+};
 
 function updateGradeSummary(grade) {
     const saved = loadProgress(grade);
@@ -157,6 +132,4 @@ function updateGradeSummary(grade) {
         `;
     }
 }
-
-window.loadStudySection = loadStudySection;
     
