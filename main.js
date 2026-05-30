@@ -3,15 +3,15 @@
 (function() {
   try {
     // =====================================================
-    // 📘 MAIN ENGINE (UNIFIED STORAGE, UI & SMART ENGINE)
+    // 📘 MAIN ENGINE: UNIFIED STORAGE, STATE & SMART LOGIC
     // =====================================================
     window.NATIVE_FILE_NAME = "mission_app_progress.json";
     window.cachedNativeData = window.cachedNativeData || {}; 
     window.isNativeStorageReady = false;
 
+    // 1. DATA SERVICE (Persistence)
     window.DataService = {
       STORAGE_KEY: "study_progress",
-
       get(fallback) {
         if (window.isNativeStorageReady && window.cachedNativeData[this.STORAGE_KEY]) {
           return window.cachedNativeData[this.STORAGE_KEY];
@@ -25,7 +25,6 @@
             ui: { section: "study", grade: 9 }
         });
       },
-
       set(data) {
         window.cachedNativeData[this.STORAGE_KEY] = data;
         localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
@@ -40,16 +39,6 @@
           });
         }
       },
-
-      logVelocity(subject, pages) {
-        const data = this.get();
-        if (!data.velocityLog) data.velocityLog = {};
-        if (!data.velocityLog[subject]) data.velocityLog[subject] = { total: 0, sessions: 0 };
-        data.velocityLog[subject].total += pages;
-        data.velocityLog[subject].sessions += 1;
-        this.set(data);
-      },
-
       initNativeFileSystem(callback) {
         const load = () => {
           if (window.cordova?.file) {
@@ -78,137 +67,69 @@
       }
     };
 
-    // 🧠 SMART CYCLE ENGINE: Dynamically re-balances workload & mastery
+    // 2. STATE-MACHINE ENGINE (The Gatekeeper)
+    window.StateEngine = {
+        getCurrentState() {
+            const data = window.DataService.get();
+            const daysPassed = Math.floor((new Date() - new Date(data.startDate)) / (1000 * 60 * 60 * 24));
+            if (daysPassed > 90) return "CYCLE_COMPLETE";
+            if (!data.studyProgress || Object.keys(data.studyProgress).length === 0) return "INITIALIZING";
+            return "ACTIVE_STUDY";
+        },
+        canLogProgress() {
+            return this.getCurrentState() === "ACTIVE_STUDY";
+        }
+    };
+
+    // 3. SMART CYCLE ENGINE (Pure Logic)
     window.SmartEngine = {
       calculateDynamicTarget() {
         const masterData = window.DataService.get();
-        const TOTAL_CYCLE_PAGES = 4638;
-        const TOTAL_CYCLE_DAYS = 90;
-        
+        const TOTAL_CYCLE_PAGES = 4638, TOTAL_CYCLE_DAYS = 90;
         let totalCompleted = 0;
-        if (masterData.studyProgress) {
-            Object.values(masterData.studyProgress).forEach(gradeData => {
-                Object.values(gradeData).forEach(pages => totalCompleted += Number(pages) || 0);
-            });
-        }
-
-        const startDate = new Date(masterData.startDate);
-        const daysPassed = Math.floor((new Date() - startDate) / (1000 * 60 * 60 * 24));
-        const daysRemaining = Math.max(1, TOTAL_CYCLE_DAYS - daysPassed);
-        const pagesRemaining = Math.max(0, TOTAL_CYCLE_PAGES - totalCompleted);
-
-        return Math.round(pagesRemaining / daysRemaining);
+        Object.values(masterData.studyProgress || {}).forEach(grade => Object.values(grade).forEach(p => totalCompleted += Number(p) || 0));
+        const daysPassed = Math.floor((new Date() - new Date(masterData.startDate)) / (1000 * 60 * 60 * 24));
+        return Math.round(Math.max(0, TOTAL_CYCLE_PAGES - totalCompleted) / Math.max(1, TOTAL_CYCLE_DAYS - daysPassed));
       },
-
-      getSubjectDistribution() {
-        const dailyTarget = this.calculateDynamicTarget();
-        return {
-          Math: Math.round(dailyTarget * 0.40),
-          Physics: Math.round(dailyTarget * 0.20),
-          Chemistry: Math.round(dailyTarget * 0.20),
-          Biology: Math.round(dailyTarget * 0.20)
-        };
-      },
-
       getOverallStats() {
         const masterData = window.DataService.get();
-        const YEARLY_GOAL_PAGES = 18552;
-        const YEARLY_GOAL_DAYS = 360;
-        
-        let totalCompleted = 0;
-        if (masterData.studyProgress) {
-            Object.values(masterData.studyProgress).forEach(gradeData => {
-                Object.values(gradeData).forEach(pages => totalCompleted += Number(pages) || 0);
-            });
-        }
-
-        const startDate = new Date(masterData.startDate);
-        const daysPassed = Math.min(Math.floor((new Date() - startDate) / (1000 * 60 * 60 * 24)), YEARLY_GOAL_DAYS);
-        
-        return {
-          totalRead: totalCompleted,
-          pagePercent: Math.min(Math.round((totalCompleted / YEARLY_GOAL_PAGES) * 100), 100),
-          timePercent: Math.min(Math.round((daysPassed / YEARLY_GOAL_DAYS) * 100), 100),
-          daysPassed: daysPassed,
-          daysLeft: YEARLY_GOAL_DAYS - daysPassed
-        };
+        let total = 0;
+        Object.values(masterData.studyProgress || {}).forEach(grade => Object.values(grade).forEach(p => total += Number(p) || 0));
+        return { totalRead: total, pagePercent: Math.min(Math.round((total / 18552) * 100), 100), timePercent: Math.min(Math.round((Math.min(Math.floor((new Date() - new Date(masterData.startDate)) / 86400000), 360) / 360) * 100), 100) };
       },
-
-      getWorkloadStatus(pagePercent, timePercent) {
-        if (pagePercent >= timePercent) return "✅ On Track";
-        if (pagePercent >= timePercent - 10) return "⚠️ Slightly Behind";
-        return "🚨 Needs Sprint";
+      getWorkloadStatus(pageP, timeP) {
+        return pageP >= timeP ? "✅ On Track" : (pageP >= timeP - 10 ? "⚠️ Slightly Behind" : "🚨 Needs Sprint");
       }
     };
 
+    // 4. UI CONTROLLER
     window.UI = {
-        save(section, grade) {
-            const state = window.DataService.get();
-            state.ui = { section, grade };
-            window.DataService.set(state);
-        },
-        load() {
-            return window.DataService.get().ui || { section: "study", grade: 9 };
-        }
+        save(section, grade) { const s = window.DataService.get(); s.ui = { section, grade }; window.DataService.set(s); },
+        load() { return window.DataService.get().ui || { section: "study", grade: 9 }; }
     };
 
-    const SectionMap = {
-      study: "loadStudySection",
-      timetable: "loadWeeklyTimetable",
-      dashboard: "loadDashboard",
-      topstudent: "loadTopStudentMode",
-      sunnah: "loadSunnahTracker"
-    };
+    const SectionMap = { study: "loadStudySection", timetable: "loadWeeklyTimetable", dashboard: "loadDashboard", topstudent: "loadTopStudentMode", sunnah: "loadSunnahTracker" };
 
     window.loadSection = (type, grade) => {
-      const mainContent = document.getElementById("main-content");
-      if (!mainContent) {
-          console.error("Critical: #main-content element not found!");
-          return;
-      }
-      mainContent.innerHTML = ""; 
-      const functionName = SectionMap[type];
-      if (window[functionName] && typeof window[functionName] === 'function') {
+      const main = document.getElementById("main-content");
+      if (!main) return;
+      main.innerHTML = "";
+      const fn = SectionMap[type];
+      if (window[fn]) {
           window.UI.save(type, grade);
-          document.querySelectorAll('.nav-button').forEach(btn => btn.classList.toggle('active', btn.dataset.target === type));
-          window[functionName](grade);
-      } else {
-          console.error("Function not found: " + functionName);
+          document.querySelectorAll('.nav-button').forEach(b => b.classList.toggle('active', b.dataset.target === type));
+          window[fn](grade);
       }
     };
 
-    window.maxPagesByGrade = {
-      9:  { Math: 363, Physics: 174, Chemistry: 175, Biology: 164, English: 0 },
-      10: { Math: 385, Physics: 249, Chemistry: 298, Biology: 174, English: 0 },
-      11: { Math: 479, Physics: 329, Chemistry: 330, Biology: 284, English: 0 },
-      12: { Math: 416, Physics: 177, Chemistry: 287, Biology: 354, English: 0 }
-    };
+    window.maxPagesByGrade = { 9: { Math: 363, Physics: 174, Chemistry: 175, Biology: 164 }, 10: { Math: 385, Physics: 249, Chemistry: 298, Biology: 174 }, 11: { Math: 479, Physics: 329, Chemistry: 330, Biology: 284 }, 12: { Math: 416, Physics: 177, Chemistry: 287, Biology: 354 } };
 
     document.addEventListener("DOMContentLoaded", () => {
-        document.getElementById("next-btn")?.addEventListener("click", () => {
-            const state = window.UI.load();
-            const nextGrade = Math.min(state.grade + 1, 12);
-            window.loadSection(state.section, nextGrade);
-        });
-
-        document.getElementById("prev-btn")?.addEventListener("click", () => {
-            const state = window.UI.load();
-            const prevGrade = Math.max(state.grade - 1, 9);
-            window.loadSection(state.section, prevGrade);
-        });
-
         window.DataService.initNativeFileSystem(() => {
             const lastUI = window.UI.load();
-            setTimeout(() => {
-                window.loadSection(lastUI.section, lastUI.grade);
-            }, 100);
+            setTimeout(() => window.loadSection(lastUI.section, lastUI.grade), 100);
         });
-        
-        console.log("🚀 Smart Engine Initialized.");
+        console.log("🚀 State-Machine Engine Initialized. Mode:", window.StateEngine.getCurrentState());
     });
-    
-  } catch (err) {
-    console.error("Critical Engine Failure:", err);
-  }
+  } catch (err) { console.error("Critical Engine Failure:", err); }
 })();
-      
