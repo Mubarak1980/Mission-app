@@ -2,9 +2,9 @@ window.loadWeeklyTimetable = function() {
     const container = document.getElementById("main-content");
     if (!container) return;
 
-    // 1. Calculations: Focus on 90-Day Cycle
+    // 1. Calculations: Using the Dynamic Smart Engine
     const masterData = window.DataService.get();
-    const cycleGoalPages = 4638; // Total pages for 90 days
+    const cycleGoalPages = 4638;
     const cycleGoalDays = 90;
 
     let totalCompletedPages = 0;
@@ -14,18 +14,15 @@ window.loadWeeklyTimetable = function() {
         });
     }
 
-    // Determine how many days into the current cycle
     const startDate = new Date(masterData.startDate || new Date());
     const daysPassed = Math.min(Math.floor((new Date() - startDate) / (1000 * 60 * 60 * 24)), cycleGoalDays);
     
-    // Percentages for the current cycle
+    // Percentages
     const pagePercent = Math.min(Math.round((totalCompletedPages / cycleGoalPages) * 100), 100);
     const timePercent = Math.min(Math.round((daysPassed / cycleGoalDays) * 100), 100);
 
-    const smart = {
-        cycleNumber: masterData.cycleNumber || 1,
-        dailyTarget: Math.round(cycleGoalPages / cycleGoalDays)
-    };
+    // CALL THE DYNAMIC ENGINE: This replaces the static 52/day calculation
+    const dynamicTarget = window.SmartEngine.calculateDynamicTarget();
 
     // 2. Data Matrix
     const planData = [
@@ -41,33 +38,32 @@ window.loadWeeklyTimetable = function() {
             <td>${row.total.toLocaleString()}</td>
             <td>${row.days}</td>
             <td>${row.math}</td><td>${row.phys}</td><td>${row.chem}</td><td>${row.bio}</td>
-            <td style="color: #00d4ff;">${smart.dailyTarget}</td>
+            <td style="color: #00d4ff;">${dynamicTarget}</td>
         </tr>
     `).join("");
 
-    // 3. Render: Added "Workload Balance" Summary
+    // 3. Render
     container.innerHTML = `
-        <h2>📅 Adaptive Daily Distribution (Cycle ${smart.cycleNumber}/4)</h2>
+        <h2>📅 Adaptive Daily Distribution (Cycle ${masterData.cycleNumber || 1}/4)</h2>
         <div style="overflow-x: auto; margin-bottom: 20px;">
             <table style="width: 100%; border-collapse: collapse; text-align: center; color: white;">
                 <thead><tr style="border-bottom: 1px solid #30363d;"><th>Grade</th><th>Pages</th><th>Days</th><th>Math</th><th>Phys</th><th>Chem</th><th>Bio</th><th>Target</th></tr></thead>
-                <tbody>${rowsHtml}<tr style="border-top: 2px solid #30363d; font-weight: bold;"><td>Total</td><td>4,638</td><td>90</td><td>—</td><td>—</td><td>—</td><td>—</td><td>≈${smart.dailyTarget}/d</td></tr></tbody>
+                <tbody>${rowsHtml}<tr style="border-top: 2px solid #30363d; font-weight: bold;"><td>Total</td><td>4,638</td><td>90</td><td>—</td><td>—</td><td>—</td><td>—</td><td>≈${dynamicTarget}/d</td></tr></tbody>
             </table>
         </div>
 
         <div style="background: #121821; padding: 15px; border-radius: 10px; border-left: 4px solid #00d4ff;">
-            <h3 style="margin-top: 0; color: #00d4ff;">🧠 Smart Engine Metrics (Cycle Progress)</h3>
+            <h3 style="margin-top: 0; color: #00d4ff;">🧠 Smart Engine Metrics</h3>
+            <p>Daily Goal: <strong>${dynamicTarget} pages/day</strong> (Adjusted for remaining progress).</p>
             
-            <p>Cycle Mastery: <strong>${pagePercent}%</strong> (${totalCompletedPages}/${cycleGoalPages} pages)</p>
-            <progress value="${pagePercent}" max="100" style="width: 100%; height: 10px; margin-bottom: 15px;"></progress>
+            <p>Cycle Mastery: <strong>${pagePercent}%</strong></p>
+            <progress value="${pagePercent}" max="100" style="width: 100%; height: 10px; margin-bottom: 10px;"></progress>
             
-            <p>Cycle Timeline: <strong>${timePercent}%</strong> (${daysPassed}/${cycleGoalDays} days)</p>
+            <p>Cycle Timeline: <strong>${timePercent}%</strong></p>
             <progress value="${timePercent}" max="100" style="width: 100%; height: 10px;"></progress>
             
-            <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #30363d;">
-                <p><strong>Workload Balance:</strong> ${pagePercent >= timePercent ? "✅ On Track" : "⚠️ Needs Sprint"}</p>
-            </div>
+            <p style="margin-top: 15px;"><strong>Workload Balance:</strong> ${window.SmartEngine.getWorkloadStatus(pagePercent, timePercent)}</p>
         </div>
     `;
 };
-        
+         
