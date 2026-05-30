@@ -79,6 +79,7 @@ function updateSubjectUI(container, value, max) {
     }
 }
 
+// 🧠 INTEGRATED VELOCITY LOGIC
 function cleanStudyInputRouter(e) {
     const input = e.target;
     if (!input || !input.classList.contains("subject-progress")) return;
@@ -94,6 +95,14 @@ function cleanStudyInputRouter(e) {
     if (value > max) value = max;
 
     input.value = value; 
+
+    // Log velocity: Calculate pages added since last save
+    const previousValue = activeStudySavedData[subject] || 0;
+    const pagesAdded = value - previousValue;
+
+    if (pagesAdded > 0) {
+        window.DataService.logVelocity(subject, pagesAdded);
+    }
 
     activeStudySavedData[subject] = value;
     saveProgress(activeStudyGrade, activeStudySavedData);
@@ -115,7 +124,8 @@ function loadStudySection(grade) {
     for (const subject of SUBJECTS) {
         html += createSubject(subject, data[subject], activeStudySavedData[subject] || 0);
     }
-    html += `</div>`;
+    // Added container for the Summary
+    html += `</div><div id="grade-progress-bar"></div>`;
     mainContent.innerHTML = html;
 
     mainContent.removeEventListener("input", cleanStudyInputRouter);
@@ -139,7 +149,7 @@ function updateGradeSummary(grade) {
     const el = document.getElementById("grade-progress-bar");
     if (el) {
         el.innerHTML = `
-            <div class="subject">
+            <div class="subject" style="margin-top: 20px;">
                 <h3>Overall Grade ${grade} Progress</h3>
                 <progress value="${totalDone}" max="${totalPages}" style="width: 100%; height: 16px;"></progress>
                 <p style="text-align: center; margin-top: 5px;">${percent}% (${totalDone}/${totalPages} pages)</p>
