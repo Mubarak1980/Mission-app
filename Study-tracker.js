@@ -24,7 +24,7 @@ function calculatePercent(done, max) {
     return Math.min(100, Math.round((safeDone / safeMax) * 100));
 }
 
-// Generates the subject cards that trigger the .subject CSS class
+// Generates the subject cards
 function createSubject(name, maxPages, savedPages) {
     const safeMax = Number(maxPages) || 0;
     const safeSaved = Math.min(Number(savedPages) || 0, safeMax);
@@ -37,6 +37,7 @@ function createSubject(name, maxPages, savedPages) {
                 class="subject-progress"
                 type="number"
                 inputmode="numeric"
+                pattern="[0-9]*"
                 min="0"
                 max="${safeMax}"
                 value="${safeSaved}"
@@ -67,14 +68,26 @@ function updateSubjectUI(container, value, max) {
     }
 }
 
+// Corrected Router with Input Limiting
 function cleanStudyInputRouter(e) {
     const input = e.target;
     if (!input || !input.classList.contains("subject-progress")) return;
 
     const subject = input.dataset.subject;
     const max = Number(input.dataset.maxpages) || 0;
-    let value = Math.max(0, Number(input.value) || 0);
-    if (value > max) value = max;
+
+    // 1. Sanitize: Allow only numbers, limit to 4 digits (enough for pages)
+    let valStr = input.value.replace(/[^0-9]/g, '');
+    if (valStr.length > 4) valStr = valStr.slice(0, 4);
+    
+    // 2. Convert to number and enforce range
+    let value = Number(valStr) || 0;
+    if (value > max) {
+        value = max;
+        input.value = max; // Force input box to show max limit
+    } else {
+        input.value = valStr; // Show the sanitized number
+    }
 
     activeStudySavedData[subject] = value;
     saveProgress(activeStudyGrade, activeStudySavedData);
@@ -104,7 +117,6 @@ function loadStudySection(grade) {
     updateGradeSummary(grade);
 }
 
-// Uses the same .subject class as the individual subject cards
 function updateGradeSummary(grade) {
     const saved = loadProgress(grade);
     const data = window.maxPagesByGrade?.[grade];
@@ -131,4 +143,4 @@ function updateGradeSummary(grade) {
 }
 
 window.loadStudySection = loadStudySection;
-                               
+    
