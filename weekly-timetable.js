@@ -1,88 +1,67 @@
 "use strict";
 
-window.loadDashboard = () => {
-    // 1. Safety check: Ensure the Engine is loaded before proceeding
-    if (!window.SmartEngine || !window.DataService) {
-        console.error("Dashboard failed: SmartEngine or DataService not initialized.");
-        document.getElementById("main-content").innerHTML = `<div style="color:orange;">Engine loading... please wait.</div>`;
+window.loadWeeklyTimetable = function() {
+    console.log("Loading Weekly Timetable...");
+    const container = document.getElementById("main-content");
+    
+    // 1. Safety Guard: Stop if container is missing
+    if (!container) {
+        console.error("Weekly Timetable: #main-content not found!");
         return;
     }
 
-    try {
-        const main = document.getElementById("main-content");
-        if (!main) return;
-
-        // Clear current content
-        main.innerHTML = "";
-
-        const masterData = window.DataService.get();
-        const studyProgress = masterData.studyProgress || {}; 
-        
-        // Use Smart Engine for accurate global stats
-        const stats = window.SmartEngine.getOverallStats();
-        const dailyTarget = window.SmartEngine.calculateDynamicTarget();
-
-        // 1. Subjects list
-        const subjects = ["Math", "Physics", "Chemistry", "Biology"];
-        const grades = [9, 10, 11, 12];
-
-        let totalGlobalDone = stats.totalRead;
-        let totalGlobalMax = 18552; // Annual goal
-
-        let html = `<h2>📊 Master Dashboard</h2>`;
-
-        // 2. Yearly Progress Section (Engine-Driven)
-        html += `
-          <div class="yearly-summary" style="margin-bottom: 20px; padding: 15px; background: #121821; border-radius: 10px; border-left: 4px solid #00d4ff;">
-            <h3>Yearly Progress & Smart Velocity</h3>
-            <p>Pages: ${stats.pagePercent}% (${totalGlobalDone.toLocaleString()} / ${totalGlobalMax.toLocaleString()})</p>
-            <progress max="100" value="${stats.pagePercent}" style="width:100%; height:12px; margin-bottom:10px;"></progress>
-            <p>Time: ${stats.timePercent}% (${stats.daysPassed}/360 days)</p>
-            <progress max="100" value="${stats.timePercent}" style="width:100%; height:12px;"></progress>
-            <p style="margin-top: 10px; font-weight: bold; color: #00d4ff;">Current Smart Velocity: ${dailyTarget} pages/day</p>
-          </div>
-          <div class="dashboard-container">`;
-
-        // 3. Render Subject Progress
-        subjects.forEach(subject => {
-          let subjectTotalDone = 0;
-          let subjectTotalMax = 0;
-          
-          grades.forEach(gradeKey => {
-            const saved = studyProgress[gradeKey] || {};
-            // Safely access maxPagesByGrade
-            const gradeData = (window.maxPagesByGrade && window.maxPagesByGrade[gradeKey]) ? window.maxPagesByGrade[gradeKey] : {};
-            const max = Number(gradeData[subject]) || 0;
-            const done = Math.min(Number(saved[subject]) || 0, max);
-            
-            subjectTotalDone += done;
-            subjectTotalMax += max;
-          });
-
-          const avg = subjectTotalMax ? Math.round((subjectTotalDone / subjectTotalMax) * 100) : 0;
-          
-          html += `
-            <div class="dashboard-subject" style="margin-bottom: 20px;">
-              <h3 style="margin-bottom: 5px;">${subject}</h3>
-              <progress max="${subjectTotalMax}" value="${subjectTotalDone}" style="width:100%; height:12px;"></progress>
-              <p style="font-size: 13px; color: #8b949e; margin-top: 5px;">
-                ${avg}% (${subjectTotalDone.toLocaleString()} / ${subjectTotalMax.toLocaleString()} pages)
-              </p>
-            </div>`;
-        });
-
-        html += `</div>
-          <div class="metrics-summary" style="margin-top: 20px; padding: 15px; background: #121821; border-radius: 10px;">
-            <h3>📈 Workload Status</h3>
-            <p style="font-size: 18px; font-weight: bold;">
-              ${window.SmartEngine.getWorkloadStatus(stats.pagePercent, stats.timePercent)}
-            </p>
-          </div>`;
-
-        main.innerHTML = html;
-
-    } catch (err) {
-        console.error("Dashboard Render Failed:", err);
-        document.getElementById("main-content").innerHTML = `<div style="color:red;">Error loading dashboard. Please check console.</div>`;
+    // 2. Logic: Ensure Engine is initialized before accessing methods
+    if (!window.SmartEngine || !window.DataService) {
+        container.innerHTML = `<div style="color:orange;">Engine loading... please wait.</div>`;
+        return;
     }
+
+    const masterData = window.DataService.get();
+    const stats = window.SmartEngine.getOverallStats();
+    const dist = window.SmartEngine.getSubjectDistribution();
+    const dynamicTarget = window.SmartEngine.calculateDynamicTarget();
+
+    // 3. Define the Table Data
+    const planData = [
+        { grade: 9, total: 876, days: 18, math: dist.Math, phys: dist.Physics, chem: dist.Chemistry, bio: dist.Biology },
+        { grade: 10, total: 1116, days: 22, math: dist.Math, phys: dist.Physics, chem: dist.Chemistry, bio: dist.Biology },
+        { grade: 11, total: 1422, days: 27, math: dist.Math, phys: dist.Physics, chem: dist.Chemistry, bio: dist.Biology },
+        { grade: 12, total: 1234, days: 23, math: dist.Math, phys: dist.Physics, chem: dist.Chemistry, bio: dist.Biology }
+    ];
+
+    let rowsHtml = planData.map(row => `
+        <tr>
+            <td style="font-weight: 700; color: #00d4ff;">${row.grade}</td>
+            <td>${row.total.toLocaleString()}</td>
+            <td>${row.days}</td>
+            <td>${row.math}</td><td>${row.phys}</td><td>${row.chem}</td><td>${row.bio}</td>
+            <td style="color: #00d4ff;">${dynamicTarget}</td>
+        </tr>
+    `).join("");
+
+    // 4. Final Render: Build the full string to avoid partial rendering
+    container.innerHTML = `
+        <h2>📅 Adaptive Daily Distribution (Cycle ${masterData.cycleNumber || 1}/4)</h2>
+        <div style="overflow-x: auto; margin-bottom: 20px;">
+            <table style="width: 100%; border-collapse: collapse; text-align: center; color: white; background: #0d1117;">
+                <thead>
+                    <tr style="border-bottom: 1px solid #30363d; color: #8b949e;">
+                        <th>Grade</th><th>Pages</th><th>Days</th><th>Math</th><th>Phys</th><th>Chem</th><th>Bio</th><th>Target</th>
+                    </tr>
+                </thead>
+                <tbody>${rowsHtml}</tbody>
+            </table>
+        </div>
+
+        <div style="background: #121821; padding: 15px; border-radius: 10px; border-left: 4px solid #00d4ff;">
+            <h3 style="margin-top: 0; color: #00d4ff;">🧠 Smart Engine Metrics</h3>
+            <p>Daily Goal: <strong>${dynamicTarget} pages/day</strong></p>
+            <p>Yearly Mastery: <strong>${stats.pagePercent}%</strong></p>
+            <progress value="${stats.pagePercent}" max="100" style="width: 100%; height: 8px;"></progress>
+            <p style="margin-top: 10px;">Status: <strong>${window.SmartEngine.getWorkloadStatus(stats.pagePercent, stats.timePercent)}</strong></p>
+        </div>
+    `;
+    
+    console.log("Weekly Timetable rendered successfully.");
 };
+         
