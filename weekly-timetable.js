@@ -2,10 +2,12 @@ window.loadWeeklyTimetable = function() {
     const container = document.getElementById("main-content");
     if (!container) return;
 
-    // 1. Calculations: Using the Dynamic Smart Engine
+    // 1. Calculations
     const masterData = window.DataService.get();
     const cycleGoalPages = 4638;
     const cycleGoalDays = 90;
+    const yearlyGoalPages = 18552; // 4,638 * 4 cycles
+    const yearlyGoalDays = 360;
 
     let totalCompletedPages = 0;
     if (masterData.studyProgress) {
@@ -15,13 +17,12 @@ window.loadWeeklyTimetable = function() {
     }
 
     const startDate = new Date(masterData.startDate || new Date());
-    const daysPassed = Math.min(Math.floor((new Date() - startDate) / (1000 * 60 * 60 * 24)), cycleGoalDays);
+    const daysPassed = Math.min(Math.floor((new Date() - startDate) / (1000 * 60 * 60 * 24)), yearlyGoalDays);
     
-    // Percentages
-    const pagePercent = Math.min(Math.round((totalCompletedPages / cycleGoalPages) * 100), 100);
-    const timePercent = Math.min(Math.round((daysPassed / cycleGoalDays) * 100), 100);
-
-    // CALL THE DYNAMIC ENGINE: This replaces the static 52/day calculation
+    const pagePercent = Math.min(Math.round((totalCompletedPages / yearlyGoalPages) * 100), 100);
+    const timePercent = Math.min(Math.round((daysPassed / yearlyGoalDays) * 100), 100);
+    
+    // Dynamic Target from Smart Engine
     const dynamicTarget = window.SmartEngine.calculateDynamicTarget();
 
     // 2. Data Matrix
@@ -42,7 +43,7 @@ window.loadWeeklyTimetable = function() {
         </tr>
     `).join("");
 
-    // 3. Render
+    // 3. Render: Full Information Set
     container.innerHTML = `
         <h2>📅 Adaptive Daily Distribution (Cycle ${masterData.cycleNumber || 1}/4)</h2>
         <div style="overflow-x: auto; margin-bottom: 20px;">
@@ -54,16 +55,17 @@ window.loadWeeklyTimetable = function() {
 
         <div style="background: #121821; padding: 15px; border-radius: 10px; border-left: 4px solid #00d4ff;">
             <h3 style="margin-top: 0; color: #00d4ff;">🧠 Smart Engine Metrics</h3>
-            <p>Daily Goal: <strong>${dynamicTarget} pages/day</strong> (Adjusted for remaining progress).</p>
+            <p style="margin: 5px 0;">Current Objective: <strong>${cycleGoalPages} pages</strong> per 90-day cycle.</p>
+            <p style="margin: 5px 0;">Daily Performance Goal: <strong>${dynamicTarget} pages/day</strong> (Adjusted).</p>
+            <p style="margin: 5px 0;">Rotation Status: <strong>Cycle ${masterData.cycleNumber || 1} of 4</strong> active.</p>
             
-            <p>Cycle Mastery: <strong>${pagePercent}%</strong></p>
-            <progress value="${pagePercent}" max="100" style="width: 100%; height: 10px; margin-bottom: 10px;"></progress>
-            
-            <p>Cycle Timeline: <strong>${timePercent}%</strong></p>
-            <progress value="${timePercent}" max="100" style="width: 100%; height: 10px;"></progress>
-            
-            <p style="margin-top: 15px;"><strong>Workload Balance:</strong> ${window.SmartEngine.getWorkloadStatus(pagePercent, timePercent)}</p>
+            <div style="margin-top: 15px;">
+                <p style="margin: 5px 0;">Yearly Mastery: <strong>${pagePercent}%</strong> of annual goal reached.</p>
+                <progress value="${pagePercent}" max="100" style="width: 100%; height: 8px; margin-bottom: 10px;"></progress>
+                
+                <p style="margin: 5px 0;">Workload Balance: <strong>${window.SmartEngine.getWorkloadStatus(pagePercent, timePercent)}</strong></p>
+            </div>
         </div>
     `;
 };
-         
+        
