@@ -46,6 +46,7 @@ function createSubject(name, maxPages, savedPages) {
     const safeSaved = Math.min(Number(savedPages) || 0, safeMax);
     const percent = calculatePercent(safeSaved, safeMax);
 
+    // No inline styles here, allowing styles.css to handle all presentation
     return `
         <div class="subject ${percent === 100 ? "complete" : ""}">
             <h3>${name}</h3>
@@ -125,9 +126,8 @@ function loadStudySection(grade) {
         return;
     }
 
-    // Corrected: Added the header element with the ID required for updateGradeSummary
-    let html = `<h2 id="grade-progress-bar">Grade ${grade} Overall: 0% (0/0 pages)</h2>
-                <div class="subjects-container">`;
+    // Only inject the subjects container; the summary is handled by the static element in index.html
+    let html = `<div class="subjects-container">`;
     for (const subject of SUBJECTS) {
         html += createSubject(subject, data[subject], activeStudySavedData[subject] || 0);
     }
@@ -162,3 +162,4 @@ function updateGradeSummary(grade) {
 }
 
 window.loadStudySection = loadStudySection;
+    
