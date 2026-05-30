@@ -24,7 +24,6 @@ function calculatePercent(done, max) {
     return Math.min(100, Math.round((safeDone / safeMax) * 100));
 }
 
-// Generates the subject cards
 function createSubject(name, maxPages, savedPages) {
     const safeMax = Number(maxPages) || 0;
     const safeSaved = Math.min(Number(savedPages) || 0, safeMax);
@@ -68,7 +67,7 @@ function updateSubjectUI(container, value, max) {
     }
 }
 
-// Corrected Router with Input Limiting
+// Optimized Router: Fixes leading zeros and ensures input integrity
 function cleanStudyInputRouter(e) {
     const input = e.target;
     if (!input || !input.classList.contains("subject-progress")) return;
@@ -76,18 +75,20 @@ function cleanStudyInputRouter(e) {
     const subject = input.dataset.subject;
     const max = Number(input.dataset.maxpages) || 0;
 
-    // 1. Sanitize: Allow only numbers, limit to 4 digits (enough for pages)
+    // 1. Sanitize: Remove non-numeric, cap at 4 digits
     let valStr = input.value.replace(/[^0-9]/g, '');
     if (valStr.length > 4) valStr = valStr.slice(0, 4);
     
-    // 2. Convert to number and enforce range
-    let value = Number(valStr) || 0;
-    if (value > max) {
-        value = max;
-        input.value = max; // Force input box to show max limit
-    } else {
-        input.value = valStr; // Show the sanitized number
-    }
+    // 2. Convert to number (this automatically strips leading zeros)
+    let value = Number(valStr);
+    if (isNaN(value)) value = 0;
+    
+    // 3. Enforce the max limit
+    if (value > max) value = max;
+
+    // 4. Update the input display specifically to the integer value
+    // This forces "045" to become "45"
+    input.value = value; 
 
     activeStudySavedData[subject] = value;
     saveProgress(activeStudyGrade, activeStudySavedData);
