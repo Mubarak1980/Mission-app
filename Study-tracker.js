@@ -4,6 +4,7 @@ const SUBJECTS = ["Math", "Physics", "Chemistry", "Biology", "English"];
 let activeStudyGrade = null;
 let activeStudySavedData = null;
 
+// [Bridge Logic remains identical to your original]
 function loadProgress(grade) {
     const masterData = window.DataService.get();
     if (!masterData.studyProgress) masterData.studyProgress = {};
@@ -24,7 +25,7 @@ function calculatePercent(done, max) {
     return Math.min(100, Math.round((safeDone / safeMax) * 100));
 }
 
-// Generates the subject cards that match your CSS classes
+// Optimized component generation
 function createSubject(name, maxPages, savedPages) {
     const safeMax = Number(maxPages) || 0;
     const safeSaved = Math.min(Number(savedPages) || 0, safeMax);
@@ -36,22 +37,17 @@ function createSubject(name, maxPages, savedPages) {
             <input
                 class="subject-progress"
                 type="number"
-                inputmode="numeric"
-                pattern="[0-9]*"
-                min="0"
-                max="${safeMax}"
                 value="${safeSaved}"
                 data-subject="${name}"
                 data-maxpages="${safeMax}"
             />
-            <div class="subject-progress-wrapper">
-                <progress value="${safeSaved}" max="${safeMax}"></progress>
-            </div>
-            <p class="subject-percent">${percent}% progress (${safeSaved}/${safeMax} pages)</p>
+            <progress value="${safeSaved}" max="${safeMax}"></progress>
+            <p class="subject-percent">${percent}% (${safeSaved}/${safeMax} pages)</p>
         </div>
     `;
 }
 
+// Updated to match the CSS class names
 function updateSubjectUI(container, value, max) {
     if (!container) return;
     const safeMax = Number(max) || 0;
@@ -63,22 +59,19 @@ function updateSubjectUI(container, value, max) {
 
     if (progressBar) {
         progressBar.value = safeValue;
-        progressBar.max = safeMax;
     }
     if (percentText) {
-        percentText.innerHTML = `${percent}% progress (${safeValue}/${safeMax} pages)`;
+        percentText.innerHTML = `${percent}% (${safeValue}/${safeMax} pages)`;
     }
 }
 
 function cleanStudyInputRouter(e) {
     const input = e.target;
     if (!input || !input.classList.contains("subject-progress")) return;
-
     const subject = input.dataset.subject;
     const max = Number(input.dataset.maxpages) || 0;
     let value = Math.max(0, Number(input.value) || 0);
     if (value > max) value = max;
-
     activeStudySavedData[subject] = value;
     saveProgress(activeStudyGrade, activeStudySavedData);
     updateSubjectUI(input.closest(".subject"), value, max);
@@ -88,15 +81,10 @@ function cleanStudyInputRouter(e) {
 function loadStudySection(grade) {
     const mainContent = document.getElementById("main-content");
     if (!mainContent) return;
-
     activeStudyGrade = grade;
     activeStudySavedData = loadProgress(grade);
-
     const data = window.maxPagesByGrade?.[grade];
-    if (!data) {
-        mainContent.innerHTML = `<p>Error: No data for Grade ${grade}</p>`;
-        return;
-    }
+    if (!data) return;
 
     let html = `<div class="subjects-container">`;
     for (const subject of SUBJECTS) {
@@ -104,25 +92,21 @@ function loadStudySection(grade) {
     }
     html += `</div>`;
     mainContent.innerHTML = html;
-
     mainContent.removeEventListener("input", cleanStudyInputRouter);
     mainContent.addEventListener("input", cleanStudyInputRouter);
     updateGradeSummary(grade);
 }
 
-// Updated to structure the output to match your CSS classes
 function updateGradeSummary(grade) {
     const saved = loadProgress(grade);
     const data = window.maxPagesByGrade?.[grade];
     if (!data) return;
-
     let totalDone = 0, totalPages = 0;
     for (const subject of SUBJECTS) {
         const max = Number(data[subject]) || 0;
         totalDone += Math.min(Number(saved[subject]) || 0, max);
         totalPages += max;
     }
-
     const percent = calculatePercent(totalDone, totalPages);
     const el = document.getElementById("grade-progress-bar");
     if (el) {
