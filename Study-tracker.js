@@ -13,9 +13,7 @@ let activeStudySavedData = null;
 // BRIDGE-AWARE LOADING
 // ===============================
 function loadProgress(grade) {
-    // Access the unified master data from the DataService bridge
     const masterData = window.DataService.get();
-    // Ensure the studyProgress object exists
     if (!masterData.studyProgress) masterData.studyProgress = {};
     return masterData.studyProgress[grade] || {};
 }
@@ -26,11 +24,7 @@ function loadProgress(grade) {
 function saveProgress(grade, data) {
     const masterData = window.DataService.get();
     if (!masterData.studyProgress) masterData.studyProgress = {};
-    
-    // Save the grade-specific progress into the master object
     masterData.studyProgress[grade] = data;
-    
-    // Push the entire updated object back to the DataService
     window.DataService.set(masterData);
 }
 
@@ -53,7 +47,7 @@ function createSubject(name, maxPages, savedPages) {
     const percent = calculatePercent(safeSaved, safeMax);
 
     return `
-        <div class="subject ${percent === 100 ? "complete" : ""}" style="contain: content; margin-bottom: 14px;">
+        <div class="subject ${percent === 100 ? "complete" : ""}">
             <h3>${name}</h3>
             <input
                 class="subject-progress"
@@ -65,12 +59,11 @@ function createSubject(name, maxPages, savedPages) {
                 value="${safeSaved}"
                 data-subject="${name}"
                 data-maxpages="${safeMax}"
-                style="width: 100%; padding: 8px; border-radius: 6px;"
             />
-            <div class="subject-progress-wrapper" style="margin-top: 4px;">
-                <progress value="${safeSaved}" max="${safeMax}" style="width: 100%;"></progress>
+            <div class="subject-progress-wrapper">
+                <progress value="${safeSaved}" max="${safeMax}"></progress>
             </div>
-            <p class="subject-percent" style="margin-top: 6px; font-size: 12px; font-weight: 500; text-align: right; color: #8b949e;">
+            <p class="subject-percent">
                 ${percent}% progress (${safeSaved}/${safeMax} pages)
             </p>
         </div>
@@ -132,7 +125,9 @@ function loadStudySection(grade) {
         return;
     }
 
-    let html = `<h2>📘 Grade ${grade} Study Tracker</h2><div class="subjects-container">`;
+    // Corrected: Added the header element with the ID required for updateGradeSummary
+    let html = `<h2 id="grade-progress-bar">Grade ${grade} Overall: 0% (0/0 pages)</h2>
+                <div class="subjects-container">`;
     for (const subject of SUBJECTS) {
         html += createSubject(subject, data[subject], activeStudySavedData[subject] || 0);
     }
@@ -167,4 +162,3 @@ function updateGradeSummary(grade) {
 }
 
 window.loadStudySection = loadStudySection;
-                    
