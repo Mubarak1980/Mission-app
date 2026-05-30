@@ -1,6 +1,13 @@
 "use strict";
 
 window.loadDashboard = () => {
+    // 1. Safety check: Ensure the Engine is loaded before proceeding
+    if (!window.SmartEngine || !window.DataService) {
+        console.error("Dashboard failed: SmartEngine or DataService not initialized.");
+        document.getElementById("main-content").innerHTML = `<div style="color:orange;">Engine loading... please wait.</div>`;
+        return;
+    }
+
     try {
         const main = document.getElementById("main-content");
         if (!main) return;
@@ -43,7 +50,9 @@ window.loadDashboard = () => {
           
           grades.forEach(gradeKey => {
             const saved = studyProgress[gradeKey] || {};
-            const max = Number(window.maxPagesByGrade?.[gradeKey]?.[subject]) || 0;
+            // Safely access maxPagesByGrade
+            const gradeData = (window.maxPagesByGrade && window.maxPagesByGrade[gradeKey]) ? window.maxPagesByGrade[gradeKey] : {};
+            const max = Number(gradeData[subject]) || 0;
             const done = Math.min(Number(saved[subject]) || 0, max);
             
             subjectTotalDone += done;
@@ -74,7 +83,6 @@ window.loadDashboard = () => {
 
     } catch (err) {
         console.error("Dashboard Render Failed:", err);
-        document.getElementById("main-content").innerHTML = `<div style="color:red;">Error loading dashboard.</div>`;
+        document.getElementById("main-content").innerHTML = `<div style="color:red;">Error loading dashboard. Please check console.</div>`;
     }
 };
-            
