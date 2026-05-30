@@ -1,26 +1,15 @@
 "use strict";
 
-// =====================================================
-// 📘 STUDY TRACKER (PWA OPTIMIZED & BRIDGE INTEGRATED)
-// =====================================================
-
 const SUBJECTS = ["Math", "Physics", "Chemistry", "Biology", "English"];
-
 let activeStudyGrade = null;
 let activeStudySavedData = null;
 
-// ===============================
-// BRIDGE-AWARE LOADING
-// ===============================
 function loadProgress(grade) {
     const masterData = window.DataService.get();
     if (!masterData.studyProgress) masterData.studyProgress = {};
     return masterData.studyProgress[grade] || {};
 }
 
-// ===============================
-// BRIDGE-AWARE SAVING
-// ===============================
 function saveProgress(grade, data) {
     const masterData = window.DataService.get();
     if (!masterData.studyProgress) masterData.studyProgress = {};
@@ -28,9 +17,6 @@ function saveProgress(grade, data) {
     window.DataService.set(masterData);
 }
 
-// ===============================
-// PERCENT ENGINE
-// ===============================
 function calculatePercent(done, max) {
     const safeDone = Math.max(0, Number(done) || 0);
     const safeMax = Math.max(0, Number(max) || 0);
@@ -38,17 +24,14 @@ function calculatePercent(done, max) {
     return Math.min(100, Math.round((safeDone / safeMax) * 100));
 }
 
-// ===============================
-// SUBJECT COMPONENT
-// ===============================
+// Generates the subject cards that match your CSS classes
 function createSubject(name, maxPages, savedPages) {
     const safeMax = Number(maxPages) || 0;
     const safeSaved = Math.min(Number(savedPages) || 0, safeMax);
     const percent = calculatePercent(safeSaved, safeMax);
 
-    // Structure optimized for CSS hookup
     return `
-        <div class="subject ${percent === 100 ? "complete" : ""}">
+        <div class="subject">
             <h3>${name}</h3>
             <input
                 class="subject-progress"
@@ -64,16 +47,11 @@ function createSubject(name, maxPages, savedPages) {
             <div class="subject-progress-wrapper">
                 <progress value="${safeSaved}" max="${safeMax}"></progress>
             </div>
-            <p class="subject-percent">
-                ${percent}% progress (${safeSaved}/${safeMax} pages)
-            </p>
+            <p class="subject-percent">${percent}% progress (${safeSaved}/${safeMax} pages)</p>
         </div>
     `;
 }
 
-// ===============================
-// UI UPDATE
-// ===============================
 function updateSubjectUI(container, value, max) {
     if (!container) return;
     const safeMax = Number(max) || 0;
@@ -92,9 +70,6 @@ function updateSubjectUI(container, value, max) {
     }
 }
 
-// ===============================
-// CENTRALIZED INPUT HANDLER
-// ===============================
 function cleanStudyInputRouter(e) {
     const input = e.target;
     if (!input || !input.classList.contains("subject-progress")) return;
@@ -110,9 +85,6 @@ function cleanStudyInputRouter(e) {
     updateGradeSummary(activeStudyGrade);
 }
 
-// ===============================
-// LOAD STUDY SECTION
-// ===============================
 function loadStudySection(grade) {
     const mainContent = document.getElementById("main-content");
     if (!mainContent) return;
@@ -126,7 +98,6 @@ function loadStudySection(grade) {
         return;
     }
 
-    // Wrapped in a dedicated container to allow CSS grid/flex styling
     let html = `<div class="subjects-container">`;
     for (const subject of SUBJECTS) {
         html += createSubject(subject, data[subject], activeStudySavedData[subject] || 0);
@@ -139,9 +110,7 @@ function loadStudySection(grade) {
     updateGradeSummary(grade);
 }
 
-// ===============================
-// GRADE SUMMARY
-// ===============================
+// Updated to structure the output to match your CSS classes
 function updateGradeSummary(grade) {
     const saved = loadProgress(grade);
     const data = window.maxPagesByGrade?.[grade];
@@ -155,10 +124,15 @@ function updateGradeSummary(grade) {
     }
 
     const percent = calculatePercent(totalDone, totalPages);
-    // Finds the existing static element from your index.html
     const el = document.getElementById("grade-progress-bar");
     if (el) {
-        el.innerHTML = `Grade ${grade} Overall: ${percent}% (${totalDone}/${totalPages} pages)`;
+        el.innerHTML = `
+            <div class="subject">
+                <h3>Grade ${grade} Overall Progress</h3>
+                <progress value="${totalDone}" max="${totalPages}"></progress>
+                <p class="subject-percent">${percent}% (${totalDone}/${totalPages} pages)</p>
+            </div>
+        `;
     }
 }
 
