@@ -76,27 +76,39 @@
             if (!data.studyProgress || Object.keys(data.studyProgress).length === 0) return "INITIALIZING";
             return "ACTIVE_STUDY";
         },
-        canLogProgress() {
-            return this.getCurrentState() === "ACTIVE_STUDY";
-        }
+        canLogProgress() { return this.getCurrentState() === "ACTIVE_STUDY"; }
     };
 
-    // 3. SMART CYCLE ENGINE (Pure Logic)
+    // 3. SMART CYCLE ENGINE (Logic & Guidance)
     window.SmartEngine = {
-      calculateDynamicTarget() {
-        const masterData = window.DataService.get();
-        const TOTAL_CYCLE_PAGES = 4638, TOTAL_CYCLE_DAYS = 90;
-        let totalCompleted = 0;
-        Object.values(masterData.studyProgress || {}).forEach(grade => Object.values(grade).forEach(p => totalCompleted += Number(p) || 0));
-        const daysPassed = Math.floor((new Date() - new Date(masterData.startDate)) / (1000 * 60 * 60 * 24));
-        return Math.round(Math.max(0, TOTAL_CYCLE_PAGES - totalCompleted) / Math.max(1, TOTAL_CYCLE_DAYS - daysPassed));
-      },
       getOverallStats() {
         const masterData = window.DataService.get();
         let total = 0;
         Object.values(masterData.studyProgress || {}).forEach(grade => Object.values(grade).forEach(p => total += Number(p) || 0));
         return { totalRead: total, pagePercent: Math.min(Math.round((total / 18552) * 100), 100), timePercent: Math.min(Math.round((Math.min(Math.floor((new Date() - new Date(masterData.startDate)) / 86400000), 360) / 360) * 100), 100) };
       },
+      
+      // NEW: Cycle Countdown logic
+      getCycleTimeRemaining() {
+        const data = window.DataService.get();
+        const daysPassed = Math.floor((new Date() - new Date(data.startDate)) / (1000 * 60 * 60 * 24));
+        return { remaining: Math.max(0, 90 - daysPassed), percent: Math.min(Math.round((daysPassed / 90) * 100), 100) };
+      },
+
+      // NEW: Dynamic Workload Distribution
+      getSuggestedDailyWorkload() {
+        const time = this.getCycleTimeRemaining();
+        const remainingPages = Math.max(0, 4638 - this.getOverallStats().totalRead);
+        const dailyTarget = Math.round(remainingPages / Math.max(1, time.remaining));
+        return {
+            totalTarget: dailyTarget,
+            Math: Math.round(dailyTarget * 0.40),
+            Physics: Math.round(dailyTarget * 0.20),
+            Chemistry: Math.round(dailyTarget * 0.20),
+            Biology: Math.round(dailyTarget * 0.20)
+        };
+      },
+
       getWorkloadStatus(pageP, timeP) {
         return pageP >= timeP ? "✅ On Track" : (pageP >= timeP - 10 ? "⚠️ Slightly Behind" : "🚨 Needs Sprint");
       }
@@ -133,3 +145,4 @@
     });
   } catch (err) { console.error("Critical Engine Failure:", err); }
 })();
+              
