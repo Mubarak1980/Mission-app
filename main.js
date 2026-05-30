@@ -67,7 +67,7 @@
       }
     };
 
-    // 2. STATE-MACHINE ENGINE (The Gatekeeper)
+    // 2. STATE-MACHINE ENGINE
     window.StateEngine = {
         getCurrentState() {
             const data = window.DataService.get();
@@ -79,33 +79,47 @@
         canLogProgress() { return this.getCurrentState() === "ACTIVE_STUDY"; }
     };
 
-    // 3. SMART CYCLE ENGINE (Logic & Guidance)
+    // 3. SMART CYCLE ENGINE (Adaptive Velocity Logic)
     window.SmartEngine = {
       getOverallStats() {
         const masterData = window.DataService.get();
         let total = 0;
         Object.values(masterData.studyProgress || {}).forEach(grade => Object.values(grade).forEach(p => total += Number(p) || 0));
-        return { totalRead: total, pagePercent: Math.min(Math.round((total / 18552) * 100), 100), timePercent: Math.min(Math.round((Math.min(Math.floor((new Date() - new Date(masterData.startDate)) / 86400000), 360) / 360) * 100), 100) };
+        return { 
+            totalRead: total, 
+            pagePercent: Math.min(Math.round((total / 18552) * 100), 100), 
+            timePercent: Math.min(Math.round((Math.min(Math.floor((new Date() - new Date(window.DataService.get().startDate)) / 86400000), 360) / 360) * 100), 100) 
+        };
       },
       
-      // NEW: Cycle Countdown logic
       getCycleTimeRemaining() {
         const data = window.DataService.get();
         const daysPassed = Math.floor((new Date() - new Date(data.startDate)) / (1000 * 60 * 60 * 24));
         return { remaining: Math.max(0, 90 - daysPassed), percent: Math.min(Math.round((daysPassed / 90) * 100), 100) };
       },
 
-      // NEW: Dynamic Workload Distribution
+      // ADAPTIVE VELOCITY MODEL: Recalculates daily targets based on actual progress
+      getAdaptiveTarget() {
+          const stats = this.getOverallStats();
+          const TOTAL_GOAL = 4648; 
+          const pagesRemaining = Math.max(0, TOTAL_GOAL - stats.totalRead);
+          const daysRemaining = Math.max(1, this.getCycleTimeRemaining().remaining);
+          return {
+              dailyTarget: Math.ceil(pagesRemaining / daysRemaining),
+              pagesRemaining: pagesRemaining,
+              daysRemaining: daysRemaining
+          };
+      },
+
       getSuggestedDailyWorkload() {
-        const time = this.getCycleTimeRemaining();
-        const remainingPages = Math.max(0, 4638 - this.getOverallStats().totalRead);
-        const dailyTarget = Math.round(remainingPages / Math.max(1, time.remaining));
+        const adaptive = this.getAdaptiveTarget();
+        const t = adaptive.dailyTarget;
         return {
-            totalTarget: dailyTarget,
-            Math: Math.round(dailyTarget * 0.40),
-            Physics: Math.round(dailyTarget * 0.20),
-            Chemistry: Math.round(dailyTarget * 0.20),
-            Biology: Math.round(dailyTarget * 0.20)
+            totalTarget: t,
+            Math: Math.round(t * 0.40),
+            Physics: Math.round(t * 0.20),
+            Chemistry: Math.round(t * 0.20),
+            Biology: Math.round(t * 0.20)
         };
       },
 
@@ -120,7 +134,13 @@
         load() { return window.DataService.get().ui || { section: "study", grade: 9 }; }
     };
 
-    const SectionMap = { study: "loadStudySection", timetable: "loadWeeklyTimetable", dashboard: "loadDashboard", topstudent: "loadTopStudentMode", sunnah: "loadSunnahTracker" };
+    const SectionMap = { 
+        study: "loadStudySection", 
+        timetable: "loadWeeklyTimetable", 
+        dashboard: "loadDashboard", 
+        topstudent: "loadTopStudentMode", 
+        sunnah: "loadSunnahTracker" 
+    };
 
     window.loadSection = (type, grade) => {
       const main = document.getElementById("main-content");
@@ -141,8 +161,8 @@
             const lastUI = window.UI.load();
             setTimeout(() => window.loadSection(lastUI.section, lastUI.grade), 100);
         });
-        console.log("🚀 State-Machine Engine Initialized. Mode:", window.StateEngine.getCurrentState());
+        console.log("🚀 Mission Engine Initialized. Mode:", window.StateEngine.getCurrentState());
     });
   } catch (err) { console.error("Critical Engine Failure:", err); }
 })();
-              
+                                  
