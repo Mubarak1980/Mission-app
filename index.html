@@ -41,11 +41,7 @@
 
     <main id="main-content"></main>
 
-    <div id="grade-nav" style="display: none;">
-        <button id="prev-btn">Previous</button>
-        <button id="next-btn">Next</button>
     </div>
-</div>
 
 <script src="cordova.js"></script>
 <script src="./data.js"></script>
@@ -74,12 +70,9 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     // 2. Initialize Visibility state
     const lastUI = window.UI.load();
-    const nav = document.getElementById("grade-nav");
     const prog = document.getElementById("grade-progress-container");
-    if (nav && prog) {
-        const isStudy = (lastUI.section === 'study');
-        nav.style.display = isStudy ? 'flex' : 'none';
-        prog.style.display = isStudy ? 'block' : 'none';
+    if (prog) {
+        prog.style.display = (lastUI.section === 'study') ? 'block' : 'none';
     }
 
     // 3. Splash Screen Logic
