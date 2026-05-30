@@ -80,7 +80,6 @@
 
     // 🧠 SMART CYCLE ENGINE: Dynamically re-balances workload & mastery
     window.SmartEngine = {
-      // Automatic Dynamic Target (Cycle Based)
       calculateDynamicTarget() {
         const masterData = window.DataService.get();
         const TOTAL_CYCLE_PAGES = 4638;
@@ -101,8 +100,6 @@
         return Math.round(pagesRemaining / daysRemaining);
       },
 
-      // Workload Distribution (Subject Balancing)
-      // Math = 40%, Physics/Chem/Bio = 20% each
       getSubjectDistribution() {
         const dailyTarget = this.calculateDynamicTarget();
         return {
@@ -113,10 +110,9 @@
         };
       },
 
-      // Global Mastery and Status
       getOverallStats() {
         const masterData = window.DataService.get();
-        const YEARLY_GOAL_PAGES = 18552; // 4638 * 4
+        const YEARLY_GOAL_PAGES = 18552;
         const YEARLY_GOAL_DAYS = 360;
         
         let totalCompleted = 0;
@@ -166,13 +162,18 @@
 
     window.loadSection = (type, grade) => {
       const mainContent = document.getElementById("main-content");
-      if (!mainContent) return;
+      if (!mainContent) {
+          console.error("Critical: #main-content element not found!");
+          return;
+      }
       mainContent.innerHTML = ""; 
       const functionName = SectionMap[type];
-      if (window[functionName]) {
+      if (window[functionName] && typeof window[functionName] === 'function') {
           window.UI.save(type, grade);
           document.querySelectorAll('.nav-button').forEach(btn => btn.classList.toggle('active', btn.dataset.target === type));
           window[functionName](grade);
+      } else {
+          console.error("Function not found: " + functionName);
       }
     };
 
@@ -198,13 +199,16 @@
 
         window.DataService.initNativeFileSystem(() => {
             const lastUI = window.UI.load();
-            window.loadSection(lastUI.section, lastUI.grade);
+            setTimeout(() => {
+                window.loadSection(lastUI.section, lastUI.grade);
+            }, 100);
         });
         
-        console.log("🚀 Smart Engine Engine Initialized.");
+        console.log("🚀 Smart Engine Initialized.");
     });
     
   } catch (err) {
     console.error("Critical Engine Failure:", err);
   }
 })();
+      
