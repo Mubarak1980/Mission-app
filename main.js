@@ -78,6 +78,35 @@
       }
     };
 
+    // 🧠 SMART CYCLE ENGINE: Dynamically re-balances workload
+    window.SmartEngine = {
+      calculateDynamicTarget() {
+        const masterData = window.DataService.get();
+        const TOTAL_CYCLE_PAGES = 4638;
+        const TOTAL_CYCLE_DAYS = 90;
+        
+        let totalCompleted = 0;
+        if (masterData.studyProgress) {
+            Object.values(masterData.studyProgress).forEach(gradeData => {
+                Object.values(gradeData).forEach(pages => totalCompleted += Number(pages) || 0);
+            });
+        }
+
+        const startDate = new Date(masterData.startDate);
+        const daysPassed = Math.floor((new Date() - startDate) / (1000 * 60 * 60 * 24));
+        const daysRemaining = Math.max(1, TOTAL_CYCLE_DAYS - daysPassed);
+        const pagesRemaining = Math.max(0, TOTAL_CYCLE_PAGES - totalCompleted);
+
+        return Math.round(pagesRemaining / daysRemaining);
+      },
+
+      getWorkloadStatus(pagePercent, timePercent) {
+        if (pagePercent >= timePercent) return "✅ On Track";
+        if (pagePercent >= timePercent - 10) return "⚠️ Slightly Behind";
+        return "🚨 Needs Sprint";
+      }
+    };
+
     window.UI = {
         save(section, grade) {
             const state = window.DataService.get();
@@ -134,11 +163,11 @@
             window.loadSection(lastUI.section, lastUI.grade);
         });
         
-        console.log("🚀 Engine Initialized: Unified Bridge & Smart Velocity Active.");
+        console.log("🚀 Smart Engine Engine Initialized.");
     });
     
   } catch (err) {
     console.error("Critical Engine Failure:", err);
   }
 })();
-               
+            
