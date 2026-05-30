@@ -7,9 +7,14 @@ function loadWeeklyTimetable() {
   const bar = document.getElementById("grade-progress-bar");
   if (bar) bar.innerHTML = "";
 
-  const cycleData = JSON.parse(localStorage.getItem("study_progress")) || { cycleNumber: 1 };
-  const dailyTarget = Math.round(4638 / 90); 
+  // 1. Fetch State (Using Smart Engine if available, otherwise defaulting)
+  const smart = (typeof window.getSmartCycle === "function") ? window.getSmartCycle() : {
+    cycleNumber: JSON.parse(localStorage.getItem("study_progress") || "{}").cycleNumber || 1,
+    dailyTarget: Math.round(4638 / 90),
+    totalPagesPercentage: "0.0"
+  };
 
+  // 2. Verified Data Matrix
   const planData = [
     { grade: 9, total: 876, days: 18, math: 20, phys: 10, chem: 10, bio: 9 },
     { grade: 10, total: 1116, days: 22, math: 18, phys: 10, chem: 12, bio: 12 },
@@ -26,15 +31,15 @@ function loadWeeklyTimetable() {
       <td>${row.phys}</td>
       <td>${row.chem}</td>
       <td>${row.bio}</td>
-      <td style="color: #00d4ff;">${dailyTarget}</td>
+      <td style="color: #00d4ff;">${smart.dailyTarget}</td>
     </tr>
   `).join("");
 
-  // Render Table + Smart Engine below it
+  // 3. Render Table + Smart Engine Metrics Below
   const innerWrapper = document.createElement("div");
   innerWrapper.className = "timetable-view-container";
   innerWrapper.innerHTML = `
-    <h2>📅 Adaptive Daily Distribution (Cycle ${cycleData.cycleNumber}/4)</h2>
+    <h2>📅 Adaptive Daily Distribution (Cycle ${smart.cycleNumber}/4)</h2>
     <div class="weekly-table-wrapper" style="overflow-x: auto; margin-bottom: 20px;">
       <table class="weekly-table" style="width: 100%; border-collapse: collapse; text-align: center; color: white;">
         <thead>
@@ -45,18 +50,18 @@ function loadWeeklyTimetable() {
         <tbody>
           ${rowsHtml}
           <tr style="border-top: 2px solid #30363d; font-weight: bold;">
-            <td>Total</td><td>4,638</td><td>90</td><td>—</td><td>—</td><td>—</td><td>—</td><td>≈${dailyTarget}/day</td>
+            <td>Total</td><td>4,638</td><td>90</td><td>—</td><td>—</td><td>—</td><td>—</td><td>≈${smart.dailyTarget}/day</td>
           </tr>
         </tbody>
       </table>
     </div>
 
-    <!-- Smart Engine Positioned Below Table -->
     <div style="background: #121821; padding: 15px; border-radius: 10px; border-left: 4px solid #00d4ff;">
       <h3 style="margin-top: 0; color: #00d4ff;">🧠 Smart Engine Metrics</h3>
       <p style="margin: 5px 0;">Current Objective: <strong>4,638 pages</strong> per 90-day cycle.</p>
-      <p style="margin: 5px 0;">Daily Performance Goal: <strong>${dailyTarget} pages/day</strong>.</p>
-      <p style="margin: 5px 0;">Rotation Status: Cycle ${cycleData.cycleNumber} of 4 active.</p>
+      <p style="margin: 5px 0;">Daily Performance Goal: <strong>${smart.dailyTarget} pages/day</strong>.</p>
+      <p style="margin: 5px 0;">Rotation Status: <strong>Cycle ${smart.cycleNumber} of 4</strong> active.</p>
+      <p style="margin: 5px 0;">Yearly Mastery: <strong>${smart.totalPagesPercentage}%</strong> of annual goal reached.</p>
     </div>
   `;
 
