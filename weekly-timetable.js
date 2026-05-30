@@ -23,16 +23,20 @@ window.loadWeeklyTimetable = function() {
                 <table style="width: 100%; border-collapse: collapse; text-align: center; color: white; margin-bottom: 20px;">
                     <thead>
                         <tr style="border-bottom: 1px solid #30363d; color: #8b949e;">
-                            <th style="padding: 10px;">Math</th><th>Phys</th><th>Chem</th><th>Bio</th><th>Target/Day</th>
+                            <th style="padding: 8px;">Math</th>
+                            <th style="padding: 8px;">Phys</th>
+                            <th style="padding: 8px;">Chem</th>
+                            <th style="padding: 8px;">Bio</th>
+                            <th style="padding: 8px;">Target</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr style="border-top: 2px solid #30363d;">
-                            <td style="padding: 10px;">${workload.Math}</td>
-                            <td>${workload.Physics}</td>
-                            <td>${workload.Chemistry}</td>
-                            <td>${workload.Biology}</td>
-                            <td style="color: #00d4ff; font-weight: bold;">${workload.totalTarget}</td>
+                        <tr style="border-top: 2px solid #30363d; background: #1c222d;">
+                            <td style="padding: 12px;">${workload.Math}</td>
+                            <td style="padding: 12px;">${workload.Physics}</td>
+                            <td style="padding: 12px;">${workload.Chemistry}</td>
+                            <td style="padding: 12px;">${workload.Biology}</td>
+                            <td style="padding: 12px; color: #00d4ff; font-weight: bold;">${workload.totalTarget}</td>
                         </tr>
                     </tbody>
                 </table>
