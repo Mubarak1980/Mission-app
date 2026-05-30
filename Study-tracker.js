@@ -2,16 +2,12 @@
 
 const SUBJECTS = ["Math", "Physics", "Chemistry", "Biology"];
 
-// Global configuration
 window.maxPagesByGrade = {
     9:  { Math: 363, Physics: 174, Chemistry: 175, Biology: 164 },
     10: { Math: 385, Physics: 249, Chemistry: 298, Biology: 174 },
     11: { Math: 479, Physics: 329, Chemistry: 330, Biology: 284 },
     12: { Math: 416, Physics: 177, Chemistry: 287, Biology: 354 }
 };
-
-let activeStudyGrade = null;
-let activeStudySavedData = null;
 
 // UI Component: Generate Subject Box
 function createSubjectHtml(name, max, saved) {
@@ -34,27 +30,27 @@ window.loadStudySection = function(grade) {
     const gradeNum = parseInt(grade);
     if (!mainContent) return;
 
-    // 1. CLEAR: Wipe everything to prevent duplicated buttons
+    // 1. CLEAR: Wipe everything (including old buttons)
     mainContent.innerHTML = "";
 
-    // 2. DATA: Load saved progress
+    // 2. DATA
     const masterData = (window.DataService && window.DataService.get()) || { studyProgress: {} };
     const savedData = masterData.studyProgress?.[gradeNum] || {};
     const config = window.maxPagesByGrade?.[gradeNum];
 
     if (!config) return;
 
-    activeStudyGrade = gradeNum;
-    activeStudySavedData = savedData;
+    window.activeStudyGrade = gradeNum;
+    window.activeStudySavedData = savedData;
 
-    // 3. RENDER: Build the subjects
+    // 3. RENDER
     let html = `<h2>📚 Grade ${gradeNum} Study Tracker</h2><div class="subjects-container">`;
     SUBJECTS.forEach(subject => {
         html += createSubjectHtml(subject, config[subject], savedData[subject] || 0);
     });
     html += `</div>`;
 
-    // 4. NAVIGATION: Add ONLY the blue buttons
+    // 4. NAVIGATION: Only these buttons will exist
     html += `
         <div style="display: flex; gap: 10px; margin-top: 20px; margin-bottom: 50px;">
             <button onclick="loadStudySection(${Math.max(9, gradeNum - 1)})" 
@@ -71,26 +67,33 @@ window.loadStudySection = function(grade) {
     mainContent.innerHTML = html;
 };
 
-// INPUT HANDLER: Update data on change
+// IMPROVED INPUT HANDLER: Sanitizes input and caps at MAX
 document.getElementById("main-content").addEventListener("input", function(e) {
     if (!e.target.classList.contains("subject-progress")) return;
     
     const input = e.target;
-    const subject = input.dataset.subject;
     const max = Number(input.dataset.maxpages);
-    let value = Math.min(Math.max(0, Number(input.value)), max);
-
-    // Update Memory
-    activeStudySavedData[subject] = value;
     
-    // Save to DataService
+    // Convert input to number (strips leading zeros)
+    let val = Number(input.value.replace(/[^0-9]/g, ''));
+    
+    // Cap at Max
+    if (val > max) val = max;
+    
+    // Update visual input and internal state
+    input.value = val; 
+    const subject = input.dataset.subject;
+    window.activeStudySavedData[subject] = val;
+
+    // Save
     const masterData = window.DataService.get() || { studyProgress: {} };
-    masterData.studyProgress[activeStudyGrade] = activeStudySavedData;
+    if (!masterData.studyProgress) masterData.studyProgress = {};
+    masterData.studyProgress[window.activeStudyGrade] = window.activeStudySavedData;
     window.DataService.set(masterData);
 
-    // Update UI
-    const percent = max > 0 ? Math.round((value / max) * 100) : 0;
-    input.parentElement.querySelector("progress").value = value;
-    input.parentElement.querySelector("p").innerText = `${percent}% (${value}/${max} pages)`;
+    // Refresh UI
+    const percent = max > 0 ? Math.round((val / max) * 100) : 0;
+    input.parentElement.querySelector("progress").value = val;
+    input.parentElement.querySelector("p").innerText = `${percent}% (${val}/${max} pages)`;
 });
     
