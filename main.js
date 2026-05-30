@@ -102,7 +102,13 @@ window.updateNavUI = (type) => {
 
 window.loadSection = (type, grade) => {
   const mainContent = document.getElementById("main-content");
+  const progressBar = document.getElementById("grade-progress-bar");
   if (!mainContent) return;
+
+  // Manage Progress Bar Visibility: Show ONLY for study section
+  if (progressBar) {
+      progressBar.style.display = (type === 'study') ? 'block' : 'none';
+  }
 
   mainContent.innerHTML = ""; 
   const functionName = SectionMap[type];
