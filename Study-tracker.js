@@ -46,7 +46,7 @@ function createSubject(name, maxPages, savedPages) {
     const safeSaved = Math.min(Number(savedPages) || 0, safeMax);
     const percent = calculatePercent(safeSaved, safeMax);
 
-    // No inline styles here, allowing styles.css to handle all presentation
+    // Structure optimized for CSS hookup
     return `
         <div class="subject ${percent === 100 ? "complete" : ""}">
             <h3>${name}</h3>
@@ -126,7 +126,7 @@ function loadStudySection(grade) {
         return;
     }
 
-    // Only inject the subjects container; the summary is handled by the static element in index.html
+    // Wrapped in a dedicated container to allow CSS grid/flex styling
     let html = `<div class="subjects-container">`;
     for (const subject of SUBJECTS) {
         html += createSubject(subject, data[subject], activeStudySavedData[subject] || 0);
@@ -155,6 +155,7 @@ function updateGradeSummary(grade) {
     }
 
     const percent = calculatePercent(totalDone, totalPages);
+    // Finds the existing static element from your index.html
     const el = document.getElementById("grade-progress-bar");
     if (el) {
         el.innerHTML = `Grade ${grade} Overall: ${percent}% (${totalDone}/${totalPages} pages)`;
@@ -162,4 +163,3 @@ function updateGradeSummary(grade) {
 }
 
 window.loadStudySection = loadStudySection;
-    
