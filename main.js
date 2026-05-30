@@ -84,11 +84,16 @@
       getOverallStats() {
         const masterData = window.DataService.get();
         let total = 0;
-        Object.values(masterData.studyProgress || {}).forEach(grade => Object.values(grade).forEach(p => total += Number(p) || 0));
+        const progress = masterData.studyProgress || {};
+        
+        Object.keys(progress).forEach(grade => {
+            Object.values(progress[grade]).forEach(p => total += Number(p) || 0);
+        });
+
         return { 
             totalRead: total, 
             pagePercent: Math.min(Math.round((total / 18552) * 100), 100), 
-            timePercent: Math.min(Math.round((Math.min(Math.floor((new Date() - new Date(window.DataService.get().startDate)) / 86400000), 360) / 360) * 100), 100) 
+            timePercent: Math.min(Math.round((Math.min(Math.floor((new Date() - new Date(masterData.startDate || new Date())) / 86400000), 90) / 90) * 100), 100) 
         };
       },
       
@@ -103,11 +108,15 @@
           const TOTAL_GOAL = 4648; 
           const pagesRemaining = Math.max(0, TOTAL_GOAL - stats.totalRead);
           const daysRemaining = Math.max(1, this.getCycleTimeRemaining().remaining);
+          
+          const timeElapsedPercent = this.getCycleTimeRemaining().percent;
+          const status = (stats.pagePercent < (timeElapsedPercent - 10)) ? "🚨 Needs Sprint" : "✅ On Track";
+          
           return {
               dailyTarget: Math.ceil(pagesRemaining / daysRemaining),
               pagesRemaining: pagesRemaining,
               daysRemaining: daysRemaining,
-              status: (stats.pagePercent < (Math.floor((new Date() - new Date(window.DataService.get().startDate)) / 86400000) / 90 * 100) - 10) ? "🚨 Needs Sprint" : "✅ On Track"
+              status: status
           };
       },
 
@@ -135,7 +144,6 @@
       if (!main) return;
       
       const fnName = window.SectionMap[type];
-      
       if (typeof window[fnName] === 'function') {
           main.innerHTML = "";
           window.UI.save(type, grade);
@@ -143,7 +151,7 @@
           window[fnName](grade); 
       } else {
           console.error(`Missing function: ${fnName}`);
-          main.innerHTML = `<div style="padding:20px; color:white;">Error: Module ${type} is still initializing...</div>`;
+          main.innerHTML = `<div style="padding:20px; color:white;">Error: Module ${type} not found.</div>`;
       }
     };
 
@@ -154,8 +162,8 @@
             const lastUI = window.UI.load();
             setTimeout(() => window.loadSection(lastUI.section, lastUI.grade), 100);
         });
-        console.log("🚀 Engine Initialized. Mode:", window.StateEngine.getCurrentState());
+        console.log("🚀 Engine Initialized.");
     });
   } catch (err) { console.error("Critical Engine Failure:", err); }
 })();
-      
+                                                                                          
