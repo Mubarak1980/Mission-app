@@ -10,19 +10,12 @@ window.loadDashboard = () => {
     const masterData = window.DataService.get();
     const studyProgress = masterData.studyProgress || {}; 
     
-    const YEARLY_GOAL_PAGES = 18552; // Updated to your correct annual goal
-    const YEARLY_GOAL_DAYS = 360;
-    const startDate = new Date(masterData.startDate || new Date());
-    const daysPassed = Math.min(Math.floor((new Date() - startDate) / (1000 * 60 * 60 * 24)), YEARLY_GOAL_DAYS);
-
     const subjects = ["Math", "Physics", "Chemistry", "Biology"];
     const grades = [9, 10, 11, 12];
-
-    let totalGlobalDone = 0;
-    let totalGlobalMax = 0;
+    
     let subjectHtml = "";
 
-    // 1. Render Subject Progress (Populates totals first)
+    // Render Subject Progress
     subjects.forEach(subject => {
       let subjectTotalDone = 0;
       let subjectTotalMax = 0;
@@ -35,37 +28,23 @@ window.loadDashboard = () => {
         subjectTotalMax += max;
       });
 
-      totalGlobalDone += subjectTotalDone;
-      totalGlobalMax += subjectTotalMax;
-
       const avg = subjectTotalMax ? Math.round((subjectTotalDone / subjectTotalMax) * 100) : 0;
       
       subjectHtml += `
-        <div class="dashboard-subject" style="margin-bottom: 20px;">
-          <h3 style="margin-bottom: 5px;">${subject}</h3>
+        <div class="dashboard-subject" style="margin-bottom: 25px; padding: 15px; background: #121821; border-radius: 10px;">
+          <h3 style="margin-top: 0; margin-bottom: 10px; color: #00d4ff;">${subject}</h3>
           <progress max="${subjectTotalMax}" value="${subjectTotalDone}" style="width:100%; height:12px;"></progress>
-          <p style="font-size: 13px; color: #8b949e; margin-top: 5px;">${avg}% (${subjectTotalDone.toLocaleString()} / ${subjectTotalMax.toLocaleString()} pages)</p>
+          <p style="font-size: 14px; color: #8b949e; margin-top: 8px;">
+            <strong>${avg}%</strong> completion (${subjectTotalDone.toLocaleString()} / ${subjectTotalMax.toLocaleString()} pages)
+          </p>
         </div>`;
     });
 
-    // 2. Now calculate percentages AFTER totals are updated
-    const pagePercent = Math.round((totalGlobalDone / YEARLY_GOAL_PAGES) * 100);
-    const timePercent = Math.round((daysPassed / YEARLY_GOAL_DAYS) * 100);
-    
-    // 3. Final Render
+    // Final Render (Cleaned: No yearly summary, no global total)
     main.innerHTML = `
-      <h2>📊 Master Dashboard</h2>
-      <div class="yearly-summary" style="margin-bottom: 20px; padding: 15px; background: #121821; border-radius: 10px;">
-        <h3>Yearly Progress</h3>
-        <p>Pages: ${pagePercent}% (${totalGlobalDone.toLocaleString()} / ${YEARLY_GOAL_PAGES.toLocaleString()})</p>
-        <progress max="100" value="${pagePercent}" style="width:100%; height:12px; margin-bottom:10px;"></progress>
-        <p>Time: ${timePercent}% (${daysPassed}/${YEARLY_GOAL_DAYS} days)</p>
-        <progress max="100" value="${timePercent}" style="width:100%; height:12px;"></progress>
-      </div>
-      <div class="dashboard-container">${subjectHtml}</div>
-      <div class="metrics-summary" style="margin-top: 20px; padding: 15px; background: #121821; border-radius: 10px;">
-        <h3>📈 Overall Master Completion</h3>
-        <p style="font-size: 18px; font-weight: bold;">Total: ${totalGlobalDone.toLocaleString()} / ${totalGlobalMax.toLocaleString()} pages</p>
+      <h2 style="margin-bottom: 20px;">📊 Subject Mastery Dashboard</h2>
+      <div class="dashboard-container">
+        ${subjectHtml}
       </div>`;
 
   } catch (err) {
@@ -73,4 +52,3 @@ window.loadDashboard = () => {
     document.getElementById("main-content").innerHTML = `<div style="color:red;">Error loading dashboard.</div>`;
   }
 };
-          
