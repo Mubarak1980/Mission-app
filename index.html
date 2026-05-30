@@ -35,13 +35,13 @@
         <button data-target="sunnah" class="nav-button">Sunnah Tracker</button>
     </nav>
 
-    <div style="width: 100%; box-sizing: border-box; padding: 0 4px;">
+    <div id="grade-progress-container" style="width: 100%; box-sizing: border-box; padding: 0 4px;">
         <div id="grade-progress-bar"></div>
     </div>
 
     <main id="main-content"></main>
 
-    <div id="grade-nav">
+    <div id="grade-nav" style="display: none;">
         <button id="prev-btn">Previous</button>
         <button id="next-btn">Next</button>
     </div>
@@ -60,21 +60,29 @@
 <script>
 "use strict";
 
-// Initialization Logic
 window.addEventListener("DOMContentLoaded", async () => {
-    // 1. Initialize Nav Listeners
+    // 1. Navigation Event Delegation
     const navContainer = document.getElementById("app-navigation-container");
     if (navContainer) {
         navContainer.addEventListener("click", (e) => {
             const btn = e.target.closest("button");
             if (btn && btn.dataset.target) {
-                // Ensure UI persistence and routing
                 window.loadSection(btn.dataset.target, window.UI.load().grade);
             }
         });
     }
 
-    // 2. Splash Screen Logic
+    // 2. Initialize Visibility state
+    const lastUI = window.UI.load();
+    const nav = document.getElementById("grade-nav");
+    const prog = document.getElementById("grade-progress-container");
+    if (nav && prog) {
+        const isStudy = (lastUI.section === 'study');
+        nav.style.display = isStudy ? 'flex' : 'none';
+        prog.style.display = isStudy ? 'block' : 'none';
+    }
+
+    // 3. Splash Screen Logic
     const hideSplash = () => {
         const splash = document.getElementById("splash-screen");
         const app = document.getElementById("app");
