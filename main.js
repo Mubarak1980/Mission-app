@@ -19,113 +19,66 @@
         const raw = localStorage.getItem(this.STORAGE_KEY);
         return raw ? JSON.parse(raw) : (fallback || { 
             startDate: new Date().toISOString().split("T")[0], 
-            cycleNumber: 1, 
             studyProgress: {},
-            velocityLog: {}, 
             ui: { section: "study", grade: 9 }
         });
       },
       set(data) {
         window.cachedNativeData[this.STORAGE_KEY] = data;
         localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
-        if (window.isNativeStorageReady && window.cordova?.file) {
-          const path = cordova.file.dataDirectory;
-          window.resolveLocalFileSystemURL(path, (dir) => {
-            dir.getFile(window.NATIVE_FILE_NAME, { create: true }, (fileEntry) => {
-              fileEntry.createWriter((fileWriter) => {
-                fileWriter.write(new Blob([JSON.stringify(window.cachedNativeData)], { type: "text/plain" }));
-              });
-            });
-          });
-        }
       },
       initNativeFileSystem(callback) {
-        const load = () => {
-          if (window.cordova?.file) {
-            window.resolveLocalFileSystemURL(cordova.file.dataDirectory, (dir) => {
-              dir.getFile(window.NATIVE_FILE_NAME, { create: true }, (fileEntry) => {
-                fileEntry.file((file) => {
-                  const reader = new FileReader();
-                  reader.onloadend = function() {
-                    if (this.result) {
-                      try { window.cachedNativeData = JSON.parse(this.result); } catch (e) { window.cachedNativeData = {}; }
-                      window.isNativeStorageReady = true;
-                      localStorage.setItem(window.DataService.STORAGE_KEY, JSON.stringify(window.cachedNativeData[window.DataService.STORAGE_KEY] || {}));
-                    }
-                    if (callback) callback();
-                  };
-                  reader.readAsText(file);
-                });
-              });
-            });
-          } else {
-            window.isNativeStorageReady = true;
-            if (callback) callback();
-          }
-        };
-        window.cordova ? document.addEventListener("deviceready", load, false) : load();
+        window.isNativeStorageReady = true;
+        if (callback) callback();
       }
     };
 
-    // 2. STATE-MACHINE ENGINE
-    window.StateEngine = {
-        getCurrentState() {
-            const data = window.DataService.get();
-            const daysPassed = Math.floor((new Date() - new Date(data.startDate)) / (1000 * 60 * 60 * 24));
-            if (daysPassed > 90) return "CYCLE_COMPLETE";
-            if (!data.studyProgress || Object.keys(data.studyProgress).length === 0) return "INITIALIZING";
-            return "ACTIVE_STUDY";
-        },
-        canLogProgress() { return this.getCurrentState() === "ACTIVE_STUDY"; }
-    };
-
-    // 3. SMART CYCLE ENGINE
+    // 2. SMART CYCLE ENGINE (PRO VERSION)
     window.SmartEngine = {
       getOverallStats() {
         const masterData = window.DataService.get();
         let total = 0;
         const progress = masterData.studyProgress || {};
-        
         Object.keys(progress).forEach(grade => {
             Object.values(progress[grade]).forEach(p => total += Number(p) || 0);
         });
-
-        return { 
-            totalRead: total, 
-            pagePercent: Math.min(Math.round((total / 18552) * 100), 100), 
-            timePercent: Math.min(Math.round((Math.min(Math.floor((new Date() - new Date(masterData.startDate || new Date())) / 86400000), 90) / 90) * 100), 100) 
-        };
+        return { totalRead: total };
       },
       
-      getCycleTimeRemaining() {
-        const data = window.DataService.get();
-        const daysPassed = Math.floor((new Date() - new Date(data.startDate)) / (1000 * 60 * 60 * 24));
-        return { remaining: Math.max(0, 90 - daysPassed), percent: Math.min(Math.round((daysPassed / 90) * 100), 100) };
+      // Gap Analysis: Identifies weakest subject
+      getSubjectPriorities() {
+        const masterData = window.DataService.get();
+        const progress = masterData.studyProgress || {};
+        const subjectStats = {};
+        Object.keys(progress).forEach(grade => {
+            Object.keys(progress[grade]).forEach(subj => {
+                subjectStats[subj] = (subjectStats[subj] || 0) + Number(progress[grade][subj]);
+            });
+        });
+        const totals = { Math: 1643, Physics: 929, Chemistry: 1090, Biology: 986 };
+        return Object.keys(totals).map(subj => {
+            const completed = subjectStats[subj] || 0;
+            return { name: subj, percent: (completed / totals[subj]) * 100, remaining: totals[subj] - completed };
+        }).sort((a, b) => a.percent - b.percent);
       },
 
       getAdaptiveTarget() {
           const stats = this.getOverallStats();
-          const TOTAL_GOAL = 4648; 
-          const pagesRemaining = Math.max(0, TOTAL_GOAL - stats.totalRead);
-          const daysRemaining = Math.max(1, this.getCycleTimeRemaining().remaining);
+          const daysPassed = Math.max(1, Math.floor((new Date() - new Date(window.DataService.get().startDate)) / 86400000));
+          const currentVelocity = stats.totalRead / daysPassed; 
           
-          const timeElapsedPercent = this.getCycleTimeRemaining().percent;
-          const status = (stats.pagePercent < (timeElapsedPercent - 10)) ? "🚨 Needs Sprint" : "✅ On Track";
+          const pagesRemaining = Math.max(0, 4648 - stats.totalRead);
+          const daysRemaining = Math.max(1, 90 - daysPassed);
           
-          return {
-              dailyTarget: Math.ceil(pagesRemaining / daysRemaining),
-              pagesRemaining: pagesRemaining,
-              daysRemaining: daysRemaining,
-              status: status
-          };
-      },
-
-      getWorkloadStatus(pageP, timeP) {
-        return pageP >= timeP ? "✅ On Track" : (pageP >= timeP - 10 ? "⚠️ Slightly Behind" : "🚨 Needs Sprint");
+          const rawTarget = pagesRemaining / daysRemaining;
+          // Momentum-weighted: reward consistency with 5% buffer
+          const adaptiveTarget = currentVelocity > rawTarget ? Math.ceil(rawTarget * 0.95) : Math.ceil(rawTarget * 1.05);
+          
+          return { dailyTarget: adaptiveTarget, priority: this.getSubjectPriorities()[0] };
       }
     };
 
-    // 4. UI CONTROLLER & GLOBAL REGISTRY
+    // 3. UI CONTROLLER & GLOBAL REGISTRY
     window.UI = {
         save(section, grade) { const s = window.DataService.get(); s.ui = { section, grade }; window.DataService.set(s); },
         load() { return window.DataService.get().ui || { section: "study", grade: 9 }; }
@@ -134,36 +87,25 @@
     window.SectionMap = { 
         study: "loadStudySection", 
         timetable: "loadWeeklyTimetable", 
-        dashboard: "loadDashboard", 
-        topstudent: "loadTopStudentMode", 
-        sunnah: "loadSunnahTracker" 
+        dashboard: "loadDashboard" 
     };
 
     window.loadSection = (type, grade) => {
       const main = document.getElementById("main-content");
-      if (!main) return;
-      
       const fnName = window.SectionMap[type];
       if (typeof window[fnName] === 'function') {
           main.innerHTML = "";
           window.UI.save(type, grade);
-          document.querySelectorAll('.nav-button').forEach(b => b.classList.toggle('active', b.dataset.target === type));
           window[fnName](grade); 
-      } else {
-          console.error(`Missing function: ${fnName}`);
-          main.innerHTML = `<div style="padding:20px; color:white;">Error: Module ${type} not found.</div>`;
       }
     };
 
     window.maxPagesByGrade = { 9: { Math: 363, Physics: 174, Chemistry: 175, Biology: 164 }, 10: { Math: 385, Physics: 249, Chemistry: 298, Biology: 174 }, 11: { Math: 479, Physics: 329, Chemistry: 330, Biology: 284 }, 12: { Math: 416, Physics: 177, Chemistry: 287, Biology: 354 } };
 
     document.addEventListener("DOMContentLoaded", () => {
-        window.DataService.initNativeFileSystem(() => {
-            const lastUI = window.UI.load();
-            setTimeout(() => window.loadSection(lastUI.section, lastUI.grade), 100);
-        });
-        console.log("🚀 Engine Initialized.");
+        const lastUI = window.UI.load();
+        window.loadSection(lastUI.section, lastUI.grade);
     });
   } catch (err) { console.error("Critical Engine Failure:", err); }
 })();
-                                                                                          
+          
