@@ -4,7 +4,7 @@ window.loadWeeklyTimetable = function() {
     const container = document.getElementById("main-content");
     if (!container) return;
 
-    // 1. Data Matrix (Locked to your exact specifications)
+    // 1. Your Fixed Plan Data
     const planData = [
         { grade: 9, total: 876, days: 18, math: 20, phys: 10, chem: 10, bio: 9, target: 49 },
         { grade: 10, total: 1116, days: 22, math: 18, phys: 10, chem: 12, bio: 12, target: 52 },
@@ -13,33 +13,39 @@ window.loadWeeklyTimetable = function() {
     ];
 
     let rowsHtml = planData.map(row => `
-        <tr>
-            <td style="font-weight: 700; color: #00d4ff;">${row.grade}</td>
-            <td>${row.total.toLocaleString()}</td>
-            <td>${row.days}</td>
-            <td>${row.math}</td><td>${row.phys}</td><td>${row.chem}</td><td>${row.bio}</td>
-            <td style="color: #00d4ff;">${row.target}</td>
+        <tr style="border-bottom: 1px solid #30363d;">
+            <td style="font-weight: 700; color: #00d4ff; padding: 8px;">${row.grade}</td>
+            <td style="padding: 8px;">${row.total.toLocaleString()}</td>
+            <td style="padding: 8px;">${row.days}</td>
+            <td style="padding: 8px;">${row.math}</td>
+            <td style="padding: 8px;">${row.phys}</td>
+            <td style="padding: 8px;">${row.chem}</td>
+            <td style="padding: 8px;">${row.bio}</td>
+            <td style="color: #00d4ff; font-weight: bold; padding: 8px;">${row.target}</td>
         </tr>
     `).join("");
 
-    // 2. Metrics
+    // 2. Fetch Dynamic Metrics from Smart Engine
     const stats = window.SmartEngine.getOverallStats();
 
-    // 3. Final Render (Title restricted to Daily Distribution)
+    // 3. Render
     container.innerHTML = `
-        <div style="background: #121821; padding: 15px; border-radius: 10px;">
-            <h2 style="margin-top: 0; color: white;">📅 Daily Distribution</h2>
+        <div style="background: #121821; padding: 15px; border-radius: 10px; color: white;">
+            <h2 style="margin-top: 0;">📅 Daily Distribution</h2>
             <div style="overflow-x: auto;">
                 <table style="width: 100%; border-collapse: collapse; text-align: center; color: white; margin-bottom: 20px;">
                     <thead>
-                        <tr style="border-bottom: 1px solid #30363d; color: #8b949e;">
-                            <th>Grade</th><th>Pages</th><th>Days</th><th>Math</th><th>Phys</th><th>Chem</th><th>Bio</th><th>Target</th>
+                        <tr style="border-bottom: 2px solid #30363d; color: #8b949e;">
+                            <th style="padding: 8px;">Gr</th><th style="padding: 8px;">Pgs</th><th style="padding: 8px;">Dys</th>
+                            <th style="padding: 8px;">M</th><th style="padding: 8px;">Ph</th><th style="padding: 8px;">Ch</th><th style="padding: 8px;">Bi</th>
+                            <th style="padding: 8px;">Tgt</th>
                         </tr>
                     </thead>
                     <tbody>
                         ${rowsHtml}
-                        <tr style="border-top: 2px solid #30363d; font-weight: bold;">
-                            <td>Total</td><td>4,648</td><td>90</td><td>—</td><td>—</td><td>—</td><td>—</td><td>≈52/day</td>
+                        <tr style="border-top: 2px solid #30363d; font-weight: bold; color: #00d4ff;">
+                            <td style="padding: 8px;">Sum</td><td style="padding: 8px;">4,648</td><td style="padding: 8px;">90</td>
+                            <td colspan="4" style="padding: 8px;">—</td><td style="padding: 8px;">≈52/d</td>
                         </tr>
                     </tbody>
                 </table>
