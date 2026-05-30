@@ -1,43 +1,37 @@
-"use strict";
-
-// =====================================================
-// 📊 DASHBOARD (FULLY UNIFIED WITH DATA BRIDGE)
-// =====================================================
-
 window.loadDashboard = (grade) => {
   try {
     const main = document.getElementById("main-content");
     if (!main) return;
 
-    // 🛡️ Ensure clean slate
     main.innerHTML = "";
 
-    if (typeof window.maxPagesByGrade === 'undefined') {
-        throw new Error("Grade configuration not loaded.");
-    }
-
-    // 1. Fetch Unified Master Data
     const masterData = window.DataService.get();
-    const studyProgress = masterData.studyProgress || {}; // Access the nested object
+    const studyProgress = masterData.studyProgress || {}; 
     
     const subjects = ["Math", "Physics", "Chemistry", "Biology", "English"];
     const grades = [9, 10, 11, 12];
 
+    let totalGlobalDone = 0;
+    let totalGlobalMax = 0;
+
     let html = `<h2>📊 Master Dashboard</h2><div class="dashboard-container">`;
 
-    // 2. Render Subject Progress
+    // 1. Render Subject Progress (Aggregated across all grades)
     subjects.forEach(subject => {
       let totalDone = 0, totalMax = 0;
       
       grades.forEach(gradeKey => {
-        // Retrieve progress for this specific grade from the unified object
         const saved = studyProgress[gradeKey] || {};
         const max = Number(window.maxPagesByGrade?.[gradeKey]?.[subject]) || 0;
-        
         const done = Math.min(Number(saved[subject]) || 0, max);
+        
         totalDone += done;
         totalMax += max;
       });
+
+      // Track global totals for the master completion
+      totalGlobalDone += totalDone;
+      totalGlobalMax += totalMax;
 
       const avg = totalMax ? Math.round((totalDone / totalMax) * 100) : 0;
       
@@ -49,25 +43,17 @@ window.loadDashboard = (grade) => {
         </div>`;
     });
 
-    // 3. Metrics Render
-    // If getSmartCycle is not yet defined, provide a neutral fallback
-    const metrics = (typeof window.getSmartCycle === "function") 
-        ? window.getSmartCycle() 
-        : { actualPages: 0, TOTAL_PAGES: 5705 };
-    
+    // 2. Metrics Render (Correctly calculating from the variables above)
     html += `</div>
       <div class="metrics-summary" style="margin-top: 20px; padding: 15px; background: #121821; border-radius: 10px;">
         <h3>📈 Overall Master Completion</h3>
-        <p>Total: ${metrics.actualPages.toLocaleString()} / ${metrics.TOTAL_PAGES.toLocaleString()} pages</p>
+        <p>Total: ${totalGlobalDone.toLocaleString()} / ${totalGlobalMax.toLocaleString()} pages</p>
       </div>`;
 
     main.innerHTML = html;
 
   } catch (err) {
     console.error("Dashboard Render Failed:", err);
-    const main = document.getElementById("main-content");
-    if (main) {
-        main.innerHTML = `<div style="color:red; padding: 20px;">Error loading dashboard: ${err.message}</div>`;
-    }
+    document.getElementById("main-content").innerHTML = `<div style="color:red;">Error loading dashboard.</div>`;
   }
 };
