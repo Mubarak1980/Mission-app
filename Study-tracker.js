@@ -1,78 +1,162 @@
 "use strict";
 
-// 1. Global Subjects Definition
+// 1. Updated Subject List
 const SUBJECTS = ["Math", "Physics", "Chemistry", "Biology"];
 
-// 2. Helper: Calculate percentage safely
+// 2. Verified Master Configuration
+window.maxPagesByGrade = {
+    9:  { Math: 363, Physics: 174, Chemistry: 175, Biology: 164 },
+    10: { Math: 385, Physics: 249, Chemistry: 298, Biology: 174 },
+    11: { Math: 479, Physics: 329, Chemistry: 330, Biology: 284 },
+    12: { Math: 416, Physics: 177, Chemistry: 287, Biology: 354 }
+};
+
+let activeStudyGrade = null;
+let activeStudySavedData = null;
+
+function loadProgress(grade) {
+    const masterData = window.DataService.get();
+    if (!masterData.studyProgress) masterData.studyProgress = {};
+    return masterData.studyProgress[grade] || {};
+}
+
+function saveProgress(grade, data) {
+    const masterData = window.DataService.get();
+    if (!masterData.studyProgress) masterData.studyProgress = {};
+    masterData.studyProgress[grade] = data;
+    window.DataService.set(masterData);
+}
+
 function calculatePercent(done, max) {
     const safeMax = Math.max(0, Number(max) || 0);
     const safeDone = Math.max(0, Math.min(Number(done) || 0, safeMax));
-    return safeMax <= 0 ? 0 : Math.round((safeDone / safeMax) * 100);
+    if (safeMax <= 0) return 0;
+    return Math.round((safeDone / safeMax) * 100);
 }
 
-// 3. Helper: Generate UI components
 function createSubject(name, maxPages, savedPages) {
     const safeMax = Number(maxPages) || 0;
     const safeSaved = Math.min(Number(savedPages) || 0, safeMax);
     const percent = calculatePercent(safeSaved, safeMax);
 
     return `
-        <div class="subject" style="margin-bottom: 20px; background: #161b22; padding: 15px; border-radius: 8px;">
-            <h3 style="margin-top:0; color: #00d4ff;">${name}</h3>
-            <input class="subject-progress" type="number" 
-                value="${safeSaved}" 
-                data-subject="${name}" 
+        <div class="subject" style="margin-bottom: 20px;">
+            <h3>${name}</h3>
+            <input
+                class="subject-progress"
+                type="number"
+                inputmode="numeric"
+                pattern="[0-9]*"
+                min="0"
+                max="${safeMax}"
+                value="${safeSaved}"
+                data-subject="${name}"
                 data-maxpages="${safeMax}"
-                style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #30363d; background: #0d1117; color: white; margin-bottom: 5px;">
-            <progress value="${safeSaved}" max="${safeMax}" style="width: 100%; height: 10px;"></progress>
-            <p style="font-size: 12px; color: #8b949e; margin-top: 5px;">${percent}% (${safeSaved}/${safeMax} pages)</p>
+                style="width: 100%; padding: 10px; border-radius: 6px; margin-bottom: 5px;"
+            />
+            <progress value="${safeSaved}" max="${safeMax}" style="width: 100%; height: 12px;"></progress>
+            <p class="subject-percent" style="font-size: 13px; color: #8b949e; margin-top: 5px;">
+                ${percent}% (${safeSaved}/${safeMax} pages)
+            </p>
         </div>
     `;
 }
 
-// 4. Main Loading Function (Fixed to prevent black screen)
-window.loadStudySection = function(grade) {
+function updateSubjectUI(container, value, max) {
+    if (!container) return;
+    const safeMax = Number(max) || 0;
+    const safeValue = Math.min(Number(value) || 0, safeMax);
+    const percent = calculatePercent(safeValue, safeMax);
+
+    const progressBar = container.querySelector("progress");
+    const percentText = container.querySelector(".subject-percent");
+
+    if (progressBar) {
+        progressBar.value = safeValue;
+    }
+    if (percentText) {
+        percentText.innerHTML = `${percent}% (${safeValue}/${safeMax} pages)`;
+    }
+}
+
+// 🧠 INTEGRATED VELOCITY LOGIC
+function cleanStudyInputRouter(e) {
+    const input = e.target;
+    if (!input || !input.classList.contains("subject-progress")) return;
+
+    const subject = input.dataset.subject;
+    const max = Number(input.dataset.maxpages) || 0;
+
+    let valStr = input.value.replace(/[^0-9]/g, '');
+    if (valStr.length > 4) valStr = valStr.slice(0, 4);
+    
+    let value = Number(valStr);
+    if (isNaN(value)) value = 0;
+    if (value > max) value = max;
+
+    input.value = value; 
+
+    // Log velocity: Calculate pages added since last save
+    const previousValue = activeStudySavedData[subject] || 0;
+    const pagesAdded = value - previousValue;
+
+    if (pagesAdded > 0) {
+        window.DataService.logVelocity(subject, pagesAdded);
+    }
+
+    activeStudySavedData[subject] = value;
+    saveProgress(activeStudyGrade, activeStudySavedData);
+    updateSubjectUI(input.closest(".subject"), value, max);
+    updateGradeSummary(activeStudyGrade);
+}
+
+function loadStudySection(grade) {
     const mainContent = document.getElementById("main-content");
     if (!mainContent) return;
 
-    // Load data or initialize empty if none exists
-    const masterData = (window.DataService && typeof window.DataService.get === 'function') ? window.DataService.get() : { studyProgress: {} };
-    const savedData = masterData.studyProgress?.[grade] || {};
-    const config = window.maxPagesByGrade?.[grade];
+    activeStudyGrade = grade;
+    activeStudySavedData = loadProgress(grade);
 
-    if (!config) {
-        mainContent.innerHTML = `<p style="padding: 20px;">Configuration for Grade ${grade} not found.</p>`;
-        return;
-    }
+    const data = window.maxPagesByGrade?.[grade];
+    if (!data) return;
 
-    // Render HTML
     let html = `<h2>📚 Grade ${grade} Study Tracker</h2><div class="subjects-container">`;
-    SUBJECTS.forEach(sub => {
-        html += createSubject(sub, config[sub], savedData[sub] || 0);
-    });
-    html += `</div>`;
-
+    for (const subject of SUBJECTS) {
+        html += createSubject(subject, data[subject], activeStudySavedData[subject] || 0);
+    }
+    // Added container for the Summary
+    html += `</div><div id="grade-progress-bar"></div>`;
     mainContent.innerHTML = html;
 
-    // Attach listener for inputs
-    mainContent.addEventListener("input", (e) => {
-        if (!e.target.classList.contains("subject-progress")) return;
-        
-        // Simple save logic
-        const sub = e.target.dataset.subject;
-        const val = Math.min(Number(e.target.value), Number(e.target.dataset.maxpages));
-        
-        masterData.studyProgress[grade] = masterData.studyProgress[grade] || {};
-        masterData.studyProgress[grade][sub] = val;
-        
-        if (window.DataService && typeof window.DataService.set === 'function') {
-            window.DataService.set(masterData);
-        }
-        
-        // Re-render percent text
-        const p = e.target.parentElement.querySelector("p");
-        const percent = calculatePercent(val, e.target.dataset.maxpages);
-        p.innerText = `${percent}% (${val}/${e.target.dataset.maxpages} pages)`;
-        e.target.parentElement.querySelector("progress").value = val;
-    });
-};
+    mainContent.removeEventListener("input", cleanStudyInputRouter);
+    mainContent.addEventListener("input", cleanStudyInputRouter);
+    updateGradeSummary(grade);
+}
+
+function updateGradeSummary(grade) {
+    const saved = loadProgress(grade);
+    const data = window.maxPagesByGrade?.[grade];
+    if (!data) return;
+
+    let totalDone = 0, totalPages = 0;
+    for (const subject of SUBJECTS) {
+        const max = Number(data[subject]) || 0;
+        totalDone += Math.min(Number(saved[subject]) || 0, max);
+        totalPages += max;
+    }
+
+    const percent = calculatePercent(totalDone, totalPages);
+    const el = document.getElementById("grade-progress-bar");
+    if (el) {
+        el.innerHTML = `
+            <div class="subject" style="margin-top: 20px;">
+                <h3>Overall Grade ${grade} Progress</h3>
+                <progress value="${totalDone}" max="${totalPages}" style="width: 100%; height: 16px;"></progress>
+                <p style="text-align: center; margin-top: 5px;">${percent}% (${totalDone}/${totalPages} pages)</p>
+            </div>
+        `;
+    }
+}
+
+window.loadStudySection = loadStudySection;
+    
