@@ -1,9 +1,9 @@
 "use strict";
 
 /**
- * 🧠 Smart Cycle Engine v2
- * 4 Cycles × 90 Days = 360 Day System
- * Deterministic workload distribution engine
+ * 🧠 Smart Cycle Engine v3 (Cycle Locked System)
+ * 4 Cycles × 90 Days = 360 Days
+ * Fixed Cycle Budget: ~1159 pages per cycle
  */
 
 window.SmartEngine = (function () {
@@ -12,9 +12,11 @@ window.SmartEngine = (function () {
     const DAYS_PER_CYCLE = 90;
     const TOTAL_DAYS = TOTAL_CYCLES * DAYS_PER_CYCLE;
 
+    const TOTAL_PAGES = 4638;
+    const PAGES_PER_CYCLE = TOTAL_PAGES / TOTAL_CYCLES; // ~1159.5
+
     const SUBJECTS = ["Math", "Physics", "Chemistry", "Biology"];
 
-    // Approx weight distribution (can be tuned later)
     const WEIGHTS = {
         Math: 0.35,
         Physics: 0.20,
@@ -22,7 +24,9 @@ window.SmartEngine = (function () {
         Biology: 0.20
     };
 
-    // 🔹 Get system start date from DataService
+    // ===============================
+    // START DATE (PERSISTENT)
+    // ===============================
     function getStartDate() {
         const data = window.DataService.get();
         if (!data.startDate) {
@@ -32,22 +36,38 @@ window.SmartEngine = (function () {
         return new Date(data.startDate);
     }
 
-    // 🔹 Calculate current day in cycle system
-    function getCurrentDay() {
+    // ===============================
+    // GLOBAL DAY (1 → 360)
+    // ===============================
+    function getGlobalDay() {
         const start = getStartDate();
         const now = new Date();
         const diff = Math.floor((now - start) / (1000 * 60 * 60 * 24)) + 1;
         return Math.min(Math.max(diff, 1), TOTAL_DAYS);
     }
 
-    function getCycleInfo(day) {
-        const cycle = Math.ceil(day / DAYS_PER_CYCLE);
-        const dayInCycle = ((day - 1) % DAYS_PER_CYCLE) + 1;
-        return { cycle, dayInCycle };
+    // ===============================
+    // CYCLE CALCULATION
+    // ===============================
+    function getCycleInfo(globalDay) {
+        const cycle = Math.ceil(globalDay / DAYS_PER_CYCLE);
+        const dayInCycle = ((globalDay - 1) % DAYS_PER_CYCLE) + 1;
+
+        const cycleStartDay = (cycle - 1) * DAYS_PER_CYCLE + 1;
+        const cycleEndDay = cycle * DAYS_PER_CYCLE;
+
+        return {
+            cycle,
+            dayInCycle,
+            cycleStartDay,
+            cycleEndDay
+        };
     }
 
-    // 🔹 Load total remaining workload from study tracker
-    function getRemainingPages() {
+    // ===============================
+    // PROGRESS INSIDE CYCLE ONLY
+    // ===============================
+    function getCycleProgress() {
         const data = window.DataService.get();
         const progress = data.studyProgress || {};
 
@@ -56,37 +76,45 @@ window.SmartEngine = (function () {
         for (let g = 9; g <= 12; g++) {
             const gData = progress[g] || {};
             SUBJECTS.forEach(s => {
-                totals[s] += Number(window.maxPagesByGrade?.[g]?.[s]) || 0;
-                totals[s] -= Number(gData[s]) || 0;
+                totals[s] += Number(gData[s]) || 0;
             });
         }
 
-        return totals;
+        const cycleDone =
+            totals.Math +
+            totals.Physics +
+            totals.Chemistry +
+            totals.Biology;
+
+        return {
+            totals,
+            cycleDone
+        };
     }
 
-    // 🔹 Core Mission Generator
+    // ===============================
+    // DAILY MISSION (CYCLE LOCKED)
+    // ===============================
     function getDailyMission() {
-        const day = getCurrentDay();
-        const { cycle, dayInCycle } = getCycleInfo(day);
 
-        const remaining = getRemainingPages();
+        const globalDay = getGlobalDay();
+        const { cycle, dayInCycle } = getCycleInfo(globalDay);
 
-        const totalRemaining =
-            remaining.Math +
-            remaining.Physics +
-            remaining.Chemistry +
-            remaining.Biology;
+        const { cycleDone } = getCycleProgress();
+
+        const cycleRemaining = Math.max(PAGES_PER_CYCLE - cycleDone, 0);
+        const remainingDaysInCycle = Math.max(DAYS_PER_CYCLE - dayInCycle + 1, 1);
 
         const breakdown = {};
 
-        SUBJECTS.forEach(s => {
-            const weight = WEIGHTS[s];
-            const base = totalRemaining * weight;
+        SUBJECTS.forEach(subject => {
+            const weight = WEIGHTS[subject];
 
-            // smooth distribution across remaining days
-            const perDay = Math.ceil(base / (TOTAL_DAYS - day + 1));
+            const base = cycleRemaining * weight;
 
-            breakdown[s] = Math.max(1, perDay);
+            const perDay = Math.ceil(base / remainingDaysInCycle);
+
+            breakdown[subject] = Math.max(1, perDay);
         });
 
         const total = Object.values(breakdown).reduce((a, b) => a + b, 0);
@@ -94,16 +122,24 @@ window.SmartEngine = (function () {
         return {
             cycle,
             day: dayInCycle,
-            globalDay: day,
+            globalDay,
+
+            cycleBudget: PAGES_PER_CYCLE,
+            cycleRemaining,
+
             totalDays: TOTAL_DAYS,
+
             breakdown,
             total
         };
     }
 
-    // 🔹 Progress Engine
+    // ===============================
+    // GLOBAL PROGRESS (OPTIONAL UI)
+    // ===============================
     function getProgress() {
-        const day = getCurrentDay();
+        const globalDay = getGlobalDay();
+
         const data = window.DataService.get();
         const progress = data.studyProgress || {};
 
@@ -112,18 +148,19 @@ window.SmartEngine = (function () {
 
         for (let g = 9; g <= 12; g++) {
             const gData = progress[g] || {};
-            for (const s of SUBJECTS) {
+            SUBJECTS.forEach(s => {
                 done += Number(gData[s]) || 0;
                 max += Number(window.maxPagesByGrade?.[g]?.[s]) || 0;
-            }
+            });
         }
 
         return {
             pagesDone: done,
             pagesTotal: max,
             pagesPercent: max ? Math.round((done / max) * 100) : 0,
-            day,
-            dayPercent: Math.round((day / TOTAL_DAYS) * 100)
+
+            globalDay,
+            dayPercent: Math.round((globalDay / TOTAL_DAYS) * 100)
         };
     }
 
