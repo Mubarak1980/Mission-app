@@ -25,76 +25,6 @@ window.loadWeeklyTimetable = function() {
         </tr>
     `).join("");
 
-    // 2. Smart Engine Panel
-    const mission = window.SmartEngine?.CycleEngine?.getDailyMission?.();
-
-    const missionHtml = mission ? `
-        <div style="
-            background:#0d1117;
-            padding:15px;
-            border-radius:8px;
-            margin-top:20px;
-            border:1px solid #30363d;
-        ">
-            <h2 style="margin-top:0;color:#00d4ff;">
-                🧠 Smart Cycle Engine
-            </h2>
-
-            <div style="display:flex;justify-content:space-between;margin-bottom:15px;">
-                <div>
-                    <strong>Cycle:</strong>
-                    ${mission.cycle} / 4
-                </div>
-
-                <div>
-                    <strong>Day:</strong>
-                    ${mission.day} / 90
-                </div>
-            </div>
-
-            <h3 style="margin-bottom:12px;">
-                🎯 Today's Mission
-            </h3>
-
-            <div style="
-                display:grid;
-                grid-template-columns:1fr 1fr;
-                gap:10px;
-                margin-bottom:15px;
-            ">
-                <div>Math: <strong>${mission.breakdown.Math}</strong></div>
-                <div>Physics: <strong>${mission.breakdown.Physics}</strong></div>
-                <div>Chemistry: <strong>${mission.breakdown.Chemistry}</strong></div>
-                <div>Biology: <strong>${mission.breakdown.Biology}</strong></div>
-            </div>
-
-            <div style="
-                font-size:18px;
-                font-weight:bold;
-                color:#00d4ff;
-            ">
-                Total: ${mission.total} pages
-            </div>
-        </div>
-    ` : `
-        <div style="
-            background:#0d1117;
-            padding:15px;
-            border-radius:8px;
-            margin-top:20px;
-            border:1px solid #30363d;
-        ">
-            <h2 style="margin-top:0;color:#00d4ff;">
-                🧠 Smart Cycle Engine
-            </h2>
-
-            <p style="margin:0;color:#8b949e;">
-                Engine not available.
-            </p>
-        </div>
-    `;
-
-    // 3. Render Module
     container.innerHTML = `
         <div style="background: #121821; padding: 15px; border-radius: 10px; color: white;">
             <h2 style="margin-top: 0;">📅 Curriculum Reference</h2>
@@ -127,9 +57,6 @@ window.loadWeeklyTimetable = function() {
                     </tbody>
                 </table>
             </div>
-
-            ${missionHtml}
-
         </div>
     `;
 };
