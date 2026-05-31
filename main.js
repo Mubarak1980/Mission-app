@@ -1,9 +1,8 @@
 "use strict";
 
 (function() {
-    // 1. GLOBAL ENGINE REGISTRY
+    // 1. GLOBAL REGISTRY
     window.NATIVE_FILE_NAME = "mission_app_progress.json";
-    window.isNativeStorageReady = false;
 
     // 2. DATA SERVICE
     window.DataService = {
@@ -62,7 +61,7 @@
         }
     };
 
-    // 4. UI CONTROLLER (The Fix for the Black Screen)
+    // 4. UI CONTROLLER
     window.UI = {
         save(section, grade) { 
             const s = window.DataService.get(); 
@@ -74,10 +73,13 @@
         }
     };
 
+    // FULLY REGISTERED MODULES
     window.SectionMap = { 
         study: "loadStudySection", 
         timetable: "loadWeeklyTimetable", 
-        dashboard: "loadDashboard" 
+        dashboard: "loadDashboard",
+        topstudent: "loadTopStudentMode",
+        sunnah: "loadSunnahTracker"
     };
 
     window.loadSection = (type, grade) => {
@@ -86,21 +88,24 @@
 
         const fnName = window.SectionMap[type];
         
-        // Final sanity check: Does the function exist?
+        // Safety: verify function exists before calling
         if (typeof window[fnName] === 'function') {
-            main.innerHTML = "";
-            window.UI.save(type, grade);
-            window[fnName](grade); 
+            try {
+                main.innerHTML = ""; 
+                window.UI.save(type, grade);
+                window[fnName](grade); 
+            } catch (err) {
+                console.error(`Runtime Error in ${fnName}:`, err);
+                main.innerHTML = `<div style="padding:20px; color:red;">Error loading ${type}.</div>`;
+            }
         } else {
-            console.error(`Missing function: ${fnName}. Make sure it is defined as window.${fnName} = function()...`);
-            main.innerHTML = `<div style="padding:20px; color:red;">Error: Module '${type}' not found.</div>`;
+            console.error(`Missing function: ${fnName}. Ensure the module script is loaded and defines window.${fnName} = function()...`);
+            main.innerHTML = `<div style="padding:20px; color:red;">Error: Module '${type}' function not found.</div>`;
         }
     };
 
-    // 5. INITIALIZATION
     document.addEventListener("DOMContentLoaded", () => {
         const lastUI = window.UI.load();
         window.loadSection(lastUI.section, lastUI.grade);
     });
 })();
-                  
