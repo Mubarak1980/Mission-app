@@ -1,108 +1,143 @@
 "use strict";
 
-window.SmartEngine = {
-    TOTAL_PAGES: 4648,
-    TOTAL_DAYS: 360,
-    CYCLE_DAYS: 90,
-    CYCLES: 4,
+(function () {
 
-    SUBJECTS: ["Math", "Physics", "Chemistry", "Biology"],
+    const TOTAL_PAGES = 4648;
+    const CYCLE_DAYS = 90;
+    const TOTAL_CYCLES = 4;
 
-    // ===============================
-    // 🔍 READ REAL DATA (FROM SYSTEM)
-    // ===============================
-    getSystemStats() {
-        const data = window.DataService.get();
-        const progress = data.studyProgress || {};
-        
-        let totalDone = 0;
+    const SUBJECTS = ["Math", "Physics", "Chemistry", "Biology"];
 
-        const subjectTotals = {
-            Math: 0,
-            Physics: 0,
-            Chemistry: 0,
-            Biology: 0
-        };
+    const SUBJECT_WEIGHTS = {
+        Math: 1643,
+        Physics: 929,
+        Chemistry: 1090,
+        Biology: 986
+    };
 
-        for (const grade of [9,10,11,12]) {
-            const g = progress[grade] || {};
-
-            for (const subject of this.SUBJECTS) {
-                const val = Number(g[subject] || 0);
-                subjectTotals[subject] += val;
-                totalDone += val;
-            }
+    function getMasterData() {
+        if (!window.DataService) {
+            return { studyProgress: {}, startDate: new Date().toISOString().split("T")[0] };
         }
-
-        return {
-            totalDone,
-            subjectTotals
-        };
-    },
-
-    // ===============================
-    // 📅 YEAR PROGRESS (360 DAYS)
-    // ===============================
-    getYearProgress() {
-        const start = new Date(window.DataService.get().startDate);
-        const now = new Date();
-
-        const diffDays = Math.max(0, Math.floor((now - start) / 86400000));
-
-        return {
-            day: diffDays,
-            percent: Math.min(100, Math.round((diffDays / this.TOTAL_DAYS) * 100))
-        };
-    },
-
-    // ===============================
-    // 📘 TOTAL PAGE PROGRESS
-    // ===============================
-    getPageProgress() {
-        const stats = this.getSystemStats();
-
-        return {
-            done: stats.totalDone,
-            percent: Math.min(100, Math.round((stats.totalDone / this.TOTAL_PAGES) * 100)),
-            remaining: Math.max(0, this.TOTAL_PAGES - stats.totalDone)
-        };
-    },
-
-    // ===============================
-    // 🧠 DAILY 90-DAY CYCLE ENGINE
-    // ===============================
-    getDailyMission() {
-        const stats = this.getSystemStats();
-        const pageProgress = this.getPageProgress();
-
-        const data = window.DataService.get();
-        const start = new Date(data.startDate);
-        const now = new Date();
-
-        const day = Math.max(1, Math.floor((now - start) / 86400000));
-        const cycleDay = (day % this.CYCLE_DAYS) || 1;
-        const cycle = Math.ceil(day / this.CYCLE_DAYS);
-
-        const remainingDays = Math.max(1, this.CYCLE_DAYS - cycleDay);
-        const remainingPages = pageProgress.remaining;
-
-        const baseDaily = Math.ceil(remainingPages / remainingDays);
-
-        // Weighted distribution (slight bias to weak subjects)
-        const breakdown = {
-            Math: Math.round(baseDaily * 0.35),
-            Physics: Math.round(baseDaily * 0.20),
-            Chemistry: Math.round(baseDaily * 0.25),
-            Biology: Math.round(baseDaily * 0.20)
-        };
-
-        const total = Object.values(breakdown).reduce((a,b) => a + b, 0);
-
-        return {
-            cycle,
-            day: cycleDay,
-            breakdown,
-            total
-        };
+        return window.DataService.get();
     }
-};
+
+    function getDaysSinceStart(startDate) {
+        const start = new Date(startDate);
+        const now = new Date();
+        const diff = Math.floor((now - start) / 86400000);
+        return Math.max(1, diff);
+    }
+
+    function getTotalDone() {
+        const data = getMasterData();
+        let total = 0;
+
+        const grades = data.studyProgress || {};
+
+        Object.values(grades).forEach(gradeData => {
+            Object.values(gradeData).forEach(val => {
+                total += Number(val) || 0;
+            });
+        });
+
+        return total;
+    }
+
+    function getSubjectDone(subject) {
+        const data = getMasterData();
+        let total = 0;
+
+        Object.values(data.studyProgress || {}).forEach(gradeData => {
+            total += Number(gradeData?.[subject]) || 0;
+        });
+
+        return total;
+    }
+
+    function getCycleInfo(daysElapsed) {
+        const cycle = Math.min(
+            TOTAL_CYCLES,
+            Math.floor((daysElapsed - 1) / CYCLE_DAYS) + 1
+        );
+
+        const dayInCycle = ((daysElapsed - 1) % CYCLE_DAYS) + 1;
+
+        return { cycle, dayInCycle };
+    }
+
+    function calculateDailyTarget(remainingPages, remainingDays) {
+        if (remainingDays <= 0) return remainingPages;
+        return Math.ceil(remainingPages / remainingDays);
+    }
+
+    function generateBreakdown(totalToday, subjectRemaining) {
+
+        const totalRemainingWeight = Object.values(subjectRemaining)
+            .reduce((a, b) => a + b, 0);
+
+        let breakdown = {};
+
+        SUBJECTS.forEach(subject => {
+            const weight = subjectRemaining[subject] || 0;
+
+            const share = totalRemainingWeight > 0
+                ? weight / totalRemainingWeight
+                : 1 / SUBJECTS.length;
+
+            breakdown[subject] = Math.max(1, Math.round(totalToday * share));
+        });
+
+        return breakdown;
+    }
+
+    // ============================
+    // 🚀 PUBLIC API
+    // ============================
+    window.SmartEngine = {
+
+        getDailyMission() {
+
+            const data = getMasterData();
+
+            const startDate = data.startDate || new Date().toISOString().split("T")[0];
+
+            const daysElapsed = getDaysSinceStart(startDate);
+
+            const { cycle, dayInCycle } = getCycleInfo(daysElapsed);
+
+            const totalDone = getTotalDone();
+
+            const remaining = Math.max(0, TOTAL_PAGES - totalDone);
+
+            const remainingDays = Math.max(1, (TOTAL_CYCLES * CYCLE_DAYS) - daysElapsed);
+
+            const dailyTarget = calculateDailyTarget(remaining, remainingDays);
+
+            const subjectDone = {
+                Math: getSubjectDone("Math"),
+                Physics: getSubjectDone("Physics"),
+                Chemistry: getSubjectDone("Chemistry"),
+                Biology: getSubjectDone("Biology")
+            };
+
+            const subjectRemaining = {
+                Math: Math.max(0, SUBJECT_WEIGHTS.Math - subjectDone.Math),
+                Physics: Math.max(0, SUBJECT_WEIGHTS.Physics - subjectDone.Physics),
+                Chemistry: Math.max(0, SUBJECT_WEIGHTS.Chemistry - subjectDone.Chemistry),
+                Biology: Math.max(0, SUBJECT_WEIGHTS.Biology - subjectDone.Biology)
+            };
+
+            const breakdown = generateBreakdown(dailyTarget, subjectRemaining);
+
+            return {
+                cycle,
+                day: dayInCycle,
+                totalRemaining: remaining,
+                total: dailyTarget,
+                breakdown
+            };
+        }
+    };
+
+})();
