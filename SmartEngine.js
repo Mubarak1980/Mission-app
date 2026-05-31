@@ -1,10 +1,10 @@
 "use strict";
 
 /**
- * 🧠 Smart Cycle Engine v2.1 (Cycle-Aware Fix)
- * 4 Cycles × 90 Days = 360 Day System
+ * 🧠 Smart Cycle Engine v2.2 (Cycle-Budget Corrected)
+ * 4 Cycles × 90 Days = 360 Days
  * Total Pages = 4638
- * Cycle Budget = 1159 pages per cycle (logical enforcement layer)
+ * Cycle Budget = 1159 pages
  */
 
 window.SmartEngine = (function () {
@@ -18,7 +18,6 @@ window.SmartEngine = (function () {
 
     const SUBJECTS = ["Math", "Physics", "Chemistry", "Biology"];
 
-    // Weight distribution (kept stable)
     const WEIGHTS = {
         Math: 0.35,
         Physics: 0.20,
@@ -39,7 +38,7 @@ window.SmartEngine = (function () {
     }
 
     // ===============================
-    // GLOBAL DAY
+    // GLOBAL DAY (1–360)
     // ===============================
     function getCurrentDay() {
         const start = getStartDate();
@@ -51,7 +50,7 @@ window.SmartEngine = (function () {
     }
 
     // ===============================
-    // CYCLE INFO
+    // CYCLE CALCULATION
     // ===============================
     function getCycleInfo(day) {
         const cycle = Math.ceil(day / DAYS_PER_CYCLE);
@@ -61,7 +60,7 @@ window.SmartEngine = (function () {
     }
 
     // ===============================
-    // STUDY DATA READER
+    // GET REMAINING GLOBAL PROGRESS
     // ===============================
     function getRemainingPages() {
         const data = window.DataService.get();
@@ -82,7 +81,7 @@ window.SmartEngine = (function () {
     }
 
     // ===============================
-    // FIXED CYCLE-AWARE DISTRIBUTION
+    // CYCLE-LOCKED DISTRIBUTION FIX
     // ===============================
     function getRemainingPagesByCycle() {
         const remaining = getRemainingPages();
@@ -93,7 +92,6 @@ window.SmartEngine = (function () {
             remaining.Chemistry +
             remaining.Biology;
 
-        // scale remaining into cycle proportion (1159 / 4638)
         const cycleRatio = PAGES_PER_CYCLE / TOTAL_PAGES;
 
         return {
@@ -105,7 +103,7 @@ window.SmartEngine = (function () {
     }
 
     // ===============================
-    // DAILY MISSION (CYCLE LOCKED)
+    // DAILY MISSION (FIXED CORE LOGIC)
     // ===============================
     function getDailyMission() {
         const day = getCurrentDay();
@@ -115,14 +113,31 @@ window.SmartEngine = (function () {
 
         const remainingCycleDays = DAYS_PER_CYCLE - dayInCycle + 1;
 
+        const cycleRemainingTotal =
+            remaining.Math +
+            remaining.Physics +
+            remaining.Chemistry +
+            remaining.Biology;
+
+        const expectedDailyTotal = Math.ceil(PAGES_PER_CYCLE / remainingCycleDays);
+
         const breakdown = {};
+        let tempTotal = 0;
 
         SUBJECTS.forEach(s => {
-            const perDay = Math.ceil(remaining[s] / remainingCycleDays);
-            breakdown[s] = Math.max(1, perDay);
+            const ratio = remaining[s] / cycleRemainingTotal;
+            let value = Math.round(expectedDailyTotal * ratio);
+
+            value = Math.max(1, value);
+
+            breakdown[s] = value;
+            tempTotal += value;
         });
 
-        const total = Object.values(breakdown).reduce((a, b) => a + b, 0);
+        const diff = expectedDailyTotal - tempTotal;
+
+        breakdown.Math += diff;
+        if (breakdown.Math < 1) breakdown.Math = 1;
 
         return {
             cycle,
@@ -130,13 +145,13 @@ window.SmartEngine = (function () {
             globalDay: day,
             totalDays: TOTAL_DAYS,
             breakdown,
-            total,
+            total: Object.values(breakdown).reduce((a, b) => a + b, 0),
             cycleBudget: PAGES_PER_CYCLE
         };
     }
 
     // ===============================
-    // PROGRESS ENGINE (GLOBAL VIEW)
+    // PROGRESS TRACKER
     // ===============================
     function getProgress() {
         const day = getCurrentDay();
