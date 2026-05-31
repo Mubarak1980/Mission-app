@@ -25,28 +25,111 @@ window.loadWeeklyTimetable = function() {
         </tr>
     `).join("");
 
-    // 2. Render Module (Removed SmartEngine calls)
+    // 2. Smart Engine Panel
+    const mission = window.SmartEngine?.CycleEngine?.getDailyMission?.();
+
+    const missionHtml = mission ? `
+        <div style="
+            background:#0d1117;
+            padding:15px;
+            border-radius:8px;
+            margin-top:20px;
+            border:1px solid #30363d;
+        ">
+            <h2 style="margin-top:0;color:#00d4ff;">
+                🧠 Smart Cycle Engine
+            </h2>
+
+            <div style="display:flex;justify-content:space-between;margin-bottom:15px;">
+                <div>
+                    <strong>Cycle:</strong>
+                    ${mission.cycle} / 4
+                </div>
+
+                <div>
+                    <strong>Day:</strong>
+                    ${mission.day} / 90
+                </div>
+            </div>
+
+            <h3 style="margin-bottom:12px;">
+                🎯 Today's Mission
+            </h3>
+
+            <div style="
+                display:grid;
+                grid-template-columns:1fr 1fr;
+                gap:10px;
+                margin-bottom:15px;
+            ">
+                <div>Math: <strong>${mission.breakdown.Math}</strong></div>
+                <div>Physics: <strong>${mission.breakdown.Physics}</strong></div>
+                <div>Chemistry: <strong>${mission.breakdown.Chemistry}</strong></div>
+                <div>Biology: <strong>${mission.breakdown.Biology}</strong></div>
+            </div>
+
+            <div style="
+                font-size:18px;
+                font-weight:bold;
+                color:#00d4ff;
+            ">
+                Total: ${mission.total} pages
+            </div>
+        </div>
+    ` : `
+        <div style="
+            background:#0d1117;
+            padding:15px;
+            border-radius:8px;
+            margin-top:20px;
+            border:1px solid #30363d;
+        ">
+            <h2 style="margin-top:0;color:#00d4ff;">
+                🧠 Smart Cycle Engine
+            </h2>
+
+            <p style="margin:0;color:#8b949e;">
+                Engine not available.
+            </p>
+        </div>
+    `;
+
+    // 3. Render Module
     container.innerHTML = `
         <div style="background: #121821; padding: 15px; border-radius: 10px; color: white;">
             <h2 style="margin-top: 0;">📅 Curriculum Reference</h2>
+
             <div style="overflow-x: auto;">
                 <table style="width: 100%; border-collapse: collapse; text-align: center; color: white;">
                     <thead>
                         <tr style="border-bottom: 2px solid #30363d; color: #8b949e;">
-                            <th style="padding: 8px;">Gr</th><th style="padding: 8px;">Pgs</th><th style="padding: 8px;">Dys</th>
-                            <th style="padding: 8px;">M</th><th style="padding: 8px;">Ph</th><th style="padding: 8px;">Ch</th><th style="padding: 8px;">Bi</th>
+                            <th style="padding: 8px;">Gr</th>
+                            <th style="padding: 8px;">Pgs</th>
+                            <th style="padding: 8px;">Dys</th>
+                            <th style="padding: 8px;">M</th>
+                            <th style="padding: 8px;">Ph</th>
+                            <th style="padding: 8px;">Ch</th>
+                            <th style="padding: 8px;">Bi</th>
                             <th style="padding: 8px;">Tgt</th>
                         </tr>
                     </thead>
+
                     <tbody>
                         ${rowsHtml}
+
                         <tr style="border-top: 2px solid #30363d; font-weight: bold; color: #00d4ff;">
-                            <td style="padding: 8px;">Sum</td><td style="padding: 8px;">4,648</td><td style="padding: 8px;">90</td>
-                            <td colspan="4" style="padding: 8px;">—</td><td style="padding: 8px;">≈52/d</td>
+                            <td style="padding: 8px;">Sum</td>
+                            <td style="padding: 8px;">4,648</td>
+                            <td style="padding: 8px;">90</td>
+                            <td colspan="4" style="padding: 8px;">—</td>
+                            <td style="padding: 8px;">≈52/d</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
+
+            ${missionHtml}
+
         </div>
     `;
 };
