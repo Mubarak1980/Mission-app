@@ -17,7 +17,7 @@
         }
     };
 
-    // 2. SMART ENGINE (Upgraded Workload Distributor)
+    // 2. PROFESSIONAL SMART CYCLE ENGINE
     window.SmartEngine = {
         TOTAL_PAGES: 4648,
         SUBJECT_WEIGHTS: { Math: 1643, Physics: 929, Chemistry: 1090, Biology: 986 },
@@ -41,25 +41,34 @@
             };
         },
 
+        // ADVANCED WORKLOAD DISTRIBUTOR & SMART CYCLE
         getAdaptiveTarget() {
             const stats = this.getOverallStats();
-            const daysPassed = Math.max(1, Math.floor((new Date() - new Date(window.DataService.get().startDate)) / 86400000));
+            const daysElapsed = Math.max(1, Math.floor((new Date() - new Date(window.DataService.get().startDate)) / 86400000));
             const pagesRemaining = Math.max(0, this.TOTAL_PAGES - stats.totalRead);
-            const daysRemaining = Math.max(1, 90 - daysPassed);
+            const daysRemaining = Math.max(1, 90 - daysElapsed);
             
-            // Calculate Priority: Sort subjects by 'Gap' (Target - Completed)
-            const priorities = Object.keys(this.SUBJECT_WEIGHTS).map(subj => {
-                const completed = stats.subjectStats[subj] || 0;
-                return { name: subj, gap: this.SUBJECT_WEIGHTS[subj] - completed };
-            }).sort((a, b) => b.gap - a.gap);
+            // Velocity Calculation: Pages read per day on average
+            const currentVelocity = stats.totalRead / daysElapsed;
+            const requiredVelocity = pagesRemaining / daysRemaining;
 
-            const status = stats.pagePercent < (daysPassed / 90 * 100) - 10 ? "🚨 Needs Sprint" : "✅ On Track";
+            // Prioritization: Sort subjects by remaining gap
+            const priorities = Object.keys(this.SUBJECT_WEIGHTS).map(subj => ({
+                name: subj, 
+                gap: Math.max(0, this.SUBJECT_WEIGHTS[subj] - (stats.subjectStats[subj] || 0))
+            })).sort((a, b) => b.gap - a.gap);
+
+            // Proactive Status Logic
+            let status = "✅ On Track";
+            if (currentVelocity < (requiredVelocity * 0.8)) status = "🚨 Needs Sprint";
+            else if (stats.pagePercent > (daysElapsed / 90 * 100) + 10) status = "🔥 Ahead of Schedule";
 
             return { 
-                dailyTarget: Math.ceil(pagesRemaining / daysRemaining),
+                dailyTarget: Math.ceil(requiredVelocity),
                 topPriority: priorities[0],
                 daysRemaining: daysRemaining,
-                status: status 
+                status: status,
+                efficiency: (currentVelocity / requiredVelocity * 100).toFixed(0)
             };
         }
     };
@@ -71,9 +80,7 @@
             s.ui = { section, grade }; 
             window.DataService.set(s); 
         },
-        load() { 
-            return window.DataService.get().ui || { section: "study", grade: 9 }; 
-        }
+        load() { return window.DataService.get().ui || { section: "study", grade: 9 }; }
     };
 
     // 4. MODULE REGISTRY
@@ -88,21 +95,15 @@
     window.loadSection = (type, grade) => {
         const main = document.getElementById("main-content");
         if (!main) return;
-
         const fnName = window.SectionMap[type];
         
         if (typeof window[fnName] === 'function') {
             try {
-                main.innerHTML = ""; 
                 window.UI.save(type, grade);
                 window[fnName](grade); 
             } catch (err) {
                 console.error(`Runtime Error in ${fnName}:`, err);
-                main.innerHTML = `<div style="padding:20px; color:red;">Module error.</div>`;
             }
-        } else {
-            console.error(`Missing function: ${fnName}`);
-            main.innerHTML = `<div style="padding:20px; color:red;">Module not found.</div>`;
         }
     };
 
