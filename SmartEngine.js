@@ -1,9 +1,10 @@
 "use strict";
 
 /**
- * 🧠 Smart Cycle Engine v3 (Professional System)
+ * 🧠 Smart Cycle Engine v2.2 (Cycle-Budget Corrected)
  * 4 Cycles × 90 Days = 360 Days
- * 4638 pages × 4 cycles = 18,552 pages/year
+ * Total Pages = 4638
+ * Cycle Budget = 1159 pages
  */
 
 window.SmartEngine = (function () {
@@ -12,8 +13,8 @@ window.SmartEngine = (function () {
     const DAYS_PER_CYCLE = 90;
     const TOTAL_DAYS = TOTAL_CYCLES * DAYS_PER_CYCLE;
 
-    const TOTAL_PAGES_PER_CYCLE = 4638;
-    const TOTAL_PAGES_YEAR = TOTAL_PAGES_PER_CYCLE * TOTAL_CYCLES;
+    const TOTAL_PAGES = 4638;
+    const PAGES_PER_CYCLE = 1159;
 
     const SUBJECTS = ["Math", "Physics", "Chemistry", "Biology"];
 
@@ -24,9 +25,9 @@ window.SmartEngine = (function () {
         Biology: 0.20
     };
 
-    // =========================
+    // ===============================
     // START DATE
-    // =========================
+    // ===============================
     function getStartDate() {
         const data = window.DataService.get();
         if (!data.startDate) {
@@ -36,88 +37,152 @@ window.SmartEngine = (function () {
         return new Date(data.startDate);
     }
 
-    // =========================
-    // DAY CALCULATION
-    // =========================
+    // ===============================
+    // GLOBAL DAY (1–360)
+    // ===============================
     function getCurrentDay() {
         const start = getStartDate();
         const now = new Date();
+
         const diff = Math.floor((now - start) / (1000 * 60 * 60 * 24)) + 1;
+
         return Math.min(Math.max(diff, 1), TOTAL_DAYS);
     }
 
+    // ===============================
+    // CYCLE CALCULATION
+    // ===============================
     function getCycleInfo(day) {
         const cycle = Math.ceil(day / DAYS_PER_CYCLE);
         const dayInCycle = ((day - 1) % DAYS_PER_CYCLE) + 1;
+
         return { cycle, dayInCycle };
     }
 
-    // =========================
-    // PROGRESS CALCULATION
-    // =========================
-    function getProgress() {
+    // ===============================
+    // GET REMAINING GLOBAL PROGRESS
+    // ===============================
+    function getRemainingPages() {
         const data = window.DataService.get();
         const progress = data.studyProgress || {};
 
-        let done = 0;
+        const totals = { Math: 0, Physics: 0, Chemistry: 0, Biology: 0 };
 
         for (let g = 9; g <= 12; g++) {
             const gData = progress[g] || {};
-            for (const s of SUBJECTS) {
-                done += Number(gData[s]) || 0;
-            }
+
+            SUBJECTS.forEach(s => {
+                totals[s] += Number(window.maxPagesByGrade?.[g]?.[s]) || 0;
+                totals[s] -= Number(gData[s]) || 0;
+            });
         }
 
-        const expected = (getCurrentDay() / TOTAL_DAYS) * TOTAL_PAGES_YEAR;
+        return totals;
+    }
 
-        let status = "ON TRACK";
-        const diff = done - expected;
+    // ===============================
+    // CYCLE-LOCKED DISTRIBUTION FIX
+    // ===============================
+    function getRemainingPagesByCycle() {
+        const remaining = getRemainingPages();
 
-        if (diff < -50) status = "BEHIND";
-        else if (diff > 50) status = "AHEAD";
+        const totalRemaining =
+            remaining.Math +
+            remaining.Physics +
+            remaining.Chemistry +
+            remaining.Biology;
+
+        const cycleRatio = PAGES_PER_CYCLE / TOTAL_PAGES;
 
         return {
-            pagesDone: done,
-            pagesTotal: TOTAL_PAGES_YEAR,
-            completionPercent: Math.round((done / TOTAL_PAGES_YEAR) * 100),
-
-            expectedToday: Math.round(expected),
-            deviation: Math.round(diff),
-
-            status
+            Math: remaining.Math * cycleRatio,
+            Physics: remaining.Physics * cycleRatio,
+            Chemistry: remaining.Chemistry * cycleRatio,
+            Biology: remaining.Biology * cycleRatio
         };
     }
 
-    // =========================
-    // DAILY MISSION
-    // =========================
+    // ===============================
+    // DAILY MISSION (FIXED CORE LOGIC)
+    // ===============================
     function getDailyMission() {
         const day = getCurrentDay();
         const { cycle, dayInCycle } = getCycleInfo(day);
 
-        const dailyTarget = Math.ceil(TOTAL_PAGES_PER_CYCLE / DAYS_PER_CYCLE);
+        const remaining = getRemainingPagesByCycle();
+
+        const remainingCycleDays = DAYS_PER_CYCLE - dayInCycle + 1;
+
+        const cycleRemainingTotal =
+            remaining.Math +
+            remaining.Physics +
+            remaining.Chemistry +
+            remaining.Biology;
+
+        const expectedDailyTotal = Math.ceil(PAGES_PER_CYCLE / remainingCycleDays);
 
         const breakdown = {};
+        let tempTotal = 0;
+
         SUBJECTS.forEach(s => {
-            breakdown[s] = Math.max(1, Math.round(dailyTarget * WEIGHTS[s]));
+            const ratio = remaining[s] / cycleRemainingTotal;
+            let value = Math.round(expectedDailyTotal * ratio);
+
+            value = Math.max(1, value);
+
+            breakdown[s] = value;
+            tempTotal += value;
         });
 
-        const total = Object.values(breakdown).reduce((a, b) => a + b, 0);
+        const diff = expectedDailyTotal - tempTotal;
+
+        breakdown.Math += diff;
+        if (breakdown.Math < 1) breakdown.Math = 1;
 
         return {
             cycle,
             day: dayInCycle,
             globalDay: day,
-
             totalDays: TOTAL_DAYS,
-            cycleBudget: TOTAL_PAGES_PER_CYCLE,
-            systemBudget: TOTAL_PAGES_YEAR,
-
             breakdown,
-            total
+            total: Object.values(breakdown).reduce((a, b) => a + b, 0),
+            cycleBudget: PAGES_PER_CYCLE
         };
     }
 
+    // ===============================
+    // PROGRESS TRACKER
+    // ===============================
+    function getProgress() {
+        const day = getCurrentDay();
+
+        const data = window.DataService.get();
+        const progress = data.studyProgress || {};
+
+        let done = 0;
+        let max = 0;
+
+        for (let g = 9; g <= 12; g++) {
+            const gData = progress[g] || {};
+
+            SUBJECTS.forEach(s => {
+                done += Number(gData[s]) || 0;
+                max += Number(window.maxPagesByGrade?.[g]?.[s]) || 0;
+            });
+        }
+
+        return {
+            pagesDone: done,
+            pagesTotal: max,
+            pagesPercent: max ? Math.round((done / max) * 100) : 0,
+            day,
+            dayPercent: Math.round((day / TOTAL_DAYS) * 100)
+        };
+    }
+
+    // ===============================
+    // PUBLIC API
+    // ===============================
     return {
         getDailyMission,
         getProgress
