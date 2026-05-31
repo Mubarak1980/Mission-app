@@ -1,143 +1,135 @@
 "use strict";
 
-(function () {
+/**
+ * 🧠 Smart Cycle Engine v2
+ * 4 Cycles × 90 Days = 360 Day System
+ * Deterministic workload distribution engine
+ */
 
-    const TOTAL_PAGES = 4648;
-    const CYCLE_DAYS = 90;
+window.SmartEngine = (function () {
+
     const TOTAL_CYCLES = 4;
+    const DAYS_PER_CYCLE = 90;
+    const TOTAL_DAYS = TOTAL_CYCLES * DAYS_PER_CYCLE;
 
     const SUBJECTS = ["Math", "Physics", "Chemistry", "Biology"];
 
-    const SUBJECT_WEIGHTS = {
-        Math: 1643,
-        Physics: 929,
-        Chemistry: 1090,
-        Biology: 986
+    // Approx weight distribution (can be tuned later)
+    const WEIGHTS = {
+        Math: 0.35,
+        Physics: 0.20,
+        Chemistry: 0.25,
+        Biology: 0.20
     };
 
-    function getMasterData() {
-        if (!window.DataService) {
-            return { studyProgress: {}, startDate: new Date().toISOString().split("T")[0] };
+    // 🔹 Get system start date from DataService
+    function getStartDate() {
+        const data = window.DataService.get();
+        if (!data.startDate) {
+            data.startDate = new Date().toISOString().split("T")[0];
+            window.DataService.set(data);
         }
-        return window.DataService.get();
+        return new Date(data.startDate);
     }
 
-    function getDaysSinceStart(startDate) {
-        const start = new Date(startDate);
+    // 🔹 Calculate current day in cycle system
+    function getCurrentDay() {
+        const start = getStartDate();
         const now = new Date();
-        const diff = Math.floor((now - start) / 86400000);
-        return Math.max(1, diff);
+        const diff = Math.floor((now - start) / (1000 * 60 * 60 * 24)) + 1;
+        return Math.min(Math.max(diff, 1), TOTAL_DAYS);
     }
 
-    function getTotalDone() {
-        const data = getMasterData();
-        let total = 0;
-
-        const grades = data.studyProgress || {};
-
-        Object.values(grades).forEach(gradeData => {
-            Object.values(gradeData).forEach(val => {
-                total += Number(val) || 0;
-            });
-        });
-
-        return total;
-    }
-
-    function getSubjectDone(subject) {
-        const data = getMasterData();
-        let total = 0;
-
-        Object.values(data.studyProgress || {}).forEach(gradeData => {
-            total += Number(gradeData?.[subject]) || 0;
-        });
-
-        return total;
-    }
-
-    function getCycleInfo(daysElapsed) {
-        const cycle = Math.min(
-            TOTAL_CYCLES,
-            Math.floor((daysElapsed - 1) / CYCLE_DAYS) + 1
-        );
-
-        const dayInCycle = ((daysElapsed - 1) % CYCLE_DAYS) + 1;
-
+    function getCycleInfo(day) {
+        const cycle = Math.ceil(day / DAYS_PER_CYCLE);
+        const dayInCycle = ((day - 1) % DAYS_PER_CYCLE) + 1;
         return { cycle, dayInCycle };
     }
 
-    function calculateDailyTarget(remainingPages, remainingDays) {
-        if (remainingDays <= 0) return remainingPages;
-        return Math.ceil(remainingPages / remainingDays);
+    // 🔹 Load total remaining workload from study tracker
+    function getRemainingPages() {
+        const data = window.DataService.get();
+        const progress = data.studyProgress || {};
+
+        const totals = { Math: 0, Physics: 0, Chemistry: 0, Biology: 0 };
+
+        for (let g = 9; g <= 12; g++) {
+            const gData = progress[g] || {};
+            SUBJECTS.forEach(s => {
+                totals[s] += Number(window.maxPagesByGrade?.[g]?.[s]) || 0;
+                totals[s] -= Number(gData[s]) || 0;
+            });
+        }
+
+        return totals;
     }
 
-    function generateBreakdown(totalToday, subjectRemaining) {
+    // 🔹 Core Mission Generator
+    function getDailyMission() {
+        const day = getCurrentDay();
+        const { cycle, dayInCycle } = getCycleInfo(day);
 
-        const totalRemainingWeight = Object.values(subjectRemaining)
-            .reduce((a, b) => a + b, 0);
+        const remaining = getRemainingPages();
 
-        let breakdown = {};
+        const totalRemaining =
+            remaining.Math +
+            remaining.Physics +
+            remaining.Chemistry +
+            remaining.Biology;
 
-        SUBJECTS.forEach(subject => {
-            const weight = subjectRemaining[subject] || 0;
+        const breakdown = {};
 
-            const share = totalRemainingWeight > 0
-                ? weight / totalRemainingWeight
-                : 1 / SUBJECTS.length;
+        SUBJECTS.forEach(s => {
+            const weight = WEIGHTS[s];
+            const base = totalRemaining * weight;
 
-            breakdown[subject] = Math.max(1, Math.round(totalToday * share));
+            // smooth distribution across remaining days
+            const perDay = Math.ceil(base / (TOTAL_DAYS - day + 1));
+
+            breakdown[s] = Math.max(1, perDay);
         });
 
-        return breakdown;
+        const total = Object.values(breakdown).reduce((a, b) => a + b, 0);
+
+        return {
+            cycle,
+            day: dayInCycle,
+            globalDay: day,
+            totalDays: TOTAL_DAYS,
+            breakdown,
+            total
+        };
     }
 
-    // ============================
-    // 🚀 PUBLIC API
-    // ============================
-    window.SmartEngine = {
+    // 🔹 Progress Engine
+    function getProgress() {
+        const day = getCurrentDay();
+        const data = window.DataService.get();
+        const progress = data.studyProgress || {};
 
-        getDailyMission() {
+        let done = 0;
+        let max = 0;
 
-            const data = getMasterData();
-
-            const startDate = data.startDate || new Date().toISOString().split("T")[0];
-
-            const daysElapsed = getDaysSinceStart(startDate);
-
-            const { cycle, dayInCycle } = getCycleInfo(daysElapsed);
-
-            const totalDone = getTotalDone();
-
-            const remaining = Math.max(0, TOTAL_PAGES - totalDone);
-
-            const remainingDays = Math.max(1, (TOTAL_CYCLES * CYCLE_DAYS) - daysElapsed);
-
-            const dailyTarget = calculateDailyTarget(remaining, remainingDays);
-
-            const subjectDone = {
-                Math: getSubjectDone("Math"),
-                Physics: getSubjectDone("Physics"),
-                Chemistry: getSubjectDone("Chemistry"),
-                Biology: getSubjectDone("Biology")
-            };
-
-            const subjectRemaining = {
-                Math: Math.max(0, SUBJECT_WEIGHTS.Math - subjectDone.Math),
-                Physics: Math.max(0, SUBJECT_WEIGHTS.Physics - subjectDone.Physics),
-                Chemistry: Math.max(0, SUBJECT_WEIGHTS.Chemistry - subjectDone.Chemistry),
-                Biology: Math.max(0, SUBJECT_WEIGHTS.Biology - subjectDone.Biology)
-            };
-
-            const breakdown = generateBreakdown(dailyTarget, subjectRemaining);
-
-            return {
-                cycle,
-                day: dayInCycle,
-                totalRemaining: remaining,
-                total: dailyTarget,
-                breakdown
-            };
+        for (let g = 9; g <= 12; g++) {
+            const gData = progress[g] || {};
+            for (const s of SUBJECTS) {
+                done += Number(gData[s]) || 0;
+                max += Number(window.maxPagesByGrade?.[g]?.[s]) || 0;
+            }
         }
+
+        return {
+            pagesDone: done,
+            pagesTotal: max,
+            pagesPercent: max ? Math.round((done / max) * 100) : 0,
+            day,
+            dayPercent: Math.round((day / TOTAL_DAYS) * 100)
+        };
+    }
+
+    return {
+        getDailyMission,
+        getProgress
     };
 
 })();
