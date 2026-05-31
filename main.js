@@ -61,7 +61,7 @@
         }
     };
 
-    // 4. UI CONTROLLER
+    // 4. UI CONTROLLER & SECTION MAPPING
     window.UI = {
         save(section, grade) { 
             const s = window.DataService.get(); 
@@ -73,7 +73,7 @@
         }
     };
 
-    // FULLY REGISTERED MODULES
+    // REGISTER ALL MODULES HERE
     window.SectionMap = { 
         study: "loadStudySection", 
         timetable: "loadWeeklyTimetable", 
@@ -88,7 +88,6 @@
 
         const fnName = window.SectionMap[type];
         
-        // Safety: verify function exists before calling
         if (typeof window[fnName] === 'function') {
             try {
                 main.innerHTML = ""; 
@@ -99,8 +98,8 @@
                 main.innerHTML = `<div style="padding:20px; color:red;">Error loading ${type}.</div>`;
             }
         } else {
-            console.error(`Missing function: ${fnName}. Ensure the module script is loaded and defines window.${fnName} = function()...`);
-            main.innerHTML = `<div style="padding:20px; color:red;">Error: Module '${type}' function not found.</div>`;
+            console.error(`Function '${fnName}' not found.`);
+            main.innerHTML = `<div style="padding:20px; color:red;">Error loading ${type}.</div>`;
         }
     };
 
