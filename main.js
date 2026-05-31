@@ -1,7 +1,7 @@
 "use strict";
 
 (function() {
-    // 1. DATA SERVICE (Persistence Layer)
+    // 1. DATA SERVICE
     window.DataService = {
         STORAGE_KEY: "study_progress",
         get(fallback) {
@@ -17,33 +17,7 @@
         }
     };
 
-    // 2. SMART ENGINE (Calculation Layer)
-    window.SmartEngine = {
-        getOverallStats() {
-            const masterData = window.DataService.get();
-            let total = 0;
-            Object.keys(masterData.studyProgress || {}).forEach(grade => {
-                Object.values(masterData.studyProgress[grade]).forEach(p => total += Number(p) || 0);
-            });
-            return { totalRead: total, pagePercent: Math.min(Math.round((total / 4648) * 100), 100) };
-        },
-
-        getAdaptiveTarget() {
-            const stats = this.getOverallStats();
-            const daysPassed = Math.max(1, Math.floor((new Date() - new Date(window.DataService.get().startDate)) / 86400000));
-            const pagesRemaining = Math.max(0, 4648 - stats.totalRead);
-            const daysRemaining = Math.max(1, 90 - daysPassed);
-            
-            const rawTarget = pagesRemaining / daysRemaining;
-            return { 
-                dailyTarget: Math.ceil(rawTarget), 
-                daysRemaining: daysRemaining,
-                status: stats.pagePercent < (Math.min(daysPassed/90*100, 100) - 10) ? "🚨 Needs Sprint" : "✅ On Track"
-            };
-        }
-    };
-
-    // 3. UI CONTROLLER (The Orchestrator)
+    // 2. UI CONTROLLER & SECTION MAPPING
     window.UI = {
         save(section, grade) { 
             const s = window.DataService.get(); 
@@ -55,7 +29,7 @@
         }
     };
 
-    // MAP OF ALL MODULE FUNCTIONS
+    // 3. REGISTER MODULES (Ensure these match your function names EXACTLY)
     window.SectionMap = { 
         study: "loadStudySection", 
         timetable: "loadWeeklyTimetable", 
@@ -66,27 +40,28 @@
 
     window.loadSection = (type, grade) => {
         const main = document.getElementById("main-content");
-        if (!main) return console.error("Critical: #main-content not found.");
+        if (!main) return console.error("Critical: #main-content missing");
 
         const fnName = window.SectionMap[type];
         
-        // Safety: verify the function exists globally
+        // Debugging log: Open your console to see if this matches
+        console.log(`System: Loading ${type} via ${fnName}`);
+
         if (typeof window[fnName] === 'function') {
             try {
-                main.innerHTML = ""; // Clear existing content
+                main.innerHTML = ""; 
                 window.UI.save(type, grade);
-                window[fnName](grade); // Call the module
+                window[fnName](grade); 
             } catch (err) {
-                console.error(`Error executing ${fnName}:`, err);
-                main.innerHTML = `<div style="padding:20px; color:red;">App Error: Module ${type} crashed.</div>`;
+                console.error(`Runtime Error in ${fnName}:`, err);
+                main.innerHTML = `<div style="padding:20px; color:red;">Error loading ${type}. Check console.</div>`;
             }
         } else {
-            console.error(`Missing Function: ${fnName} is not defined globally.`);
-            main.innerHTML = `<div style="padding:20px; color:red;">Error: Module ${type} not found.</div>`;
+            console.error(`Missing Function: ${fnName} is not defined on window.`);
+            main.innerHTML = `<div style="padding:20px; color:red;">Error: Module '${type}' (function ${fnName}) not found.</div>`;
         }
     };
 
-    // 4. INITIALIZATION
     document.addEventListener("DOMContentLoaded", () => {
         const lastUI = window.UI.load();
         window.loadSection(lastUI.section, lastUI.grade);
