@@ -4,7 +4,7 @@
 // 🚀 ENTERPRISE PRODUCTION SERVICE WORKER (V21.1 - MOBILITY LOCKED)
 // ==========================================================
 
-const CACHE_NAME = "mission-cache-v60"; 
+const CACHE_NAME = "mission-cache-v61"; 
 const LOG_STYLE = "color: #00d4ff; font-weight: bold; background: #0b0f14; padding: 2px 6px; border-radius: 4px;";
 const WARN_STYLE = "color: #e5c158; font-weight: bold; background: #0b0f14; padding: 2px 6px; border-radius: 4px;";
 
