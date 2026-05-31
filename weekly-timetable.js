@@ -31,9 +31,7 @@ window.loadWeeklyTimetable = function() {
     let mission = null;
 
     try {
-        if (window.SmartEngine && typeof window.SmartEngine.getDailyMission === "function") {
-            mission = window.SmartEngine.getDailyMission();
-        }
+        mission = window.SmartEngine?.getDailyMission?.() || null;
     } catch (e) {
         console.error("SmartEngine error:", e);
     }
