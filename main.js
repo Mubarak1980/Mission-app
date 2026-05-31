@@ -17,32 +17,47 @@
         }
     };
 
-    // 2. SMART ENGINE
+    // 2. SMART ENGINE (Upgraded Workload Distributor)
     window.SmartEngine = {
+        TOTAL_PAGES: 4648,
+        SUBJECT_WEIGHTS: { Math: 1643, Physics: 929, Chemistry: 1090, Biology: 986 },
+
         getOverallStats() {
             const masterData = window.DataService.get();
             let total = 0;
-            Object.keys(masterData.studyProgress || {}).forEach(grade => {
-                Object.values(masterData.studyProgress[grade]).forEach(p => total += Number(p) || 0);
+            let subjectStats = {};
+            
+            Object.values(masterData.studyProgress || {}).forEach(gradeData => {
+                Object.entries(gradeData).forEach(([subj, pages]) => {
+                    total += Number(pages) || 0;
+                    subjectStats[subj] = (subjectStats[subj] || 0) + Number(pages);
+                });
             });
-            // Fixed: Return pagePercent to prevent timetable.js from crashing
-            const percent = Math.min(Math.round((total / 4648) * 100), 100);
-            return { totalRead: total, pagePercent: percent };
+            
+            return { 
+                totalRead: total, 
+                pagePercent: Math.min(Math.round((total / this.TOTAL_PAGES) * 100), 100),
+                subjectStats: subjectStats
+            };
         },
 
         getAdaptiveTarget() {
             const stats = this.getOverallStats();
             const daysPassed = Math.max(1, Math.floor((new Date() - new Date(window.DataService.get().startDate)) / 86400000));
-            const pagesRemaining = Math.max(0, 4648 - stats.totalRead);
+            const pagesRemaining = Math.max(0, this.TOTAL_PAGES - stats.totalRead);
             const daysRemaining = Math.max(1, 90 - daysPassed);
-            const rawTarget = pagesRemaining / daysRemaining;
             
-            // Fixed: Define status explicitly to prevent undefined errors
-            const progressTarget = (daysPassed / 90) * 100;
-            const status = stats.pagePercent < (progressTarget - 10) ? "🚨 Needs Sprint" : "✅ On Track";
+            // Calculate Priority: Sort subjects by 'Gap' (Target - Completed)
+            const priorities = Object.keys(this.SUBJECT_WEIGHTS).map(subj => {
+                const completed = stats.subjectStats[subj] || 0;
+                return { name: subj, gap: this.SUBJECT_WEIGHTS[subj] - completed };
+            }).sort((a, b) => b.gap - a.gap);
+
+            const status = stats.pagePercent < (daysPassed / 90 * 100) - 10 ? "🚨 Needs Sprint" : "✅ On Track";
 
             return { 
-                dailyTarget: Math.ceil(rawTarget), 
+                dailyTarget: Math.ceil(pagesRemaining / daysRemaining),
+                topPriority: priorities[0],
                 daysRemaining: daysRemaining,
                 status: status 
             };
@@ -76,7 +91,6 @@
 
         const fnName = window.SectionMap[type];
         
-        // Safety: verify the function exists before calling
         if (typeof window[fnName] === 'function') {
             try {
                 main.innerHTML = ""; 
@@ -84,11 +98,11 @@
                 window[fnName](grade); 
             } catch (err) {
                 console.error(`Runtime Error in ${fnName}:`, err);
-                main.innerHTML = `<div style="padding:20px; color:red;">Module load error.</div>`;
+                main.innerHTML = `<div style="padding:20px; color:red;">Module error.</div>`;
             }
         } else {
             console.error(`Missing function: ${fnName}`);
-            main.innerHTML = `<div style="padding:20px; color:red;">Error: Module '${type}' not found.</div>`;
+            main.innerHTML = `<div style="padding:20px; color:red;">Module not found.</div>`;
         }
     };
 
