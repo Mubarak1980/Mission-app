@@ -4,12 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>Mission App</title>
-
     <link rel="manifest" href="./manifest.json">
     <link rel="stylesheet" href="./styles.css" />
     <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png" />
     <link rel="apple-touch-icon" href="./icon-192.png" />
-
     <meta name="theme-color" content="#0b0f14" />
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -27,7 +25,6 @@
 
 <div id="app" style="display: none; opacity: 0; transition: opacity 0.25s ease;">
     <h1 id="app-time-heading">MISSION</h1>
-
     <nav id="app-navigation-container" class="section-buttons">
         <button data-target="study" class="nav-button">Study Tracker</button>
         <button data-target="timetable" class="nav-button">Weekly Timetable</button>
@@ -35,82 +32,52 @@
         <button data-target="topstudent" class="nav-button">Top Student Mode</button>
         <button data-target="sunnah" class="nav-button">Sunnah Tracker</button>
     </nav>
-
     <div id="grade-progress-container" style="width: 100%; box-sizing: border-box; padding: 0 4px;">
         <div id="grade-progress-bar"></div>
     </div>
-
     <main id="main-content"></main>
 </div>
 
-<!-- =========================
-     CORE APP FILES
-========================= -->
-
 <script src="./SmartEngine.js"></script>
-
-
-<!-- Modules -->
 <script src="./Study-tracker.js"></script>
 <script src="./weekly-timetable.js"></script>
 <script src="./dashboard.js"></script>
 <script src="./top-student-mode.js"></script>
 <script src="./Sunnah-tracker.js"></script>
-
-<!-- Main Controller -->
 <script src="./main.js"></script>
 
 <script>
 "use strict";
 
-// =========================
-// Service Worker
-// =========================
+// 1. Service Worker
 if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
-        navigator.serviceWorker.register("./service-worker.js")
-            .catch(err => console.log("SW registration failed:", err));
+        navigator.serviceWorker.register("./service-worker.js");
     });
 }
 
-// =========================
-// App Initialization
-// =========================
+// 2. Navigation & Splash Handling
 window.addEventListener("DOMContentLoaded", () => {
+    // Navigation Click
+    document.getElementById("app-navigation-container")?.addEventListener("click", (e) => {
+        const btn = e.target.closest("button");
+        if (btn?.dataset.target) {
+            window.loadSection(btn.dataset.target, window.UI.load().grade);
+        }
+    });
 
-    const navContainer = document.getElementById("app-navigation-container");
-
-    if (navContainer) {
-        navContainer.addEventListener("click", (e) => {
-            const btn = e.target.closest("button");
-
-            if (btn && btn.dataset.target) {
-                window.loadSection(btn.dataset.target, window.UI.load().grade);
-            }
-        });
-    }
-
-    const hideSplash = () => {
+    // Simple Splash Hide
+    setTimeout(() => {
         const splash = document.getElementById("splash-screen");
         const app = document.getElementById("app");
-
         if (splash && app) {
-            splash.classList.add("hide");
+            splash.style.display = "none";
             app.style.display = "block";
-
-            setTimeout(() => {
-                app.style.opacity = "1";
-            }, 50);
-
-            setTimeout(() => {
-                splash.remove();
-            }, 300);
+            app.style.opacity = "1";
         }
-    };
-
-    setTimeout(hideSplash, 350);
+    }, 500);
 });
 </script>
 
 </body>
-    </html>
+</html>
