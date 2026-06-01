@@ -47,8 +47,7 @@ window.loadTopStudentMode = (grade) => {
       </ul>
     </div>
 
-    <!-- ================= NEW SECTION ADDED ================= -->
-    <div class="top-student-card highlight-card">
+    <div class="top-student-card">
       <h3>📘 SMART STUDY SYSTEM</h3>
       <p>This system helps you study with focus, clarity, and real results—not just reading without understanding.</p>
 
@@ -120,7 +119,6 @@ window.loadTopStudentMode = (grade) => {
 
       <p><strong>⚡ Final Message:</strong> Success comes from clarity, not long hours.</p>
     </div>
-    <!-- ==================================================== -->
 
     <div class="top-student-card">
       <h3>⚙️ Systems & Environment</h3>
@@ -141,7 +139,7 @@ window.loadTopStudentMode = (grade) => {
       </ul>
     </div>
 
-    <div class="top-student-card highlight-card">
+    <div class="top-student-card">
       <h3>🚀 Core Principle</h3>
       <p>
         Intelligence is not fixed. Systems, repetition, and disciplined action transform average students into top performers.
