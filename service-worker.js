@@ -8,14 +8,13 @@ const CACHE_NAME = "mission-cache-v63";
 const LOG_STYLE = "color: #00d4ff; font-weight: bold; background: #0b0f14; padding: 2px 6px; border-radius: 4px;";
 const WARN_STYLE = "color: #e5c158; font-weight: bold; background: #0b0f14; padding: 2px 6px; border-radius: 4px;";
 
-// Includes every file needed to ensure the app works offline
+// Includes every file exactly as found in your repository list
 const APP_SHELL = [
   "./",
   "./index.html",
   "./styles.css",
   "./main.js",
   "./data.js",
-  "./Storage-bridge.js", 
   "./Study-tracker.js", 
   "./Sunnah-tracker.js", 
   "./dashboard.js",
@@ -23,7 +22,8 @@ const APP_SHELL = [
   "./top-student-mode.js",
   "./manifest.json",
   "./icon-192.png",
-  "./icon-512.png"
+  "./backup-system.js",
+  "./SmartEngine.js"
 ];
 
 const BASE_URL_STR = new URL("./", self.location.href).toString();
@@ -100,4 +100,4 @@ self.addEventListener("fetch", (event) => {
     })
   );
 });
-          
+                                 
