@@ -40,47 +40,48 @@
     </div>
 
     <main id="main-content"></main>
-
 </div>
 
+<!-- Load Data/Engines -->
 <script src="./data.js"></script>
 <script src="./SmartEngine.js"></script>
+<script src="./backup-system.js"></script>
+
+<!-- Load Modules (Must be assigned to window object) -->
 <script src="./Study-tracker.js"></script>
 <script src="./weekly-timetable.js"></script>
 <script src="./dashboard.js"></script>
 <script src="./top-student-mode.js"></script>
 <script src="./Sunnah-tracker.js"></script>
+
+<!-- Your Original main.js -->
 <script src="./main.js"></script>
 
 <script>
 "use strict";
 
-// Register the Service Worker (service-worker.js)
+// Service Worker Registration
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('./service-worker.js')
-            .then(reg => console.log('SW registered:', reg))
             .catch(err => console.log('SW registration failed:', err));
     });
 }
 
+// UI Initialization
 window.addEventListener("DOMContentLoaded", async () => {
     const navContainer = document.getElementById("app-navigation-container");
     if (navContainer) {
         navContainer.addEventListener("click", (e) => {
             const btn = e.target.closest("button");
             if (btn && btn.dataset.target) {
+                // Now works because main.js is loaded and functions are on window
                 window.loadSection(btn.dataset.target, window.UI.load().grade);
             }
         });
     }
 
-    const lastUI = window.UI.load();
-    const prog = document.getElementById("grade-progress-container");
-    if (prog) {
-        prog.style.display = (lastUI.section === 'study') ? 'block' : 'none';
-    }
-
+    // Hide Splash
     const hideSplash = () => {
         const splash = document.getElementById("splash-screen");
         const app = document.getElementById("app");
@@ -91,11 +92,9 @@ window.addEventListener("DOMContentLoaded", async () => {
             setTimeout(() => { splash.remove(); }, 300);
         }
     };
-
     setTimeout(hideSplash, 350);
 });
 </script>
 
 </body>
-    </html>
-    
+</html>
