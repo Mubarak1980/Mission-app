@@ -12,15 +12,11 @@ window.loadTopStudentMode = (grade) => {
     return;
   }
 
-  // 1. Maintain consistent UI state
-  // Even though this module is static/informative, we clear the progress bar 
-  // to maintain visual cleanliness consistent with other modules.
   const gradeBar = document.getElementById('grade-progress-bar');
   if (gradeBar) {
     gradeBar.innerHTML = '';
   }
 
-  // 2. Build the structural hierarchy
   const container = document.createElement("div");
   container.className = "top-student-container";
 
@@ -51,32 +47,97 @@ window.loadTopStudentMode = (grade) => {
       </ul>
     </div>
 
+    <!-- ================= NEW SECTION ADDED ================= -->
+    <div class="top-student-card highlight-card">
+      <h3>📘 SMART STUDY SYSTEM</h3>
+      <p>This system helps you study with focus, clarity, and real results—not just reading without understanding.</p>
+
+      <h4>1) 🎯 DAILY STUDY GOAL</h4>
+      <p>Every study day must start with a clear target.</p>
+      <ul>
+        <li>What topic am I studying today?</li>
+        <li>What will I achieve by the end?</li>
+        <li>Example: Solve 20 math questions, summarize 1 chapter, memorize formulas</li>
+      </ul>
+
+      <h4>2) 🧱 IDENTIFY YOUR OBSTACLES</h4>
+      <ul>
+        <li>I don’t understand the topic</li>
+        <li>I forget formulas easily</li>
+        <li>I get distracted</li>
+        <li>I feel tired or unmotivated</li>
+      </ul>
+
+      <h4>3) 🛠️ REMOVE OBSTACLES</h4>
+      <ul>
+        <li>Turn off distractions</li>
+        <li>Watch short explanations first</li>
+        <li>Write formulas before solving</li>
+        <li>Start with easy questions</li>
+      </ul>
+
+      <h4>4) ⏱️ STUDY PROCESS</h4>
+      <ul>
+        <li>Quick Recall (2–5 min)</li>
+        <li>Learn (10–20 min)</li>
+        <li>Practice problems</li>
+        <li>Check & correct mistakes</li>
+        <li>Final recall without notes</li>
+      </ul>
+
+      <h4>5) 📊 DAILY SUCCESS TARGET</h4>
+      <ul>
+        <li>1 topic mastered</li>
+        <li>20–30 questions solved</li>
+        <li>3 mistakes corrected</li>
+        <li>Short summary written</li>
+      </ul>
+
+      <h4>6) 🔁 WEEKLY PLAN</h4>
+      <ul>
+        <li>Days 1–2: Learn concepts</li>
+        <li>Days 3–4: Practice</li>
+        <li>Day 5: Hard problems</li>
+        <li>Day 6: Mixed test</li>
+        <li>Day 7: Review weak areas</li>
+      </ul>
+
+      <h4>7) 🔄 IF YOU DON’T UNDERSTAND</h4>
+      <ul>
+        <li>Simplify topic</li>
+        <li>Change learning method</li>
+        <li>Start easier questions</li>
+        <li>Retry later</li>
+      </ul>
+
+      <h4>8) 📌 END OF DAY REVIEW</h4>
+      <ul>
+        <li>Did I complete my goal?</li>
+        <li>What stopped me?</li>
+        <li>What did I learn?</li>
+        <li>What will I improve tomorrow?</li>
+      </ul>
+
+      <p><strong>⚡ Final Message:</strong> Success comes from clarity, not long hours.</p>
+    </div>
+    <!-- ==================================================== -->
+
     <div class="top-student-card">
       <h3>⚙️ Systems & Environment</h3>
       <ul>
         <li><strong>Identity Shift:</strong> You don’t rise to goals — you fall to your systems. Build systems that reflect your identity.</li>
         <li><strong>Time Perception:</strong> The hurdle of a task feels larger before starting; starting immediately collapses that perception.</li>
-        <li><strong>Environment Control:</strong> Remove digital or physical distractions to force your brain into focus mode.</li>
-        <li><strong>Progress Feedback:</strong> Visible tracking triggers reward systems that sustain long-term effort.</li>
+        <li><strong>Environment Control:</strong> Remove distractions.</li>
+        <li><strong>Progress Feedback:</strong> Tracking sustains effort.</li>
       </ul>
     </div>
 
     <div class="top-student-card">
       <h3>🔋 Performance & Sustainability</h3>
       <ul>
-        <li><strong>Recovery Matters:</strong> Sleep consolidates memory; learning efficiency drops without adequate rest.</li>
-        <li><strong>Small Wins:</strong> Breaking tasks into micro-units reduces cognitive load and guarantees completion.</li>
-        <li><strong>Goal Clarity:</strong> Clear, measurable targets act as a compass for directing daily focus.</li>
-      </ul>
-    </div>
-
-    <div class="top-student-card">
-      <h3>🧠⚖️ Performance & Body–Brain Balance</h3>
-      <ul>
-        <li><strong>Integrated Performance:</strong> Focus cycles + movement + recovery equals maximum neural efficiency.</li>
-        <li><strong>Focus Cycles:</strong> Intense sessions followed by rest restores attention capacity.</li>
-        <li><strong>Movement & Cognitive Function:</strong> Physical activity boosts oxygen/glucose delivery to the brain.</li>
-        <li><strong>Recovery = Consolidation:</strong> Breaks are active parts of learning, allowing for memory consolidation.</li>
+        <li><strong>Recovery Matters:</strong> Sleep consolidates memory.</li>
+        <li><strong>Small Wins:</strong> Break tasks into micro units.</li>
+        <li><strong>Goal Clarity:</strong> Clear targets guide focus.</li>
       </ul>
     </div>
 
@@ -88,6 +149,5 @@ window.loadTopStudentMode = (grade) => {
     </div>
   `;
 
-  // 3. Atomically update the DOM
   mainContent.replaceChildren(container);
 };
