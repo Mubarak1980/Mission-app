@@ -14,6 +14,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 </head>
+
 <body>
 
 <div id="splash-screen">
@@ -42,59 +43,74 @@
     <main id="main-content"></main>
 </div>
 
-<!-- Load Data/Engines -->
-<script src="./data.js"></script>
+<!-- =========================
+     CORE APP FILES
+========================= -->
+
 <script src="./SmartEngine.js"></script>
 <script src="./backup-system.js"></script>
 
-<!-- Load Modules (Must be assigned to window object) -->
+<!-- Modules -->
 <script src="./Study-tracker.js"></script>
 <script src="./weekly-timetable.js"></script>
 <script src="./dashboard.js"></script>
 <script src="./top-student-mode.js"></script>
 <script src="./Sunnah-tracker.js"></script>
 
-<!-- Your Original main.js -->
+<!-- Main Controller -->
 <script src="./main.js"></script>
 
 <script>
 "use strict";
 
-// Service Worker Registration
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./service-worker.js')
-            .catch(err => console.log('SW registration failed:', err));
+// =========================
+// Service Worker
+// =========================
+if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./service-worker.js")
+            .catch(err => console.log("SW registration failed:", err));
     });
 }
 
-// UI Initialization
-window.addEventListener("DOMContentLoaded", async () => {
+// =========================
+// App Initialization
+// =========================
+window.addEventListener("DOMContentLoaded", () => {
+
     const navContainer = document.getElementById("app-navigation-container");
+
     if (navContainer) {
         navContainer.addEventListener("click", (e) => {
             const btn = e.target.closest("button");
+
             if (btn && btn.dataset.target) {
-                // Now works because main.js is loaded and functions are on window
                 window.loadSection(btn.dataset.target, window.UI.load().grade);
             }
         });
     }
 
-    // Hide Splash
     const hideSplash = () => {
         const splash = document.getElementById("splash-screen");
         const app = document.getElementById("app");
+
         if (splash && app) {
             splash.classList.add("hide");
             app.style.display = "block";
-            setTimeout(() => { app.style.opacity = "1"; }, 50);
-            setTimeout(() => { splash.remove(); }, 300);
+
+            setTimeout(() => {
+                app.style.opacity = "1";
+            }, 50);
+
+            setTimeout(() => {
+                splash.remove();
+            }, 300);
         }
     };
+
     setTimeout(hideSplash, 350);
 });
 </script>
 
 </body>
-</html>
+    </html>
