@@ -4,7 +4,7 @@
 // 🚀 MISSION APP PWA SERVICE WORKER (PRODUCTION STABLE)
 // ==========================================================
 
-const CACHE_NAME = "mission-cache-v66";
+const CACHE_NAME = "mission-cache-v67";
 const BASE_URL = new URL("./", self.location.href).toString();
 
 const APP_SHELL = [
@@ -19,7 +19,6 @@ const APP_SHELL = [
   "./weekly-timetable.js",
   "./top-student-mode.js",
   "./SmartEngine.js",
-  "./backup-system.js",
   "./manifest.json",
   "./icon-192.png",
   "./icon-512.png"
