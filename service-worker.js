@@ -1,10 +1,10 @@
 "use strict";
 
 // ==========================================================
-// 🚀 MISSION APP PWA SERVICE WORKER (PRODUCTION STABLE)
+// 🚀 MISSION APP PWA SERVICE WORKER (v69)
 // ==========================================================
 
-const CACHE_NAME = "mission-cache-v68";
+const CACHE_NAME = "mission-cache-v69";
 const BASE_URL = new URL("./", self.location.href).toString();
 
 const APP_SHELL = [
@@ -12,7 +12,6 @@ const APP_SHELL = [
   "./index.html",
   "./styles.css",
   "./main.js",
-  "./data.js",
   "./Study-tracker.js",
   "./Sunnah-tracker.js",
   "./dashboard.js",
@@ -41,7 +40,7 @@ self.addEventListener("install", (event) => {
             await cache.put(url, res.clone());
           }
         } catch (e) {
-          // silent fail for offline install safety
+          console.warn("SW: Failed to cache", file);
         }
       }
     })
@@ -71,17 +70,8 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 
-  const requestURL = new URL(event.request.url);
-
-  let lookup = event.request.url;
-
-  // Fix subfolder hosting (GitHub / Android WebView cases)
-  if (requestURL.pathname.includes("/Mission-app")) {
-    lookup = new URL("./index.html", BASE_URL).toString();
-  }
-
   event.respondWith(
-    caches.match(lookup, { ignoreSearch: true }).then((cached) => {
+    caches.match(event.request, { ignoreSearch: true }).then((cached) => {
       if (cached) return cached;
 
       return fetch(event.request)
