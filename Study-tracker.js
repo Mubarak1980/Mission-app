@@ -24,13 +24,13 @@ function createSubjectHtml(name, max, saved) {
     `;
 }
 
-// MAIN RENDER FUNCTION
+// MAIN RENDER FUNCTION: Attached to window to be visible globally
 window.loadStudySection = function(grade) {
     const mainContent = document.getElementById("main-content");
     const gradeNum = parseInt(grade);
     if (!mainContent) return;
 
-    // 1. CLEAR: Wipe everything (including old buttons)
+    // 1. CLEAR: Wipe everything
     mainContent.innerHTML = "";
 
     // 2. DATA
@@ -50,7 +50,7 @@ window.loadStudySection = function(grade) {
     });
     html += `</div>`;
 
-    // 4. NAVIGATION: Only these buttons will exist
+    // 4. NAVIGATION
     html += `
         <div style="display: flex; gap: 10px; margin-top: 20px; margin-bottom: 50px;">
             <button onclick="loadStudySection(${Math.max(9, gradeNum - 1)})" 
@@ -67,33 +67,33 @@ window.loadStudySection = function(grade) {
     mainContent.innerHTML = html;
 };
 
-// IMPROVED INPUT HANDLER: Sanitizes input and caps at MAX
-document.getElementById("main-content").addEventListener("input", function(e) {
-    if (!e.target.classList.contains("subject-progress")) return;
-    
-    const input = e.target;
-    const max = Number(input.dataset.maxpages);
-    
-    // Convert input to number (strips leading zeros)
-    let val = Number(input.value.replace(/[^0-9]/g, ''));
-    
-    // Cap at Max
-    if (val > max) val = max;
-    
-    // Update visual input and internal state
-    input.value = val; 
-    const subject = input.dataset.subject;
-    window.activeStudySavedData[subject] = val;
+// IMPROVED INPUT HANDLER: Safely attached to DOMContentLoaded
+document.addEventListener("DOMContentLoaded", () => {
+    const mainContent = document.getElementById("main-content");
+    if (!mainContent) return;
 
-    // Save
-    const masterData = window.DataService.get() || { studyProgress: {} };
-    if (!masterData.studyProgress) masterData.studyProgress = {};
-    masterData.studyProgress[window.activeStudyGrade] = window.activeStudySavedData;
-    window.DataService.set(masterData);
+    mainContent.addEventListener("input", function(e) {
+        if (!e.target.classList.contains("subject-progress")) return;
+        
+        const input = e.target;
+        const max = Number(input.dataset.maxpages);
+        
+        let val = Number(input.value.replace(/[^0-9]/g, ''));
+        
+        if (val > max) val = max;
+        
+        input.value = val; 
+        const subject = input.dataset.subject;
+        window.activeStudySavedData[subject] = val;
 
-    // Refresh UI
-    const percent = max > 0 ? Math.round((val / max) * 100) : 0;
-    input.parentElement.querySelector("progress").value = val;
-    input.parentElement.querySelector("p").innerText = `${percent}% (${val}/${max} pages)`;
+        const masterData = window.DataService.get() || { studyProgress: {} };
+        if (!masterData.studyProgress) masterData.studyProgress = {};
+        masterData.studyProgress[window.activeStudyGrade] = window.activeStudySavedData;
+        window.DataService.set(masterData);
+
+        const percent = max > 0 ? Math.round((val / max) * 100) : 0;
+        input.parentElement.querySelector("progress").value = val;
+        input.parentElement.querySelector("p").innerText = `${percent}% (${val}/${max} pages)`;
+    });
 });
-    
+                                 
