@@ -1,10 +1,6 @@
 "use strict";
 
-// ==========================================================
-// 🚀 MISSION APP PWA SERVICE WORKER (v69)
-// ==========================================================
-
-const CACHE_NAME = "mission-cache-v10";
+const CACHE_NAME = "mission-cache-v11";
 const BASE_URL = new URL("./", self.location.href).toString();
 
 const APP_SHELL = [
@@ -23,9 +19,7 @@ const APP_SHELL = [
   "./icon-512.png"
 ];
 
-// ===============================
-// INSTALL (PRE-CACHE CORE APP)
-// ===============================
+// INSTALL
 self.addEventListener("install", (event) => {
   self.skipWaiting();
 
@@ -40,50 +34,45 @@ self.addEventListener("install", (event) => {
             await cache.put(url, res.clone());
           }
         } catch (e) {
-          console.warn("SW: Failed to cache", file);
+          console.warn("SW cache failed:", file);
         }
       }
     })
   );
 });
 
-// ===============================
-// ACTIVATE (CLEAN OLD CACHE)
-// ===============================
+// ACTIVATE
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(
-        keys.map((key) => {
-          if (key !== CACHE_NAME) {
-            return caches.delete(key);
-          }
-        })
-      );
-    }).then(() => self.clients.claim())
+    caches.keys().then((keys) =>
+      Promise.all(keys.map((key) => key !== CACHE_NAME && caches.delete(key)))
+    ).then(() => self.clients.claim())
   );
 });
 
-// ===============================
-// FETCH STRATEGY (OFFLINE-FIRST)
-// ===============================
+// FETCH (FIXED FOR PWA NAVIGATION)
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 
+  const url = new URL(event.request.url);
+
   event.respondWith(
-    caches.match(event.request, { ignoreSearch: true }).then((cached) => {
+    caches.match(event.request).then((cached) => {
       if (cached) return cached;
 
       return fetch(event.request)
-        .then((response) => {
-          if (response && response.status === 200) {
-            const clone = response.clone();
+        .then((res) => {
+          if (res && res.status === 200) {
+            const clone = res.clone();
             caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
           }
-          return response;
+          return res;
         })
         .catch(() => {
-          return caches.match(new URL("./index.html", BASE_URL).toString());
+          // IMPORTANT: always fallback to index for SPA navigation
+          if (event.request.mode === "navigate") {
+            return caches.match("./index.html");
+          }
         });
     })
   );
