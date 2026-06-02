@@ -4,7 +4,7 @@
 // 🚀 MISSION APP PWA SERVICE WORKER (v69)
 // ==========================================================
 
-const CACHE_NAME = "mission-cache-v4";
+const CACHE_NAME = "mission-cache-v5";
 const BASE_URL = new URL("./", self.location.href).toString();
 
 const APP_SHELL = [
