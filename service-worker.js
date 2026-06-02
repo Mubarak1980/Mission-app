@@ -1,7 +1,7 @@
 "use strict";
 
-const CACHE_NAME = "mission-cache-v11";
-const BASE_URL = new URL("./", self.location.href).toString();
+const CACHE_NAME = "mission-cache-v12";
+const BASE_URL = self.location.origin + self.location.pathname.replace(/\/[^\/]*$/, "/");
 
 const APP_SHELL = [
   "./",
@@ -19,29 +19,18 @@ const APP_SHELL = [
   "./icon-512.png"
 ];
 
-// INSTALL
+// INSTALL: Using addAll is safer for atomicity
 self.addEventListener("install", (event) => {
   self.skipWaiting();
-
   event.waitUntil(
-    caches.open(CACHE_NAME).then(async (cache) => {
-      for (const file of APP_SHELL) {
-        try {
-          const url = new URL(file, BASE_URL).toString();
-          const res = await fetch(url, { cache: "reload" });
-
-          if (res.ok) {
-            await cache.put(url, res.clone());
-          }
-        } catch (e) {
-          console.warn("SW cache failed:", file);
-        }
-      }
+    caches.open(CACHE_NAME).then((cache) => {
+      // addAll is cleaner; if one fails, the installation fails (prevents partial broken state)
+      return cache.addAll(APP_SHELL);
     })
   );
 });
 
-// ACTIVATE
+// ACTIVATE: Clean up old caches
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
@@ -50,26 +39,27 @@ self.addEventListener("activate", (event) => {
   );
 });
 
-// FETCH (FIXED FOR PWA NAVIGATION)
+// FETCH: Strategy - Cache First, Network Fallback
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 
-  const url = new URL(event.request.url);
-
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
+    caches.match(event.request).then((cachedResponse) => {
+      // 1. Return cached if found
+      if (cachedResponse) return cachedResponse;
 
+      // 2. Otherwise, fetch from network
       return fetch(event.request)
-        .then((res) => {
-          if (res && res.status === 200) {
-            const clone = res.clone();
+        .then((networkResponse) => {
+          // Cache new successful requests
+          if (networkResponse && networkResponse.status === 200) {
+            const clone = networkResponse.clone();
             caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
           }
-          return res;
+          return networkResponse;
         })
         .catch(() => {
-          // IMPORTANT: always fallback to index for SPA navigation
+          // 3. Fallback to index.html for navigation requests (SPA)
           if (event.request.mode === "navigate") {
             return caches.match("./index.html");
           }
@@ -77,3 +67,4 @@ self.addEventListener("fetch", (event) => {
     })
   );
 });
+              
