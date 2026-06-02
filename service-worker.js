@@ -1,8 +1,6 @@
 "use strict";
 
-const CACHE_NAME = "mission-cache-v13";
-const BASE_URL = self.location.origin + self.location.pathname.replace(/\/[^\/]*$/, "/");
-
+const CACHE_NAME = "mission-cache-v16"; // Incremented version
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -19,18 +17,17 @@ const APP_SHELL = [
   "./icon-512.png"
 ];
 
-// INSTALL: Using addAll is safer for atomicity
+// INSTALL: Force immediate registration and caching
 self.addEventListener("install", (event) => {
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      // addAll is cleaner; if one fails, the installation fails (prevents partial broken state)
       return cache.addAll(APP_SHELL);
     })
   );
 });
 
-// ACTIVATE: Clean up old caches
+// ACTIVATE: Remove old caches to prevent conflicts
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
@@ -39,32 +36,27 @@ self.addEventListener("activate", (event) => {
   );
 });
 
-// FETCH: Strategy - Cache First, Network Fallback
+// FETCH: Network-First for logic, Cache-First for static assets
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 
-  event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      // 1. Return cached if found
-      if (cachedResponse) return cachedResponse;
+  const url = new URL(event.request.url);
 
-      // 2. Otherwise, fetch from network
-      return fetch(event.request)
-        .then((networkResponse) => {
-          // Cache new successful requests
-          if (networkResponse && networkResponse.status === 200) {
-            const clone = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-          }
-          return networkResponse;
+  // 1. NETWORK-FIRST for JS/Data: Ensures your latest logic always runs
+  if (url.pathname.endsWith('.js') || url.pathname.endsWith('.json')) {
+    event.respondWith(
+      fetch(event.request)
+        .then((res) => {
+          const clone = res.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          return res;
         })
-        .catch(() => {
-          // 3. Fallback to index.html for navigation requests (SPA)
-          if (event.request.mode === "navigate") {
-            return caches.match("./index.html");
-          }
-        });
-    })
-  );
+        .catch(() => caches.match(event.request))
+    );
+  } else {
+    // 2. CACHE-FIRST for CSS/Images/Icons: Faster performance
+    event.respondWith(
+      caches.match(event.request).then((cached) => cached || fetch(event.request))
+    );
+  }
 });
-              
