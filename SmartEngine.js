@@ -1,7 +1,7 @@
 "use strict";
 
 /**
- * 🧠 Smart Cycle Engine v2.3 (FIXED: TRUE CYCLE MATH)
+ * 🧠 Smart Cycle Engine v2.3 (FIXED: TRUE CYCLE MATH + READINESS GATE)
  */
 
 window.SmartEngine = (function () {
@@ -23,6 +23,11 @@ window.SmartEngine = (function () {
         Chemistry: 0.25,
         Biology: 0.20
     };
+
+    // --- READINESS GATE ---
+    function isDataReady() {
+        return typeof window.maxPagesByGrade !== 'undefined';
+    }
 
     function getStartDate() {
         const data = (window.DataService && window.DataService.get()) || {};
@@ -48,6 +53,8 @@ window.SmartEngine = (function () {
 
     // 🔥 FIXED CORE LOGIC (cycle-based remaining system)
     function getRemainingPages() {
+        if (!isDataReady()) return { Math: 0, Physics: 0, Chemistry: 0, Biology: 0 };
+
         const data = (window.DataService && window.DataService.get()) || {};
         const progress = data.studyProgress || {};
 
@@ -67,6 +74,11 @@ window.SmartEngine = (function () {
     }
 
     function getDailyMission() {
+        // Return safe empty state if not ready to prevent crash during PWA load
+        if (!isDataReady()) {
+            return { cycle: 1, day: 1, globalDay: 1, totalDays: TOTAL_DAYS, breakdown: {}, total: 0 };
+        }
+
         const day = getCurrentDay();
         const { cycle, dayInCycle } = getCycleInfo(day);
 
@@ -115,6 +127,9 @@ window.SmartEngine = (function () {
 
     function getProgress() {
         const day = getCurrentDay();
+        
+        // Return safe empty state if not ready
+        if (!isDataReady()) return { pagesDone: 0, pagesTotal: 0, pagesPercent: 0, day, dayPercent: 0 };
 
         const data = (window.DataService && window.DataService.get()) || {};
         const progress = data.studyProgress || {};
