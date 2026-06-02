@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE_NAME = "mission-cache-v12";
+const CACHE_NAME = "mission-cache-v13";
 const BASE_URL = self.location.origin + self.location.pathname.replace(/\/[^\/]*$/, "/");
 
 const APP_SHELL = [
