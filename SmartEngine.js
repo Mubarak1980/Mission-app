@@ -11,7 +11,6 @@ window.SmartEngine = (function () {
     const PAGES_PER_CYCLE = 1159;
     const SUBJECTS = ["Math", "Physics", "Chemistry", "Biology"];
 
-    // 1. HELPER: Get or Set Start Date
     function getStartDate() {
         const data = window.DataService.get();
         if (!data.startDate) {
@@ -21,7 +20,6 @@ window.SmartEngine = (function () {
         return new Date(data.startDate);
     }
 
-    // 2. HELPER: Current Day Calculation
     function getCurrentDay() {
         const start = getStartDate();
         const now = new Date();
@@ -29,7 +27,6 @@ window.SmartEngine = (function () {
         return Math.min(Math.max(diff + 1, 1), TOTAL_DAYS);
     }
 
-    // 3. HELPER: Get Total Possible Pages (Config)
     function getTotalPossiblePages() {
         let total = 0;
         for (let g = 9; g <= 12; g++) {
@@ -39,7 +36,6 @@ window.SmartEngine = (function () {
         return total;
     }
 
-    // 4. HELPER: Get Completed Pages (DataService)
     function getCompletedPages() {
         const data = window.DataService.get();
         const progress = data.studyProgress || {};
@@ -51,7 +47,6 @@ window.SmartEngine = (function () {
         return total;
     }
 
-    // 5. PUBLIC MISSION LOGIC
     function getDailyMission() {
         const day = getCurrentDay();
         const cycle = Math.ceil(day / DAYS_PER_CYCLE);
@@ -66,7 +61,6 @@ window.SmartEngine = (function () {
         };
     }
 
-    // 6. PUBLIC PROGRESS LOGIC
     function getProgress() {
         const day = getCurrentDay();
         const done = getCompletedPages();
@@ -86,6 +80,5 @@ window.SmartEngine = (function () {
         getDailyMission,
         getProgress
     };
-
 })();
     
