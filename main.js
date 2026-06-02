@@ -37,17 +37,23 @@ window.SectionMap = {
     sunnah: "loadSunnahTracker"
 };
 
-// 4. CENTRAL LOADER (FIXED TO PREVENT MODULE ERRORS)
+// 4. CENTRAL LOADER (WITH SAFETY GUARD)
 window.loadSection = (type, grade = 9) => {
     const main = document.getElementById("main-content");
     if (!main) return;
+    
+    // SAFETY GUARD: Check if config exists for the dashboard
+    if (type === 'dashboard' && !window.maxPagesByGrade) {
+        console.warn("Config not loaded, retrying...");
+        setTimeout(() => window.loadSection(type, grade), 100);
+        return;
+    }
     
     const fnName = window.SectionMap[type];
     
     if (typeof window[fnName] === 'function') {
         try {
             window.UI.save(type, grade);
-            // Only pass grade to the study section
             if (type === 'study') {
                 window[fnName](grade); 
             } else {
@@ -68,3 +74,4 @@ document.addEventListener("DOMContentLoaded", () => {
     const lastUI = window.UI.load();
     window.loadSection(lastUI.section, lastUI.grade);
 });
+    
