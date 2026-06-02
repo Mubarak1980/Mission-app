@@ -1,23 +1,23 @@
 "use strict";
 
-const CACHE_NAME = "mission-cache-v16"; // Incremented version
+const CACHE_NAME = "mission-cache-v17";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./styles.css",
   "./main.js",
   "./Study-tracker.js",
-  "./Sunnah-tracker.js",
+  "./SmartEngine.js",
   "./dashboard.js",
   "./weekly-timetable.js",
   "./top-student-mode.js",
-  "./SmartEngine.js",
+  "./Sunnah-tracker.js",
   "./manifest.json",
   "./icon-192.png",
   "./icon-512.png"
 ];
 
-// INSTALL: Force immediate registration and caching
+// INSTALL: Force immediate registration and caching of all shell assets
 self.addEventListener("install", (event) => {
   self.skipWaiting();
   event.waitUntil(
@@ -27,7 +27,7 @@ self.addEventListener("install", (event) => {
   );
 });
 
-// ACTIVATE: Remove old caches to prevent conflicts
+// ACTIVATE: Clean up any old caches to prevent conflicts and ensure version control
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
@@ -36,27 +36,29 @@ self.addEventListener("activate", (event) => {
   );
 });
 
-// FETCH: Network-First for logic, Cache-First for static assets
+// FETCH: Logic-aware request handling
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 
   const url = new URL(event.request.url);
 
-  // 1. NETWORK-FIRST for JS/Data: Ensures your latest logic always runs
-  if (url.pathname.endsWith('.js') || url.pathname.endsWith('.json')) {
+  // 1. NETWORK-FIRST for JS: Guarantees your latest logic/safety gates are always pulled from GitHub
+  if (url.pathname.endsWith('.js')) {
     event.respondWith(
       fetch(event.request)
-        .then((res) => {
-          const clone = res.clone();
+        .then((networkResponse) => {
+          const clone = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-          return res;
+          return networkResponse;
         })
         .catch(() => caches.match(event.request))
     );
   } else {
-    // 2. CACHE-FIRST for CSS/Images/Icons: Faster performance
+    // 2. CACHE-FIRST for Assets: Faster loading for CSS, icons, and static images
     event.respondWith(
-      caches.match(event.request).then((cached) => cached || fetch(event.request))
+      caches.match(event.request).then((cachedResponse) => {
+        return cachedResponse || fetch(event.request);
+      })
     );
   }
 });
