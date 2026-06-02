@@ -37,8 +37,8 @@ window.SectionMap = {
     sunnah: "loadSunnahTracker"
 };
 
-// 4. CENTRAL LOADER
-window.loadSection = (type, grade) => {
+// 4. CENTRAL LOADER (FIXED TO PREVENT MODULE ERRORS)
+window.loadSection = (type, grade = 9) => {
     const main = document.getElementById("main-content");
     if (!main) return;
     
@@ -47,10 +47,15 @@ window.loadSection = (type, grade) => {
     if (typeof window[fnName] === 'function') {
         try {
             window.UI.save(type, grade);
-            window[fnName](grade); 
+            // Only pass grade to the study section
+            if (type === 'study') {
+                window[fnName](grade); 
+            } else {
+                window[fnName](); 
+            }
         } catch (err) {
             console.error(`Runtime Error in ${fnName}:`, err);
-            main.innerHTML = `<div style="padding:20px; color:red;">Module load error.</div>`;
+            main.innerHTML = `<div style="padding:20px; color:red;">Module load error: ${err.message}</div>`;
         }
     } else {
         console.error(`Missing function: ${fnName}`);
@@ -63,4 +68,3 @@ document.addEventListener("DOMContentLoaded", () => {
     const lastUI = window.UI.load();
     window.loadSection(lastUI.section, lastUI.grade);
 });
-            
