@@ -63,7 +63,7 @@ window.loadStudySection = function(grade) {
             </div>
             <progress value="${totalSaved}" max="${totalMax}" style="width: 100%; height: 12px;"></progress>
             <p class="overall-text" style="font-size: 13px; color: #8b949e; margin-top: 5px; text-align: right;">
-                ${totalSaved.toLocaleString()} / ${totalMax.toLocaleString()} pages completed
+                ${totalSaved.toLocaleString()} / ${totalMax.toLocaleString()} Total
             </p>
         </div>
         <div class="subjects-container">`;
@@ -86,7 +86,7 @@ window.loadStudySection = function(grade) {
     mainContent.innerHTML = html;
 };
 
-// INPUT HANDLER: Updates UI without re-rendering the whole page
+// INPUT HANDLER: Updates UI without re-rendering the whole page (Keyboard stays open)
 document.addEventListener("DOMContentLoaded", () => {
     const mainContent = document.getElementById("main-content");
     if (!mainContent) return;
@@ -129,7 +129,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (summaryCard) {
             summaryCard.querySelector(".overall-percent").innerText = `${totalPercent}%`;
             summaryCard.querySelector("progress").value = totalSaved;
-            summaryCard.querySelector(".overall-text").innerText = `${totalSaved.toLocaleString()} / ${totalMax.toLocaleString()} pages completed`;
+            summaryCard.querySelector(".overall-text").innerText = `${totalSaved.toLocaleString()} / ${totalMax.toLocaleString()} Total`;
         }
     });
 });
+    
