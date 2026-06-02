@@ -13,13 +13,13 @@ window.maxPagesByGrade = {
 function createSubjectHtml(name, max, saved) {
     const percent = max > 0 ? Math.round((Math.min(saved, max) / max) * 100) : 0;
     return `
-        <div class="subject" style="margin-bottom: 20px; background: #161b22; padding: 15px; border-radius: 8px;">
+        <div class="subject" style="margin-bottom: 20px; background: #161b22; padding: 15px; border-radius: 8px; border: 1px solid #30363d;">
             <h3 style="margin-top:0;">${name}</h3>
             <input class="subject-progress" type="number" value="${saved}" 
                 data-subject="${name}" data-maxpages="${max}" 
                 style="width: 100%; padding: 10px; border-radius: 4px; background: #0d1117; color: white; border: 1px solid #30363d;">
             <progress value="${saved}" max="${max}" style="width: 100%; height: 10px; margin-top: 10px;"></progress>
-            <p style="font-size: 13px; color: #8b949e; margin-top: 5px;">${percent}% (${saved}/${max} pages)</p>
+            <p class="subject-stats" style="font-size: 13px; color: #8b949e; margin-top: 5px;">${percent}% (${saved}/${max} pages)</p>
         </div>
     `;
 }
@@ -41,7 +41,7 @@ window.loadStudySection = function(grade) {
     window.activeStudyGrade = gradeNum;
     window.activeStudySavedData = savedData;
 
-    // --- CALCULATE TOTAL PROGRESS ---
+    // Calculate Totals
     let totalMax = 0;
     let totalSaved = 0;
     SUBJECTS.forEach(subject => {
@@ -52,18 +52,17 @@ window.loadStudySection = function(grade) {
     });
     const totalPercent = totalMax > 0 ? Math.round((totalSaved / totalMax) * 100) : 0;
 
-    // --- RENDER ---
+    // Render HTML
     let html = `<h2>📚 Grade ${gradeNum} Study Tracker</h2>`;
 
-    // Overall Progress Summary
     html += `
-        <div style="background: #161b22; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #30363d;">
+        <div class="overall-summary-card" style="background: #161b22; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #30363d;">
             <div style="display: flex; justify-content: space-between; margin-bottom: 8px; color: #e6edf3;">
                 <span style="font-weight: bold;">Overall Progress</span>
-                <span style="color: #00d4ff;">${totalPercent}%</span>
+                <span class="overall-percent" style="color: #00d4ff;">${totalPercent}%</span>
             </div>
             <progress value="${totalSaved}" max="${totalMax}" style="width: 100%; height: 12px;"></progress>
-            <p style="font-size: 13px; color: #8b949e; margin-top: 5px; text-align: right;">
+            <p class="overall-text" style="font-size: 13px; color: #8b949e; margin-top: 5px; text-align: right;">
                 ${totalSaved.toLocaleString()} / ${totalMax.toLocaleString()} pages completed
             </p>
         </div>
@@ -78,20 +77,16 @@ window.loadStudySection = function(grade) {
     html += `
         <div style="display: flex; gap: 10px; margin-top: 20px; margin-bottom: 50px;">
             <button onclick="loadStudySection(${Math.max(9, gradeNum - 1)})" 
-                style="flex: 1; padding: 15px; background: #007bff; color: white; border: none; border-radius: 8px; font-weight: bold;">
-                Previous
-            </button>
+                style="flex: 1; padding: 15px; background: #007bff; color: white; border: none; border-radius: 8px; font-weight: bold;">Previous</button>
             <button onclick="loadStudySection(${Math.min(12, gradeNum + 1)})" 
-                style="flex: 1; padding: 15px; background: #007bff; color: white; border: none; border-radius: 8px; font-weight: bold;">
-                Next
-            </button>
+                style="flex: 1; padding: 15px; background: #007bff; color: white; border: none; border-radius: 8px; font-weight: bold;">Next</button>
         </div>
     `;
 
     mainContent.innerHTML = html;
 };
 
-// IMPROVED INPUT HANDLER
+// INPUT HANDLER: Updates UI without re-rendering the whole page
 document.addEventListener("DOMContentLoaded", () => {
     const mainContent = document.getElementById("main-content");
     if (!mainContent) return;
@@ -113,13 +108,28 @@ document.addEventListener("DOMContentLoaded", () => {
         masterData.studyProgress[window.activeStudyGrade] = window.activeStudySavedData;
         window.DataService.set(masterData);
 
-        // Update local UI
+        // Update local Subject UI
         const percent = max > 0 ? Math.round((val / max) * 100) : 0;
         input.parentElement.querySelector("progress").value = val;
-        input.parentElement.querySelector("p").innerText = `${percent}% (${val}/${max} pages)`;
+        input.parentElement.querySelector(".subject-stats").innerText = `${percent}% (${val}/${max} pages)`;
 
-        // Refresh Overall Progress (The new summary)
-        window.loadStudySection(window.activeStudyGrade);
+        // Update Overall Summary UI
+        const config = window.maxPagesByGrade?.[window.activeStudyGrade];
+        let totalMax = 0;
+        let totalSaved = 0;
+        SUBJECTS.forEach(s => {
+            const m = config[s] || 0;
+            const v = Math.min(window.activeStudySavedData[s] || 0, m);
+            totalMax += m;
+            totalSaved += v;
+        });
+
+        const totalPercent = totalMax > 0 ? Math.round((totalSaved / totalMax) * 100) : 0;
+        const summaryCard = document.querySelector(".overall-summary-card");
+        if (summaryCard) {
+            summaryCard.querySelector(".overall-percent").innerText = `${totalPercent}%`;
+            summaryCard.querySelector("progress").value = totalSaved;
+            summaryCard.querySelector(".overall-text").innerText = `${totalSaved.toLocaleString()} / ${totalMax.toLocaleString()} pages completed`;
+        }
     });
 });
-    
