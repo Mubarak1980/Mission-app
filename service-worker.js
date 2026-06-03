@@ -17,48 +17,38 @@ const APP_SHELL = [
   "./icon-512.png"
 ];
 
-// INSTALL: Force immediate registration and caching of all shell assets
 self.addEventListener("install", (event) => {
   self.skipWaiting();
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(APP_SHELL);
-    })
-  );
+  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
 });
 
-// ACTIVATE: Clean up any old caches to prevent conflicts and ensure version control
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.map((key) => key !== CACHE_NAME && caches.delete(key)))
+    caches.keys().then((keys) => 
+      Promise.all(keys.map(k => k !== CACHE_NAME && caches.delete(k)))
     ).then(() => self.clients.claim())
   );
 });
 
-// FETCH: Logic-aware request handling
+// "OFFLINE-FIRST" Strategy:
+// This forces the app to look in the cache first, ensuring it works 
+// instantly without an internet connection.
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 
-  const url = new URL(event.request.url);
+  event.respondWith(
+    caches.match(event.request).then((cachedResponse) => {
+      // 1. If it's in the cache, serve it immediately
+      if (cachedResponse) return cachedResponse;
 
-  // 1. NETWORK-FIRST for JS: Guarantees your latest logic/safety gates are always pulled from GitHub
-  if (url.pathname.endsWith('.js')) {
-    event.respondWith(
-      fetch(event.request)
-        .then((networkResponse) => {
-          const clone = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-          return networkResponse;
-        })
-        .catch(() => caches.match(event.request))
-    );
-  } else {
-    // 2. CACHE-FIRST for Assets: Faster loading for CSS, icons, and static images
-    event.respondWith(
-      caches.match(event.request).then((cachedResponse) => {
-        return cachedResponse || fetch(event.request);
-      })
-    );
-  }
+      // 2. Otherwise, try the network
+      return fetch(event.request).catch(() => {
+        // 3. If network fails (offline), serve index.html for any navigation
+        if (event.request.mode === 'navigate') {
+          return caches.match("./index.html");
+        }
+      });
+    })
+  );
 });
+  
