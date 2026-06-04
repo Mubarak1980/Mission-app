@@ -17,7 +17,6 @@
     </script>
 
     <link rel="manifest" href="./manifest.json">
-
     <link rel="stylesheet" href="./styles.css" />
     <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png" />
     <link rel="apple-touch-icon" href="./icon-192.png" />
@@ -41,6 +40,7 @@
 <div id="app" style="display: none; opacity: 0; transition: opacity 0.25s ease;">
     <h1 id="app-time-heading">MISSION</h1>
 
+    <!-- NAVIGATION (GLOBAL SYSTEM) -->
     <nav id="app-navigation-container" class="section-buttons">
         <button data-target="study" class="nav-button">Study Tracker</button>
         <button data-target="timetable" class="nav-button">Weekly Timetable</button>
@@ -69,22 +69,16 @@
 <script>
 "use strict";
 
-// ===============================
-// FIXED BOOT + INSTALL PROMPT CONTROL
-// ===============================
-
-// Install prompt capture (IMPORTANT for “Install App”)
+// Install prompt capture
 let deferredPrompt;
 
 window.addEventListener("beforeinstallprompt", (e) => {
     e.preventDefault();
     deferredPrompt = e;
-
-    // optional auto trigger (you can style a button later)
     console.log("Install prompt ready");
 });
 
-// Navigation + Splash
+// App boot
 window.addEventListener("DOMContentLoaded", () => {
 
     document.getElementById("app-navigation-container")?.addEventListener("click", (e) => {
