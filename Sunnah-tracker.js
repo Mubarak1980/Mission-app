@@ -9,18 +9,32 @@ const pagesPerJuz = 20;
 const totalJuz = 30;
 
 function loadSunnahState() {
-    const masterData = window.DataService.get();
-    if (!masterData.sunnahProgress) masterData.sunnahProgress = { 
-        pages: 0, 
-        juz: 0 
-    };
+    const masterData = (window.DataService && window.DataService.get()) || {};
+
+    if (!masterData.sunnahProgress || typeof masterData.sunnahProgress !== "object") {
+        masterData.sunnahProgress = {
+            pages: 0,
+            juz: 0
+        };
+        window.DataService && window.DataService.set(masterData);
+    }
+
     return masterData.sunnahProgress;
 }
 
 function saveSunnahProgress(data) {
-    const masterData = window.DataService.get();
-    masterData.sunnahProgress = { ...(masterData.sunnahProgress || {}), ...data };
-    window.DataService.set(masterData);
+    const masterData = (window.DataService && window.DataService.get()) || {};
+
+    if (!masterData.sunnahProgress) {
+        masterData.sunnahProgress = {};
+    }
+
+    masterData.sunnahProgress = {
+        ...masterData.sunnahProgress,
+        ...data
+    };
+
+    window.DataService && window.DataService.set(masterData);
 }
 
 // ===============================
@@ -30,31 +44,28 @@ function cleanSunnahInputRouter(e) {
     const input = e.target;
     if (!input || input.id !== "quran-pages") return;
 
-    // 1. Sanitize: Allow only numbers, limit to 3 digits (max 604)
-    let valStr = input.value.replace(/[^0-9]/g, '');
+    // 1. Sanitize input
+    let valStr = String(input.value || "").replace(/[^0-9]/g, '');
     if (valStr.length > 3) valStr = valStr.slice(0, 3);
-    
-    // 2. Convert to number (strips leading zeros)
+
     let value = Number(valStr);
     if (isNaN(value)) value = 0;
-    
-    // 3. Enforce range
+
     if (value > totalQuranPages) value = totalQuranPages;
-    
-    // 4. Update the input display immediately to cleaned value
+
     input.value = value;
 
-    // 5. Calculate logic
+    // 2. Compute juz
     const newJuz = Math.min(Math.floor(value / pagesPerJuz), totalJuz);
-    
-    // 6. Save to bridge
+
+    // 3. Save safely
     saveSunnahProgress({ pages: value, juz: newJuz });
 
-    // 7. Update UI components
+    // 4. UI updates (safe guards)
     const pagesProgress = document.getElementById("quran-pages-progress");
     const juzDisplay = document.getElementById("quran-juz");
     const juzProgress = document.getElementById("quran-juz-progress");
-    
+
     if (pagesProgress) pagesProgress.value = value;
     if (juzDisplay) juzDisplay.innerText = newJuz;
     if (juzProgress) juzProgress.value = newJuz;
@@ -68,13 +79,26 @@ window.loadSunnahTracker = (grade) => {
     if (!container) return;
 
     const saved = loadSunnahState();
-    const pages = Math.min(Math.max(Number(saved.pages) || 0, 0), totalQuranPages);
-    const juz = Math.min(Math.floor(pages / pagesPerJuz), totalJuz);
+
+    const pages = Math.min(
+        Math.max(Number(saved.pages) || 0, 0),
+        totalQuranPages
+    );
+
+    const juz = Math.min(
+        Math.floor(pages / pagesPerJuz),
+        totalJuz
+    );
 
     container.innerHTML = `
         <h2>🕌 Sunnah & Quran Tracker</h2>
+
         <div class="sunnah-container" style="padding: 20px;">
-            <label for="quran-pages">Quran Pages Read (Total: ${totalQuranPages})</label>
+
+            <label for="quran-pages">
+                Quran Pages Read (Total: ${totalQuranPages})
+            </label>
+
             <input 
                 type="number" 
                 inputmode="numeric" 
@@ -85,16 +109,29 @@ window.loadSunnahTracker = (grade) => {
                 max="${totalQuranPages}" 
                 style="width: 100%; padding: 10px; margin: 10px 0; border-radius: 6px; box-sizing: border-box;"
             >
-            
-            <progress id="quran-pages-progress" value="${pages}" max="${totalQuranPages}" style="width: 100%; height: 12px;"></progress>
-            
+
+            <progress 
+                id="quran-pages-progress" 
+                value="${pages}" 
+                max="${totalQuranPages}" 
+                style="width: 100%; height: 12px;"
+            ></progress>
+
             <div style="margin-top: 20px;">
                 <p>Current Juz: <span id="quran-juz">${juz}</span> / ${totalJuz}</p>
-                <progress id="quran-juz-progress" value="${juz}" max="${totalJuz}" style="width: 100%; height: 12px;"></progress>
+
+                <progress 
+                    id="quran-juz-progress" 
+                    value="${juz}" 
+                    max="${totalJuz}" 
+                    style="width: 100%; height: 12px;"
+                ></progress>
             </div>
+
         </div>
     `;
 
+    // 🔥 PWA SAFE EVENT BINDING (prevents duplicate listeners)
     container.removeEventListener("input", cleanSunnahInputRouter);
     container.addEventListener("input", cleanSunnahInputRouter);
 };
