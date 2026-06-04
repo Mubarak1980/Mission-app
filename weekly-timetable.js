@@ -35,12 +35,22 @@ window.loadWeeklyTimetable = function() {
 
     try {
         if (window.SmartEngine) {
-            mission = window.SmartEngine.getDailyMission?.();
-            progress = window.SmartEngine.getProgress?.();
+            mission = window.SmartEngine.getDailyMission?.() || null;
+            progress = window.SmartEngine.getProgress?.() || null;
         }
     } catch (e) {
         console.error("SmartEngine error:", e);
     }
+
+    // ===============================
+    // 🔥 PWA SAFE FIX: Guard breakdown access
+    // ===============================
+    const safeBreakdown = mission?.breakdown || {
+        Math: 0,
+        Physics: 0,
+        Chemistry: 0,
+        Biology: 0
+    };
 
     const missionHtml = mission ? `
         <div style="
@@ -73,10 +83,10 @@ window.loadWeeklyTimetable = function() {
                 gap:8px;
                 margin-bottom:10px;
             ">
-                <div>Math: <strong>${mission.breakdown.Math}</strong></div>
-                <div>Physics: <strong>${mission.breakdown.Physics}</strong></div>
-                <div>Chemistry: <strong>${mission.breakdown.Chemistry}</strong></div>
-                <div>Biology: <strong>${mission.breakdown.Biology}</strong></div>
+                <div>Math: <strong>${safeBreakdown.Math}</strong></div>
+                <div>Physics: <strong>${safeBreakdown.Physics}</strong></div>
+                <div>Chemistry: <strong>${safeBreakdown.Chemistry}</strong></div>
+                <div>Biology: <strong>${safeBreakdown.Biology}</strong></div>
             </div>
 
             <div style="
@@ -86,7 +96,7 @@ window.loadWeeklyTimetable = function() {
                 border-top:1px solid #30363d;
                 padding-top:10px;
             ">
-                Total: ${mission.total} pages
+                Total: ${mission.total || 0} pages
             </div>
 
             <!-- =============================== -->
