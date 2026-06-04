@@ -164,8 +164,3 @@ window.SmartEngine = (function () {
     };
 
 })();
-
-
-Here us the smart engine 
-Without changing anything else 
-Just make it PWA FRIENDLY
