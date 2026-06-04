@@ -373,60 +373,49 @@ to { transform: rotate(360deg); }
 }
 
 /* ==========================================================
-📱 MOBILE ADAPTATION SYSTEM
-========================================================== */
-@media (max-width: 500px) {
-body {
-padding: 12px;
-}
-
-.subject, .top-student-card, .dashboard-subject {
-padding: 16px;
-margin-bottom: 12px;
-width: 100%;
-box-sizing: border-box;
-}
-}
-
-/* ==========================================================
-🔘 UNIFIED BUTTON SYSTEM FIX (GLOBAL CONTROL)
+🔘 UNIFIED BUTTON SYSTEM (SAFE CONTROLLED VERSION)
 ========================================================== */
 
-/* Apply to ALL navigation buttons including Previous/Next */
 .nav-button,
 .study-nav-button,
-button {
+.study-nav-button button {
     flex: 1;
-    min-width: 110px;
+    min-width: 140px;
     padding: 14px 16px;
     border-radius: 14px;
     border: 1px solid var(--border);
     background: var(--card);
     color: var(--text);
     font-weight: 600;
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     cursor: pointer;
     transition: all 0.2s ease;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-/* Hover state */
-button:hover:not(:disabled) {
+/* Hover */
+.nav-button:hover:not(:disabled),
+.study-nav-button:hover:not(:disabled) {
     background: var(--primary-soft);
     border-color: var(--primary);
     color: var(--primary);
     transform: translateY(-1px);
 }
 
-/* Click feedback */
-button:active:not(:disabled) {
+/* Click */
+.nav-button:active:not(:disabled),
+.study-nav-button:active:not(:disabled) {
     transform: scale(0.97);
 }
 
-/* Disabled state */
-button:disabled {
+/* Disabled */
+.nav-button:disabled,
+.study-nav-button:disabled {
     opacity: 0.3;
     cursor: not-allowed;
     pointer-events: none;
     transform: none !important;
     }
-    
