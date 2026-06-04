@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>Mission App</title>
 
-    <!-- ✅ FIXED: SAFE SW REGISTRATION -->
+    <!-- SERVICE WORKER -->
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener("load", () => {
@@ -29,6 +29,7 @@
 
 <body>
 
+<!-- SPLASH SCREEN -->
 <div id="splash-screen">
     <div class="splash-content">
         <h1>📘 Mission App</h1>
@@ -37,10 +38,12 @@
     </div>
 </div>
 
+<!-- MAIN APP -->
 <div id="app" style="display: none; opacity: 0; transition: opacity 0.25s ease;">
+
     <h1 id="app-time-heading">MISSION</h1>
 
-    <!-- NAVIGATION (GLOBAL SYSTEM - FIXED STRUCTURE) -->
+    <!-- GLOBAL NAVIGATION (STABLE SYSTEM) -->
     <nav id="app-navigation-container" class="section-buttons">
         <button data-target="study" class="nav-button">Study Tracker</button>
         <button data-target="timetable" class="nav-button">Weekly Timetable</button>
@@ -49,18 +52,20 @@
         <button data-target="sunnah" class="nav-button">Sunnah Tracker</button>
     </nav>
 
+    <!-- GRADE PROGRESS -->
     <div id="grade-progress-container" style="width: 100%; box-sizing: border-box; padding: 0 4px;">
         <div id="grade-progress-bar"></div>
     </div>
 
+    <!-- DYNAMIC CONTENT -->
     <main id="main-content"></main>
+
 </div>
 
-<!-- Scripts -->
+<!-- SCRIPTS -->
 <script src="./Study-tracker.js"></script>
 <script src="./main.js"></script>
 <script src="./SmartEngine.js"></script>
-
 <script src="./weekly-timetable.js"></script>
 <script src="./dashboard.js"></script>
 <script src="./top-student-mode.js"></script>
@@ -69,7 +74,9 @@
 <script>
 "use strict";
 
-// Install prompt capture
+// ===============================
+// INSTALL PROMPT
+// ===============================
 let deferredPrompt;
 
 window.addEventListener("beforeinstallprompt", (e) => {
@@ -78,9 +85,12 @@ window.addEventListener("beforeinstallprompt", (e) => {
     console.log("Install prompt ready");
 });
 
-// App boot
+// ===============================
+// APP BOOT SYSTEM
+// ===============================
 window.addEventListener("DOMContentLoaded", () => {
 
+    // NAVIGATION HANDLER
     document.getElementById("app-navigation-container")?.addEventListener("click", (e) => {
         const btn = e.target.closest("button");
         if (btn?.dataset.target) {
@@ -88,6 +98,7 @@ window.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    // SYSTEM READY CHECK
     const waitForSystem = () => {
         const ready =
             window.DataService &&
