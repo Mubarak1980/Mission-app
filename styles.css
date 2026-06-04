@@ -386,4 +386,34 @@ margin-bottom: 12px;
 width: 100%;
 box-sizing: border-box;
 }
+}
+
+/* ==========================================================
+📍 FIX: STUDY TRACKER NAV BUTTON RESPONSIVENESS + EDGE STATE
+========================================================== */
+
+#main-content button {
+    border-radius: 14px;
+    transition: all 0.2s ease;
+}
+
+/* Hover feedback */
+#main-content button:hover:not(:disabled) {
+    background: var(--primary-soft) !important;
+    border-color: var(--primary) !important;
+    color: var(--primary) !important;
+    transform: translateY(-1px);
+}
+
+/* Click feedback */
+#main-content button:active:not(:disabled) {
+    transform: scale(0.97);
+}
+
+/* Disabled edge state fix (IMPORTANT for Previous/Next at limits) */
+#main-content button:disabled {
+    opacity: 0.25;
+    cursor: not-allowed;
+    pointer-events: none;
+    transform: none !important;
   }
