@@ -4,14 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>Mission App</title>
-    
-    <!-- Service Worker Registration: Placed first to ensure immediate registration -->
+
+    <!-- ✅ FIX 1: EARLY SW REGISTRATION (PWA INSTALL STABILITY) -->
     <script>
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./service-worker.js', { scope: './' })
+            navigator.serviceWorker.register('./service-worker.js', { scope: './' })
                 .catch(err => console.error("SW Registration failed:", err));
-            });
         }
     </script>
 
@@ -19,6 +17,7 @@
     <link rel="stylesheet" href="./styles.css" />
     <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png" />
     <link rel="apple-touch-icon" href="./icon-192.png" />
+
     <meta name="theme-color" content="#0b0f14" />
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -37,6 +36,7 @@
 
 <div id="app" style="display: none; opacity: 0; transition: opacity 0.25s ease;">
     <h1 id="app-time-heading">MISSION</h1>
+
     <nav id="app-navigation-container" class="section-buttons">
         <button data-target="study" class="nav-button">Study Tracker</button>
         <button data-target="timetable" class="nav-button">Weekly Timetable</button>
@@ -44,18 +44,23 @@
         <button data-target="topstudent" class="nav-button">Top Student Mode</button>
         <button data-target="sunnah" class="nav-button">Sunnah Tracker</button>
     </nav>
+
     <div id="grade-progress-container" style="width: 100%; box-sizing: border-box; padding: 0 4px;">
         <div id="grade-progress-bar"></div>
     </div>
+
     <main id="main-content"></main>
 </div>
 
-<!-- DEPENDENCY ORDER: Data and Logic loaded first -->
+<!-- ============================= -->
+<!-- ✅ FIX 2: SAFE LOADING ORDER -->
+<!-- ============================= -->
+
 <script src="./Study-tracker.js"></script>
+<script src="./DataService.js"></script> <!-- (IMPORTANT: ensure exists or merge with main.js) -->
 <script src="./main.js"></script>
 <script src="./SmartEngine.js"></script>
 
-<!-- UI MODULES loaded last -->
 <script src="./weekly-timetable.js"></script>
 <script src="./dashboard.js"></script>
 <script src="./top-student-mode.js"></script>
@@ -64,26 +69,43 @@
 <script>
 "use strict";
 
-// Navigation & Splash Handling
+// ===============================
+// FIX 3: SAFE APP BOOT SEQUENCE
+// ===============================
 window.addEventListener("DOMContentLoaded", () => {
-    // Navigation Click
-    document.getElementById("app-navigation-container")?.addEventListener("click", (e) => {
+
+    const nav = document.getElementById("app-navigation-container");
+
+    nav?.addEventListener("click", (e) => {
         const btn = e.target.closest("button");
         if (btn?.dataset.target) {
             window.loadSection(btn.dataset.target, window.UI.load().grade);
         }
     });
 
-    // Simple Splash Hide
-    setTimeout(() => {
+    // ⛔ FIX: Wait for system readiness before hiding splash
+    const waitForSystem = () => {
+        const ready =
+            window.DataService &&
+            window.maxPagesByGrade &&
+            window.SmartEngine;
+
+        if (!ready) {
+            setTimeout(waitForSystem, 50);
+            return;
+        }
+
         const splash = document.getElementById("splash-screen");
         const app = document.getElementById("app");
+
         if (splash && app) {
             splash.style.display = "none";
             app.style.display = "block";
             app.style.opacity = "1";
         }
-    }, 500);
+    };
+
+    waitForSystem();
 });
 </script>
 
