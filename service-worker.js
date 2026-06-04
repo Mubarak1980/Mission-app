@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE_NAME = "mission-cache-v19";
+const CACHE_NAME = "mission-cache-v20";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -17,19 +17,18 @@ const APP_SHELL = [
   "./icon-512.png"
 ];
 
-// INSTALL: Force-cache the entire shell immediately.
-// If any file in APP_SHELL fails to download, the service worker will not install,
-// preventing the app from entering a 'broken' half-cached state.
 self.addEventListener("install", (event) => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(APP_SHELL);
+      // Use addAll, but ensure the paths are relative to the service worker location
+      return cache.addAll(APP_SHELL).catch(err => {
+        console.error("Failed to cache shell:", err);
+      });
     })
   );
-  self.skipWaiting();
 });
 
-// ACTIVATE: Immediately claim all clients and purge old cache versions.
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
@@ -38,19 +37,13 @@ self.addEventListener("activate", (event) => {
   );
 });
 
-// FETCH: "Offline-First" Strategy for Native Feel.
-// This serves cached files instantly, bypassing the network entirely for speed.
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
-      // 1. Serve from cache if available (Native-speed performance)
-      if (cachedResponse) return cachedResponse;
-
-      // 2. Fetch from network only if not in cache
-      return fetch(event.request).catch(() => {
-        // 3. Fallback: If offline and navigating, serve the main entry point
+      // Return cached version or fetch from network
+      return cachedResponse || fetch(event.request).catch(() => {
         if (event.request.mode === 'navigate') {
           return caches.match("./index.html");
         }
@@ -58,4 +51,4 @@ self.addEventListener("fetch", (event) => {
     })
   );
 });
-          
+                       
