@@ -9,13 +9,9 @@ window.maxPagesByGrade = {
     12: { Math: 416, Physics: 177, Chemistry: 287, Biology: 354 }
 };
 
-// ===============================
-// SUBJECT CARD
-// ===============================
+// UI Component
 function createSubjectHtml(name, max, saved) {
-    const percent = max > 0
-        ? Math.round((Math.min(saved, max) / max) * 100)
-        : 0;
+    const percent = max > 0 ? Math.round((Math.min(saved, max) / max) * 100) : 0;
 
     return `
         <div class="subject">
@@ -25,7 +21,7 @@ function createSubjectHtml(name, max, saved) {
                 type="number"
                 value="${saved}"
                 data-subject="${name}"
-                data-maxpages="${max}">
+                data-maxpages="${max}" />
 
             <progress value="${saved}" max="${max}"></progress>
 
@@ -36,17 +32,16 @@ function createSubjectHtml(name, max, saved) {
     `;
 }
 
-// ===============================
-// MAIN FUNCTION
-// ===============================
+// MAIN RENDER
 window.loadStudySection = function (grade) {
-
     const mainContent = document.getElementById("main-content");
     const gradeNum = parseInt(grade);
 
     if (!mainContent) return;
 
-    const masterData = window.DataService?.get() || { studyProgress: {} };
+    mainContent.innerHTML = "";
+
+    const masterData = (window.DataService && window.DataService.get()) || { studyProgress: {} };
     const savedData = masterData.studyProgress?.[gradeNum] || {};
     const config = window.maxPagesByGrade?.[gradeNum];
 
@@ -59,27 +54,21 @@ window.loadStudySection = function (grade) {
     let totalMax = 0;
     let totalSaved = 0;
 
-    SUBJECTS.forEach(subject => {
-        const max = config[subject] || 0;
-        const saved = Math.min(savedData[subject] || 0, max);
-
+    SUBJECTS.forEach(s => {
+        const max = config[s] || 0;
+        const saved = Math.min(savedData[s] || 0, max);
         totalMax += max;
         totalSaved += saved;
     });
 
-    const totalPercent = totalMax
-        ? Math.round((totalSaved / totalMax) * 100)
-        : 0;
+    const totalPercent = totalMax > 0 ? Math.round((totalSaved / totalMax) * 100) : 0;
 
-    // ===============================
-    // HTML OUTPUT
-    // ===============================
-    let html = `
-        <h2>📚 Grade ${gradeNum} Study Tracker</h2>
+    let html = `<h2>📚 Grade ${gradeNum} Study Tracker</h2>`;
 
+    html += `
         <div class="overall-summary-card">
-            <div class="overall-header">
-                <span>Overall Progress</span>
+            <div style="display:flex; justify-content:space-between;">
+                <span><b>Overall Progress</b></span>
                 <span class="overall-percent">${totalPercent}%</span>
             </div>
 
@@ -99,18 +88,21 @@ window.loadStudySection = function (grade) {
 
     html += `</div>`;
 
-    // ===============================
-    // FIXED NAVIGATION (USES GLOBAL CSS)
-    // ===============================
+    // 🔥 FIXED NAVIGATION (NO INLINE STYLES)
+    const prev = Math.max(9, gradeNum - 1);
+    const next = Math.min(12, gradeNum + 1);
+
     html += `
-        <div class="section-buttons">
-            <button class="nav-button"
-                onclick="loadStudySection(${Math.max(9, gradeNum - 1)})">
+        <div class="study-nav">
+            <button class="study-nav-button"
+                onclick="loadStudySection(${prev})"
+                ${gradeNum === 9 ? "disabled" : ""}>
                 Previous
             </button>
 
-            <button class="nav-button"
-                onclick="loadStudySection(${Math.min(12, gradeNum + 1)})">
+            <button class="study-nav-button"
+                onclick="loadStudySection(${next})"
+                ${gradeNum === 12 ? "disabled" : ""}>
                 Next
             </button>
         </div>
@@ -119,23 +111,19 @@ window.loadStudySection = function (grade) {
     mainContent.innerHTML = html;
 };
 
-// ===============================
-// INPUT HANDLER (UNCHANGED LOGIC)
-// ===============================
-document.addEventListener("DOMContentLoaded", () => {
 
+// INPUT HANDLER (UNCHANGED LOGIC, CLEANED ONLY STYLES AFFECTED BY CSS)
+document.addEventListener("DOMContentLoaded", () => {
     const mainContent = document.getElementById("main-content");
     if (!mainContent) return;
 
     mainContent.addEventListener("input", function (e) {
-
         if (!e.target.classList.contains("subject-progress")) return;
 
         const input = e.target;
         const max = Number(input.dataset.maxpages);
 
         let val = Number(input.value.replace(/[^0-9]/g, ''));
-
         if (val > max) val = max;
 
         input.value = val;
@@ -147,12 +135,13 @@ document.addEventListener("DOMContentLoaded", () => {
         masterData.studyProgress[window.activeStudyGrade] = window.activeStudySavedData;
         window.DataService.set(masterData);
 
-        const percent = Math.round((val / max) * 100);
+        const percent = max ? Math.round((val / max) * 100) : 0;
 
         input.parentElement.querySelector("progress").value = val;
         input.parentElement.querySelector(".subject-stats").innerText =
             `${percent}% (${val}/${max} pages)`;
 
+        // update overall
         const config = window.maxPagesByGrade?.[window.activeStudyGrade];
 
         let totalMax = 0;
@@ -161,19 +150,17 @@ document.addEventListener("DOMContentLoaded", () => {
         SUBJECTS.forEach(s => {
             const m = config[s] || 0;
             const v = Math.min(window.activeStudySavedData[s] || 0, m);
-
             totalMax += m;
             totalSaved += v;
         });
 
-        const totalPercent = Math.round((totalSaved / totalMax) * 100);
+        const totalPercent = totalMax ? Math.round((totalSaved / totalMax) * 100) : 0;
 
-        const summaryCard = document.querySelector(".overall-summary-card");
-
-        if (summaryCard) {
-            summaryCard.querySelector(".overall-percent").innerText = `${totalPercent}%`;
-            summaryCard.querySelector("progress").value = totalSaved;
-            summaryCard.querySelector(".overall-text").innerText =
+        const card = document.querySelector(".overall-summary-card");
+        if (card) {
+            card.querySelector(".overall-percent").innerText = `${totalPercent}%`;
+            card.querySelector("progress").value = totalSaved;
+            card.querySelector(".overall-text").innerText =
                 `${totalSaved.toLocaleString()} / ${totalMax.toLocaleString()} Total`;
         }
     });
