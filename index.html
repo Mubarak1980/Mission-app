@@ -4,6 +4,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>Mission App</title>
+    
+    <!-- Service Worker Registration: Placed first to ensure immediate registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js', { scope: './' })
+                .catch(err => console.error("SW Registration failed:", err));
+            });
+        }
+    </script>
+
     <link rel="manifest" href="./manifest.json">
     <link rel="stylesheet" href="./styles.css" />
     <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png" />
@@ -39,11 +50,12 @@
     <main id="main-content"></main>
 </div>
 
+<!-- DEPENDENCY ORDER: Data and Logic loaded first -->
 <script src="./Study-tracker.js"></script>
 <script src="./main.js"></script>
-
 <script src="./SmartEngine.js"></script>
 
+<!-- UI MODULES loaded last -->
 <script src="./weekly-timetable.js"></script>
 <script src="./dashboard.js"></script>
 <script src="./top-student-mode.js"></script>
@@ -52,14 +64,7 @@
 <script>
 "use strict";
 
-// 1. Service Worker
-if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => {
-        navigator.serviceWorker.register("./service-worker.js");
-    });
-}
-
-// 2. Navigation & Splash Handling
+// Navigation & Splash Handling
 window.addEventListener("DOMContentLoaded", () => {
     // Navigation Click
     document.getElementById("app-navigation-container")?.addEventListener("click", (e) => {
