@@ -5,31 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>Mission App</title>
 
-    <!-- ✅ PWA: Manifest MUST load before anything else -->
-    <link rel="manifest" href="./manifest.json">
-
-    <!-- ✅ Theme color improves install UI recognition -->
-    <meta name="theme-color" content="#0b0f14" />
-
-    <!-- Apple compatibility (does not affect Android install prompt) -->
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-
-    <!-- Icons -->
-    <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png" />
-    <link rel="apple-touch-icon" href="./icon-192.png" />
-
-    <link rel="stylesheet" href="./styles.css" />
-
-    <!-- ⚠️ FIX: Service worker should NOT block main thread -->
+    <!-- ✅ FIXED: SAFE SW REGISTRATION -->
     <script>
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
+            window.addEventListener("load", () => {
                 navigator.serviceWorker.register('./service-worker.js', { scope: './' })
+                    .then(() => console.log("SW registered"))
                     .catch(err => console.error("SW Registration failed:", err));
             });
         }
     </script>
+
+    <link rel="manifest" href="./manifest.json">
+
+    <link rel="stylesheet" href="./styles.css" />
+    <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png" />
+    <link rel="apple-touch-icon" href="./icon-192.png" />
+
+    <meta name="theme-color" content="#0b0f14" />
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
 </head>
 
 <body>
@@ -46,11 +42,11 @@
     <h1 id="app-time-heading">MISSION</h1>
 
     <nav id="app-navigation-container" class="section-buttons">
-        <button data-target="study">Study Tracker</button>
-        <button data-target="timetable">Weekly Timetable</button>
-        <button data-target="dashboard">Dashboard</button>
-        <button data-target="topstudent">Top Student Mode</button>
-        <button data-target="sunnah">Sunnah Tracker</button>
+        <button data-target="study" class="nav-button">Study Tracker</button>
+        <button data-target="timetable" class="nav-button">Weekly Timetable</button>
+        <button data-target="dashboard" class="nav-button">Dashboard</button>
+        <button data-target="topstudent" class="nav-button">Top Student Mode</button>
+        <button data-target="sunnah" class="nav-button">Sunnah Tracker</button>
     </nav>
 
     <div id="grade-progress-container" style="width: 100%; box-sizing: border-box; padding: 0 4px;">
@@ -60,6 +56,7 @@
     <main id="main-content"></main>
 </div>
 
+<!-- Scripts -->
 <script src="./Study-tracker.js"></script>
 <script src="./main.js"></script>
 <script src="./SmartEngine.js"></script>
@@ -72,6 +69,22 @@
 <script>
 "use strict";
 
+// ===============================
+// FIXED BOOT + INSTALL PROMPT CONTROL
+// ===============================
+
+// Install prompt capture (IMPORTANT for “Install App”)
+let deferredPrompt;
+
+window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+
+    // optional auto trigger (you can style a button later)
+    console.log("Install prompt ready");
+});
+
+// Navigation + Splash
 window.addEventListener("DOMContentLoaded", () => {
 
     document.getElementById("app-navigation-container")?.addEventListener("click", (e) => {
@@ -87,12 +100,19 @@ window.addEventListener("DOMContentLoaded", () => {
             window.maxPagesByGrade &&
             window.SmartEngine;
 
-        if (!ready) return setTimeout(waitForSystem, 50);
+        if (!ready) {
+            setTimeout(waitForSystem, 50);
+            return;
+        }
 
-        document.getElementById("splash-screen").style.display = "none";
+        const splash = document.getElementById("splash-screen");
         const app = document.getElementById("app");
-        app.style.display = "block";
-        app.style.opacity = "1";
+
+        if (splash && app) {
+            splash.style.display = "none";
+            app.style.display = "block";
+            app.style.opacity = "1";
+        }
     };
 
     waitForSystem();
