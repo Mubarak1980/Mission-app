@@ -13,7 +13,9 @@ window.maxPagesByGrade = {
 // SUBJECT CARD
 // ===============================
 function createSubjectHtml(name, max, saved) {
-    const percent = max > 0 ? Math.round((Math.min(saved, max) / max) * 100) : 0;
+    const percent = max > 0
+        ? Math.round((Math.min(saved, max) / max) * 100)
+        : 0;
 
     return `
         <div class="subject">
@@ -35,18 +37,16 @@ function createSubjectHtml(name, max, saved) {
 }
 
 // ===============================
-// MAIN RENDER FUNCTION
+// MAIN FUNCTION
 // ===============================
-window.loadStudySection = function(grade) {
+window.loadStudySection = function (grade) {
 
     const mainContent = document.getElementById("main-content");
     const gradeNum = parseInt(grade);
 
     if (!mainContent) return;
 
-    mainContent.innerHTML = "";
-
-    const masterData = (window.DataService && window.DataService.get()) || { studyProgress: {} };
+    const masterData = window.DataService?.get() || { studyProgress: {} };
     const savedData = masterData.studyProgress?.[gradeNum] || {};
     const config = window.maxPagesByGrade?.[gradeNum];
 
@@ -55,7 +55,7 @@ window.loadStudySection = function(grade) {
     window.activeStudyGrade = gradeNum;
     window.activeStudySavedData = savedData;
 
-    // TOTAL CALCULATION
+    // totals
     let totalMax = 0;
     let totalSaved = 0;
 
@@ -67,12 +67,12 @@ window.loadStudySection = function(grade) {
         totalSaved += saved;
     });
 
-    const totalPercent = totalMax > 0
+    const totalPercent = totalMax
         ? Math.round((totalSaved / totalMax) * 100)
         : 0;
 
     // ===============================
-    // HTML
+    // HTML OUTPUT
     // ===============================
     let html = `
         <h2>📚 Grade ${gradeNum} Study Tracker</h2>
@@ -94,26 +94,22 @@ window.loadStudySection = function(grade) {
     `;
 
     SUBJECTS.forEach(subject => {
-        html += createSubjectHtml(
-            subject,
-            config[subject],
-            savedData[subject] || 0
-        );
+        html += createSubjectHtml(subject, config[subject], savedData[subject] || 0);
     });
 
     html += `</div>`;
 
     // ===============================
-    // NAVIGATION (FIXED)
+    // FIXED NAVIGATION (USES GLOBAL CSS)
     // ===============================
     html += `
-        <div class="study-nav">
-            <button class="nav-btn"
+        <div class="section-buttons">
+            <button class="nav-button"
                 onclick="loadStudySection(${Math.max(9, gradeNum - 1)})">
                 Previous
             </button>
 
-            <button class="nav-btn"
+            <button class="nav-button"
                 onclick="loadStudySection(${Math.min(12, gradeNum + 1)})">
                 Next
             </button>
@@ -124,14 +120,14 @@ window.loadStudySection = function(grade) {
 };
 
 // ===============================
-// INPUT HANDLER
+// INPUT HANDLER (UNCHANGED LOGIC)
 // ===============================
 document.addEventListener("DOMContentLoaded", () => {
 
     const mainContent = document.getElementById("main-content");
     if (!mainContent) return;
 
-    mainContent.addEventListener("input", function(e) {
+    mainContent.addEventListener("input", function (e) {
 
         if (!e.target.classList.contains("subject-progress")) return;
 
@@ -151,14 +147,12 @@ document.addEventListener("DOMContentLoaded", () => {
         masterData.studyProgress[window.activeStudyGrade] = window.activeStudySavedData;
         window.DataService.set(masterData);
 
-        // update subject UI
         const percent = Math.round((val / max) * 100);
 
         input.parentElement.querySelector("progress").value = val;
         input.parentElement.querySelector(".subject-stats").innerText =
             `${percent}% (${val}/${max} pages)`;
 
-        // update overall
         const config = window.maxPagesByGrade?.[window.activeStudyGrade];
 
         let totalMax = 0;
