@@ -37,28 +37,51 @@ window.SectionMap = {
     sunnah: "loadSunnahTracker"
 };
 
+// ===============================
+// 4. SAFE INITIALIZATION GATE (PWA FIX)
+// ===============================
+function waitForSystemReady(callback) {
+    const check = () => {
+        const ready =
+            window.DataService &&
+            typeof window.SectionMap !== "undefined" &&
+            typeof window.loadSection === "function";
+
+        if (!ready) {
+            setTimeout(check, 50);
+            return;
+        }
+
+        callback();
+    };
+
+    check();
+}
+
 // 4. CENTRAL LOADER (WITH SAFETY GUARD)
 window.loadSection = (type, grade = 9) => {
     const main = document.getElementById("main-content");
     if (!main) return;
-    
+
     // SAFETY GUARD: Check if config exists for the dashboard
     if (type === 'dashboard' && !window.maxPagesByGrade) {
         console.warn("Config not loaded, retrying...");
         setTimeout(() => window.loadSection(type, grade), 100);
         return;
     }
-    
+
     const fnName = window.SectionMap[type];
-    
+
     if (typeof window[fnName] === 'function') {
         try {
             window.UI.save(type, grade);
+
             if (type === 'study') {
                 window[fnName](grade); 
             } else {
                 window[fnName](); 
             }
+
         } catch (err) {
             console.error(`Runtime Error in ${fnName}:`, err);
             main.innerHTML = `<div style="padding:20px; color:red;">Module load error: ${err.message}</div>`;
@@ -69,9 +92,12 @@ window.loadSection = (type, grade = 9) => {
     }
 };
 
-// 5. INITIALIZATION
+// 5. INITIALIZATION (PWA SAFE BOOT)
 document.addEventListener("DOMContentLoaded", () => {
-    const lastUI = window.UI.load();
-    window.loadSection(lastUI.section, lastUI.grade);
+
+    waitForSystemReady(() => {
+        const lastUI = window.UI.load();
+        window.loadSection(lastUI.section, lastUI.grade);
+    });
+
 });
-    
