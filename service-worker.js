@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE_NAME = "mission-cache-v21";
+const CACHE_NAME = "mission-cache-v22";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -17,18 +17,19 @@ const APP_SHELL = [
   "./icon-512.png"
 ];
 
+// INSTALL: Force-cache the entire shell immediately.
 self.addEventListener("install", (event) => {
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      // Use addAll, but ensure the paths are relative to the service worker location
-      return cache.addAll(APP_SHELL).catch(err => {
-        console.error("Failed to cache shell:", err);
-      });
+      // Adding all assets. We do not use catch here because we want 
+      // the installation to fail if the network is so bad the app is broken.
+      return cache.addAll(APP_SHELL);
     })
   );
 });
 
+// ACTIVATE: Purge old caches to keep the app clean.
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
@@ -37,13 +38,18 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+// FETCH: Serve from cache, fallback to network, fallback to index.html for navigation
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
-      // Return cached version or fetch from network
-      return cachedResponse || fetch(event.request).catch(() => {
+      // 1. Return cached version immediately if found
+      if (cachedResponse) return cachedResponse;
+
+      // 2. Otherwise, fetch from network
+      return fetch(event.request).catch(() => {
+        // 3. If offline and navigating, return the shell
         if (event.request.mode === 'navigate') {
           return caches.match("./index.html");
         }
@@ -51,4 +57,4 @@ self.addEventListener("fetch", (event) => {
     })
   );
 });
-                       
+                                     
