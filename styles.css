@@ -373,13 +373,23 @@ to { transform: rotate(360deg); }
 }
 
 /* ==========================================================
-🔘 UNIFIED BUTTON SYSTEM (FIXED)
+🔘 FIXED BOTTOM NAVIGATION CONTAINER
 ========================================================== */
+.study-nav {
+    display: flex !important;           /* Forces buttons into a row */
+    flex-direction: row !important;     /* Ensures left-to-right flow */
+    gap: 10px !important;               /* Space between buttons */
+    width: 100% !important;             /* Takes full width */
+    margin-top: 20px !important;        /* Space from content above */
+}
 
+/* ==========================================================
+🔘 UNIFIED BUTTON SYSTEM
+========================================================== */
 .nav-button,
 .study-nav-button {
-    flex: 1;
-    min-width: 140px;
+    flex: 1;                            /* Each button takes equal space */
+    min-width: 120px;                   /* Prevents buttons from getting too squashed */
     padding: 14px 16px;
     border-radius: 14px;
     border: 1px solid var(--border);
@@ -389,11 +399,10 @@ to { transform: rotate(360deg); }
     font-size: 0.95rem;
     cursor: pointer;
     transition: all 0.2s ease;
-
     display: flex;
     align-items: center;
     justify-content: center;
-    text-align: center; /* Ensures text stays centered */
+    text-align: center;
 }
 
 /* Hover */
@@ -412,7 +421,6 @@ to { transform: rotate(360deg); }
 }
 
 /* Disabled */
-.nav-button:disabled,
 .study-nav-button:disabled {
     opacity: 0.3;
     cursor: not-allowed;
