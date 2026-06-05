@@ -373,12 +373,11 @@ to { transform: rotate(360deg); }
 }
 
 /* ==========================================================
-🔘 UNIFIED BUTTON SYSTEM (SAFE CONTROLLED VERSION)
+🔘 UNIFIED BUTTON SYSTEM (FIXED)
 ========================================================== */
 
 .nav-button,
-.study-nav-button,
-.study-nav-button button {
+.study-nav-button {
     flex: 1;
     min-width: 140px;
     padding: 14px 16px;
@@ -394,6 +393,7 @@ to { transform: rotate(360deg); }
     display: flex;
     align-items: center;
     justify-content: center;
+    text-align: center; /* Ensures text stays centered */
 }
 
 /* Hover */
@@ -418,4 +418,4 @@ to { transform: rotate(360deg); }
     cursor: not-allowed;
     pointer-events: none;
     transform: none !important;
-    }
+}
