@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE_NAME = "mission-cache-v1";
+const CACHE_NAME = "mission-cache-v2";
 
 // Only include files that MUST exist
 const APP_SHELL = [
