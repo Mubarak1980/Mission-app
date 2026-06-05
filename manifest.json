@@ -1,28 +1,36 @@
 {
   "name": "Mission Study Tracker",
   "short_name": "Mission",
-  "description": "Mission App - Smart study tracking system",
+  "description": "Professional study tracking and academic management system designed for students.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui"],
   "orientation": "portrait",
   "background_color": "#0b0f14",
-  "theme_color": "#00d4ff",
+  "theme_color": "#0b0f14",
   "dir": "ltr",
   "lang": "en-US",
+  "categories": ["education", "productivity"],
   "icons": [
     {
       "src": "./icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "maskable"
     },
     {
       "src": "./icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "url": "/",
+      "description": "View your study dashboard"
     }
   ]
 }
