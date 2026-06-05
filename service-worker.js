@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE_NAME = "mission-cache-v44";
+const CACHE_NAME = "mission-cache-v45";
 
 const APP_SHELL = [
   "./",
