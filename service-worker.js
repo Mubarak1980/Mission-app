@@ -1,8 +1,7 @@
 "use strict";
 
-const CACHE_NAME = "mission-cache-v2";
+const CACHE_NAME = "mission-v46"; // Increment this whenever you update your code!
 
-// Only include files that MUST exist
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -18,62 +17,40 @@ const APP_SHELL = [
   "./icon-192.png"
 ];
 
-// ===============================
-// INSTALL
-// ===============================
-self.addEventListener("install", (event) => {
+// Install: Cache shell
+self.addEventListener("install", (e) => {
   self.skipWaiting();
+  e.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
+});
 
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(APP_SHELL);
+// Activate: Cleanup old versions
+self.addEventListener("activate", (e) => {
+  e.waitUntil(
+    caches.keys().then((keys) => Promise.all(
+      keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
+    )).then(() => self.clients.claim())
+  );
+});
+
+// Fetch: Stale-While-Revalidate strategy
+self.addEventListener("fetch", (e) => {
+  if (e.request.method !== "GET") return;
+
+  e.respondWith(
+    caches.open(CACHE_NAME).then(async (cache) => {
+      const cachedResponse = await cache.match(e.request);
+      
+      // Fetch fresh version in background
+      const fetchPromise = fetch(e.request).then((networkResponse) => {
+        if (networkResponse.status === 200) {
+          cache.put(e.request, networkResponse.clone());
+        }
+        return networkResponse;
+      });
+
+      // Return cache immediately (fast), or wait for network (if offline)
+      return cachedResponse || fetchPromise;
     })
   );
 });
-
-// ===============================
-// ACTIVATE
-// ===============================
-self.addEventListener("activate", (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys
-          .filter((key) => key !== CACHE_NAME)
-          .map((key) => caches.delete(key))
-      )
-    ).then(() => self.clients.claim())
-  );
-});
-
-// ===============================
-// FETCH (Offline First Strategy)
-// ===============================
-self.addEventListener("fetch", (event) => {
-  if (event.request.method !== "GET") return;
-
-  event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-
-      return fetch(event.request)
-        .then((response) => {
-          if (!response || response.status !== 200) return response;
-
-          const clone = response.clone();
-
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, clone);
-          });
-
-          return response;
-        })
-        .catch(() => {
-          // If user is offline and navigates, return app shell
-          if (event.request.mode === "navigate") {
-            return caches.match("./index.html");
-          }
-        });
-    })
-  );
-});
+                                 
