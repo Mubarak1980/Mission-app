@@ -1,429 +1,130 @@
 /* ==========================================================
-🌐 ENTERPRISE DESIGN SYSTEM SYSTEM SHIELD VARIABLES
+🌐 DESIGN SYSTEM VARIABLES
 ========================================================== */
 :root {
---bg: #0b0f14;
---card: #121821;
---border: #1f2a36;
---primary: #00d4ff;
---primary-soft: rgba(0, 212, 255, 0.12);
---text: #e6edf3;
---muted: #8b949e;
---border-radius-main: 16px;
---transition-speed: 0.22s;
-
-/* System font stack utilized by elite cross-platform engines */
---font-stack: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    --bg: #0b0f14;
+    --card: #121821;
+    --border: #1f2a36;
+    --primary: #00d4ff;
+    --primary-soft: rgba(0, 212, 255, 0.12);
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --border-radius-main: 16px;
+    --transition-speed: 0.22s;
+    --font-stack: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 /* ==========================================================
-⚠️ DEFENSIVE NATIVE SYSTEM RESET KEYS
+⚠️ GLOBAL RESET
 ========================================================== */
-
-/* FIXED GLOBAL RESET (WAS BROKEN IN YOUR VERSION) */
-*, *::before, *::after {
-box-sizing: border-box;
--webkit-font-smoothing: antialiased;
--moz-osx-font-smoothing: grayscale;
-}
+*, *::before, *::after { box-sizing: border-box; -webkit-font-smoothing: antialiased; }
 
 html, body {
-background: var(--bg);
-margin: 0;
-
-/* Forces rendering layouts to span full physical screen boundaries */
-width: 100vw;
-min-height: 100vh;
-min-height: -webkit-fill-available;
-
-/* Dynamic environmental safe area paddings mapping past notches */
-padding-top: env(safe-area-inset-top, 16px);
-padding-bottom: env(safe-area-inset-bottom, 16px);
-padding-left: env(safe-area-inset-left, 16px);
-padding-right: env(safe-area-inset-right, 16px);
-
-color: var(--text);
-font-family: var(--font-stack);
-
-/* Disables accidental layout breaks and double-tap zoom loops */
-overflow-x: hidden;
-overscroll-behavior-y: none;
--webkit-tap-highlight-color: transparent;
--webkit-text-size-adjust: 100%;
-}
-
-#main-content {
-width: 100%;
-animation: viewTransition 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    background: var(--bg);
+    margin: 0;
+    width: 100vw;
+    min-height: 100vh;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    color: var(--text);
+    font-family: var(--font-stack);
+    overflow-x: hidden;
+    overscroll-behavior-y: none;
 }
 
 /* ==========================================================
-📱 PREMIUM NAVIGATION MODULE LAYOUTS
+🏗️ LAYOUT & SPACING
 ========================================================== */
-.section-buttons, #grade-nav {
-display: flex;
-gap: 10px;
-flex-wrap: wrap;
-margin-bottom: 20px;
-margin-top: 0;
-}
+#main-content { width: 100%; animation: viewTransition 0.25s ease; }
 
-.section-buttons button, #grade-nav button {
-flex: 1;
-min-width: 110px;
-padding: 14px 16px;
-border-radius: 14px;
-border: 1px solid var(--border);
-background: var(--card);
-color: var(--text);
-font-weight: 600;
-font-size: 0.9rem;
-letter-spacing: 0.3px;
-cursor: pointer;
-transition: transform 0.1s ease, background var(--transition-speed) ease, border-color var(--transition-speed) ease, box-shadow var(--transition-speed) ease;
-text-align: center;
-user-select: none;
-touch-action: manipulation;
-}
+/* Apply this class to cards that shouldn't touch the screen edge */
+.content-spacing { margin: 16px 12px; }
 
-.section-buttons button:hover, #grade-nav button:not(:disabled):hover {
-background: var(--primary-soft);
-border-color: var(--primary);
-color: var(--primary);
-}
-
-.section-buttons button:active, #grade-nav button:not(:disabled):active {
-transform: scale(0.97);
-}
-
-.section-buttons button.active, #grade-nav button.active {
-background: linear-gradient(135deg, #007acc, var(--primary)) !important;
-color: #ffffff !important;
-border-color: var(--primary) !important;
-box-shadow: 0 4px 14px rgba(0, 212, 255, 0.25);
-transform: none;
-}
-
-#grade-nav button {
-background: linear-gradient(135deg, #005a9e, #007acc);
-color: #ffffff;
-border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-#grade-nav button:disabled {
-opacity: 0.25;
-cursor: not-allowed;
-transform: none !important;
-pointer-events: none;
-}
+.subjects-container { padding: 0 4px; }
 
 /* ==========================================================
-📦 ARCHITECTURAL CONTAINER CARDS
+📦 ARCHITECTURAL COMPONENTS (Cards & Tables)
 ========================================================== */
-.subject, .quran-progress, .top-student-card, .dashboard-subject {
-background: var(--card);
-border-radius: var(--border-radius-main);
-padding: 20px;
-border: 1px solid var(--border);
-box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
-margin-bottom: 16px;
-transition: border-color var(--transition-speed) ease, box-shadow var(--transition-speed) ease, transform var(--transition-speed) ease;
-position: relative;
+.subject, .quran-progress, .top-student-card, .dashboard-subject, .overall-summary-card {
+    background: var(--card);
+    border-radius: var(--border-radius-main);
+    padding: 20px;
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    margin-bottom: 16px;
+    transition: all var(--transition-speed);
 }
 
-.subject:hover, .quran-progress:hover, .top-student-card:hover, .dashboard-subject:hover {
-border-color: rgba(0, 212, 255, 0.4);
-box-shadow: 0 6px 24px rgba(0, 212, 255, 0.08);
-}
+.subject:hover, .overall-summary-card:hover { border-color: rgba(0, 212, 255, 0.4); }
 
-/* Typography Synchronisation */
-h1 {
-text-align: center;
-font-size: 24px;
-margin-top: 8px;
-margin-bottom: 20px;
-color: var(--primary);
-letter-spacing: 1.2px;
-font-weight: 700;
-}
-
-h2, h3, .subject h3, .dashboard-subject h3, .top-student-card h3 {
-margin-top: 0;
-margin-bottom: 14px;
-color: var(--primary);
-font-size: 18px;
-font-weight: 600;
-letter-spacing: 0.4px;
-}
-
-/* ==========================================================
-✍️ PRODUCTION FORMS & INPUT LAYOUT DESIGN
-========================================================== */
-label {
-display: block;
-margin-bottom: 8px;
-font-size: 13px;
-font-weight: 600;
-color: var(--primary);
-letter-spacing: 0.5px;
-text-transform: uppercase;
-}
-
-input[type="number"], input[type="text"], .subject input, .quran-progress input {
-width: 100%;
-padding: 14px;
-border-radius: 12px;
-border: 1px solid var(--border);
-background: #06090e;
-color: var(--text);
-font-family: var(--font-stack);
-font-size: 1rem;
-font-weight: 600;
-margin-top: 4px;
-margin-bottom: 16px;
-outline: none;
-transition: border var(--transition-speed) ease, box-shadow var(--transition-speed) ease;
-}
-
-input[type="number"]:focus, input[type="text"]:focus {
-border-color: var(--primary);
-box-shadow: 0 0 0 3px var(--primary-soft);
-}
-
-input[readonly] {
-background: rgba(255, 255, 255, 0.01) !important;
-color: var(--muted) !important;
-border-style: dashed !important;
-cursor: not-allowed;
-opacity: 0.7;
-}
-
-/* ==========================================================
-📊 TRACKING METRIC PROGRESS BARS (FIXED)
-========================================================== */
-progress {
-display: block;
-width: 100% !important;
-height: 12px !important;
-border-radius: 10px;
-overflow: hidden;
-border: none;
-background: #19222d !important;
-
-appearance: none;
--webkit-appearance: none;
-}
-
-progress::-webkit-progress-bar {
-background: #19222d;
-border-radius: 10px;
-}
-
-progress::-webkit-progress-value {
-background: linear-gradient(90deg, #00d4ff, #00ffa6) !important;
-border-radius: 10px;
-}
-
-progress::-moz-progress-bar {
-background: linear-gradient(90deg, #00d4ff, #00ffa6) !important;
-border-radius: 10px;
-}
-
-.subject p, .quran-progress p, .dashboard-subject p {
-margin-top: 6px;
-margin-bottom: 0;
-font-size: 12px;
-font-weight: 500;
-color: var(--muted);
-text-align: right;
-}
-
-/* ==========================================================
-📅 RESPONSIVE TABLES & GRIDS
-========================================================== */
-.table-wrapper, .weekly-table-wrapper {
-overflow-x: auto;
-width: 100%;
-border-radius: 12px;
-border: 1px solid var(--border);
-margin-bottom: 16px;
-background: var(--card);
--webkit-overflow-scrolling: touch;
-}
-
-table, .weekly-table {
-width: 100%;
-border-collapse: collapse;
-font-size: 13.5px;
-min-width: 500px;
-}
-
-thead {
-background: #007acc;
-}
-
-th {
-padding: 14px 12px;
-color: #ffffff;
-font-weight: 600;
-text-align: left;
-letter-spacing: 0.3px;
-}
-
-td {
-padding: 14px 12px;
-border-top: 1px solid var(--border);
-color: var(--text);
-}
-
-tr:nth-child(even) {
-background: rgba(255, 255, 255, 0.01);
-}
-
-/* ==========================================================
-🧠 TOP STUDENT MODULE OVERRIDES
-========================================================== */
-.top-student-container {
-max-width: 900px;
-margin: 0 auto;
-}
-
-.top-student-intro {
-text-align: center;
-color: var(--muted);
-font-size: 14px;
-margin-bottom: 20px;
-line-height: 1.6;
-}
-
-.top-student-card ul {
-padding-left: 20px;
-margin: 0;
-}
-
-.top-student-card li {
-margin-bottom: 10px;
-color: var(--text);
-line-height: 1.6;
-}
-
-.top-student-card p {
-color: var(--muted);
-font-size: 13.5px;
-line-height: 1.6;
-text-align: left;
-}
-
-.highlight-card {
-background: linear-gradient(135deg, #006a9e, #00d4ff) !important;
-color: #ffffff !important;
-border: none !important;
-}
-
-.highlight-card h3, .highlight-card p, .highlight-card li {
-color: #ffffff !important;
-}
-
-/* ==========================================================
-⏳ FLUID SPLASH SYSTEMS
-========================================================== */
-#splash-screen {
-position: fixed;
-inset: 0;
-background: var(--bg);
-display: flex;
-justify-content: center;
-align-items: center;
-z-index: 99999;
-opacity: 1;
-visibility: visible;
-transition: opacity 0.25s ease, visibility 0.25s ease;
-}
-
-#splash-screen.hide {
-opacity: 0;
-visibility: hidden;
-pointer-events: none;
-}
-
-.splash-content {
-text-align: center;
-}
-
-.loader {
-width: 44px;
-height: 44px;
-margin: 20px auto 0;
-border: 4px solid var(--border);
-border-top: 4px solid var(--primary);
-border-radius: 50%;
-animation: spin 0.85s linear infinite;
-}
-
-/* ==========================================================
-🎭 ANIMATIONS
-========================================================== */
-@keyframes viewTransition {
-from { opacity: 0; transform: translateY(4px); }
-to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes spin {
-to { transform: rotate(360deg); }
-}
-
-/* ==========================================================
-🔘 FIXED BOTTOM NAVIGATION CONTAINER
-========================================================== */
-.study-nav {
-    display: flex !important;           /* Forces buttons into a row */
-    flex-direction: row !important;     /* Ensures left-to-right flow */
-    gap: 10px !important;               /* Space between buttons */
-    width: 100% !important;             /* Takes full width */
-    margin-top: 20px !important;        /* Space from content above */
-}
+.table-wrapper { overflow-x: auto; background: var(--card); border: 1px solid var(--border); border-radius: 12px; }
+table { width: 100%; border-collapse: collapse; min-width: 500px; }
+th, td { padding: 14px 12px; border-top: 1px solid var(--border); }
 
 /* ==========================================================
 🔘 UNIFIED BUTTON SYSTEM
 ========================================================== */
-.nav-button,
-.study-nav-button {
-    flex: 1;                            /* Each button takes equal space */
-    min-width: 120px;                   /* Prevents buttons from getting too squashed */
+.section-buttons, .study-nav, #grade-nav {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin: 16px 4px;
+}
+
+.nav-button, .study-nav-button, .section-buttons button, #grade-nav button {
+    flex: 1;
+    min-width: 120px;
     padding: 14px 16px;
     border-radius: 14px;
     border: 1px solid var(--border);
     background: var(--card);
     color: var(--text);
     font-weight: 600;
-    font-size: 0.95rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--transition-speed);
     display: flex;
     align-items: center;
     justify-content: center;
-    text-align: center;
 }
 
-/* Hover */
-.nav-button:hover:not(:disabled),
-.study-nav-button:hover:not(:disabled) {
+.nav-button:hover:not(:disabled), .study-nav-button:hover:not(:disabled) {
     background: var(--primary-soft);
     border-color: var(--primary);
     color: var(--primary);
     transform: translateY(-1px);
 }
 
-/* Click */
-.nav-button:active:not(:disabled),
-.study-nav-button:active:not(:disabled) {
-    transform: scale(0.97);
+.nav-button:active:not(:disabled), .study-nav-button:active:not(:disabled) { transform: scale(0.97); }
+
+.nav-button:disabled, .study-nav-button:disabled { opacity: 0.3; cursor: not-allowed; pointer-events: none; }
+
+/* ==========================================================
+✍️ FORMS & TRACKING
+========================================================== */
+input[type="number"], input[type="text"] {
+    width: 100%; padding: 14px; border-radius: 12px; border: 1px solid var(--border);
+    background: #06090e; color: var(--text); font-size: 1rem; margin: 4px 0 16px 0;
 }
 
-/* Disabled */
-.study-nav-button:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-    pointer-events: none;
-    transform: none !important;
+progress {
+    display: block; width: 100%; height: 12px; border-radius: 10px; overflow: hidden;
+    background: #19222d; appearance: none;
 }
+
+progress::-webkit-progress-value { background: linear-gradient(90deg, #00d4ff, #00ffa6); border-radius: 10px; }
+
+/* ==========================================================
+⏳ ANIMATIONS & UTILITIES
+========================================================== */
+@keyframes viewTransition { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+#splash-screen {
+    position: fixed; inset: 0; background: var(--bg); display: flex;
+    justify-content: center; align-items: center; z-index: 99999;
+}
+
+.loader {
+    width: 44px; height: 44px; margin: 20px auto 0;
+    border: 4px solid var(--border); border-top: 4px solid var(--primary);
+    border-radius: 50%; animation: spin 0.85s linear infinite;
+    }
