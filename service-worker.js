@@ -1,29 +1,27 @@
 "use strict";
 
-const CACHE_NAME = "mission-v46"; // Increment this whenever you update your code!
+const CACHE_NAME = "mission-v47";
 
 const APP_SHELL = [
-  "./",
-  "./index.html",
-  "./styles.css",
-  "./main.js",
-  "./Study-tracker.js",
-  "./SmartEngine.js",
-  "./dashboard.js",
-  "./weekly-timetable.js",
-  "./top-student-mode.js",
-  "./Sunnah-tracker.js",
-  "./manifest.json",
-  "./icon-192.png"
+  "/",
+  "/index.html",
+  "/styles.css",
+  "/main.js",
+  "/Study-tracker.js",
+  "/SmartEngine.js",
+  "/dashboard.js",
+  "/weekly-timetable.js",
+  "/top-student-mode.js",
+  "/Sunnah-tracker.js",
+  "/manifest.json",
+  "/icon-192.png"
 ];
 
-// Install: Cache shell
 self.addEventListener("install", (e) => {
   self.skipWaiting();
   e.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
 });
 
-// Activate: Cleanup old versions
 self.addEventListener("activate", (e) => {
   e.waitUntil(
     caches.keys().then((keys) => Promise.all(
@@ -32,25 +30,22 @@ self.addEventListener("activate", (e) => {
   );
 });
 
-// Fetch: Stale-While-Revalidate strategy
 self.addEventListener("fetch", (e) => {
-  if (e.request.method !== "GET") return;
+  // 1. Navigation fallback for SPA
+  if (e.request.mode === 'navigate') {
+    e.respondWith(caches.match("/"));
+    return;
+  }
 
+  // 2. Network-first strategy for dynamic performance
   e.respondWith(
-    caches.open(CACHE_NAME).then(async (cache) => {
-      const cachedResponse = await cache.match(e.request);
-      
-      // Fetch fresh version in background
-      const fetchPromise = fetch(e.request).then((networkResponse) => {
-        if (networkResponse.status === 200) {
-          cache.put(e.request, networkResponse.clone());
-        }
+    fetch(e.request)
+      .then((networkResponse) => {
+        const responseClone = networkResponse.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(e.request, responseClone));
         return networkResponse;
-      });
-
-      // Return cache immediately (fast), or wait for network (if offline)
-      return cachedResponse || fetchPromise;
-    })
+      })
+      .catch(() => caches.match(e.request)) // Fallback to cache if offline
   );
 });
-                                 
+        
