@@ -3,18 +3,18 @@
 const CACHE_NAME = "mission-v49";
 
 const APP_SHELL = [
-  "/",
-  "/index.html",
-  "/styles.css",
-  "/main.js",
-  "/Study-tracker.js",
-  "/SmartEngine.js",
-  "/dashboard.js",
-  "/weekly-timetable.js",
-  "/top-student-mode.js",
-  "/Sunnah-tracker.js",
-  "/manifest.json",
-  "/icon-192.png"
+  "./",
+  "./index.html",
+  "./styles.css",
+  "./main.js",
+  "./Study-tracker.js",
+  "./SmartEngine.js",
+  "./dashboard.js",
+  "./weekly-timetable.js",
+  "./top-student-mode.js",
+  "./Sunnah-tracker.js",
+  "./manifest.json",
+  "./icon-192.png"
 ];
 
 self.addEventListener("install", (e) => {
@@ -33,7 +33,7 @@ self.addEventListener("activate", (e) => {
 self.addEventListener("fetch", (e) => {
   // Navigation fallback: Always return index.html for page navigation
   if (e.request.mode === 'navigate') {
-    e.respondWith(caches.match("/"));
+    e.respondWith(caches.match("./index.html"));
     return;
   }
 
