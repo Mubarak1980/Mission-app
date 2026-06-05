@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE_NAME = "mission-v47";
+const CACHE_NAME = "mission-v48";
 
 const APP_SHELL = [
   "/",
@@ -31,21 +31,23 @@ self.addEventListener("activate", (e) => {
 });
 
 self.addEventListener("fetch", (e) => {
-  // 1. Navigation fallback for SPA
+  // Navigation fallback: Always return index.html for page navigation
   if (e.request.mode === 'navigate') {
     e.respondWith(caches.match("/"));
     return;
   }
 
-  // 2. Network-first strategy for dynamic performance
+  // Network-first strategy: Try network, fallback to cache
   e.respondWith(
     fetch(e.request)
       .then((networkResponse) => {
-        const responseClone = networkResponse.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(e.request, responseClone));
+        // Cache the response if it's a valid file
+        if (networkResponse && networkResponse.status === 200) {
+          const responseClone = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(e.request, responseClone));
+        }
         return networkResponse;
       })
-      .catch(() => caches.match(e.request)) // Fallback to cache if offline
+      .catch(() => caches.match(e.request))
   );
 });
-        
