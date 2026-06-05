@@ -8,11 +8,11 @@
     <!-- PWA MANIFEST -->
     <link rel="manifest" href="./manifest.json">
     
-    <!-- SERVICE WORKER REGISTRATION (ROOT SCOPE) -->
+    <!-- SERVICE WORKER REGISTRATION (RELATIVE SCOPE) -->
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener("load", () => {
-                navigator.serviceWorker.register('/service-worker.js', { scope: '/' })
+                navigator.serviceWorker.register('./service-worker.js', { scope: './' })
                     .then(() => console.log("SW registered successfully"))
                     .catch(err => console.error("SW Registration failed:", err));
             });
@@ -118,5 +118,4 @@ window.addEventListener("DOMContentLoaded", () => {
 </script>
 
 </body>
-    </html>
-    
+</html>
