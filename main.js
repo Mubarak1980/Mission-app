@@ -37,9 +37,7 @@ window.SectionMap = {
     sunnah: "loadSunnahTracker"
 };
 
-// ===============================
 // 4. SAFE INITIALIZATION GATE (PWA FIX)
-// ===============================
 function waitForSystemReady(callback) {
     const check = () => {
         const ready =
@@ -58,7 +56,7 @@ function waitForSystemReady(callback) {
     check();
 }
 
-// 4. CENTRAL LOADER (WITH SAFETY GUARD)
+// 5. CENTRAL LOADER (WITH SAFETY GUARD)
 window.loadSection = (type, grade = 9) => {
     const main = document.getElementById("main-content");
     if (!main) return;
@@ -71,6 +69,13 @@ window.loadSection = (type, grade = 9) => {
     }
 
     const fnName = window.SectionMap[type];
+
+    // STABILITY CHECK: Ensure module function is defined
+    if (typeof window[fnName] !== 'function') {
+        console.warn(`Module ${fnName} not yet ready, retrying...`);
+        setTimeout(() => window.loadSection(type, grade), 150);
+        return;
+    }
 
     if (typeof window[fnName] === 'function') {
         try {
@@ -92,7 +97,7 @@ window.loadSection = (type, grade = 9) => {
     }
 };
 
-// 5. INITIALIZATION (PWA SAFE BOOT)
+// 6. INITIALIZATION (PWA SAFE BOOT)
 document.addEventListener("DOMContentLoaded", () => {
 
     waitForSystemReady(() => {
@@ -101,3 +106,4 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
 });
+    
