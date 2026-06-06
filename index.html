@@ -7,8 +7,7 @@
 
     <!-- PWA MANIFEST -->
     <link rel="manifest" href="./manifest.json">
-    
-    <!-- SERVICE WORKER REGISTRATION (RELATIVE SCOPE) -->
+
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener("load", () => {
@@ -19,18 +18,15 @@
         }
     </script>
 
-    <!-- PWA META TAGS -->
     <meta name="theme-color" content="#0b0f14" />
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Mission">
-    
-    <!-- ICONS -->
+
     <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png" />
     <link rel="apple-touch-icon" href="./icon-192.png" />
 
-    <!-- STYLES -->
     <link rel="stylesheet" href="./styles.css" />
 </head>
 
@@ -40,34 +36,70 @@
 <div id="splash-screen">
     <div class="splash-content">
         <h1>📘 Mission App</h1>
-        <p style="color: #8b949e; font-weight: 500;">Initializing Dashboard...</p>
+        <p style="color:#8b949e;font-weight:500;">Initializing Dashboard...</p>
         <div class="loader"></div>
     </div>
 </div>
 
 <!-- MAIN APP -->
-<div id="app" style="display: none; opacity: 0; transition: opacity 0.25s ease;">
+<div id="app" style="display:none; opacity:0; transition:opacity .25s ease;">
 
     <h1 id="app-time-heading">MISSION</h1>
 
-    <!-- GLOBAL NAVIGATION -->
+    <!-- TOP NAV (UNCHANGED - KEEP YOUR SYSTEM) -->
     <nav id="app-navigation-container" class="section-buttons">
+
         <button data-target="study" class="nav-button">Study Tracker</button>
         <button data-target="timetable" class="nav-button">Weekly Timetable</button>
         <button data-target="dashboard" class="nav-button">Dashboard</button>
         <button data-target="topstudent" class="nav-button">Top Student Mode</button>
         <button data-target="sunnah" class="nav-button">Sunnah Tracker</button>
+
     </nav>
 
-    <!-- GRADE PROGRESS -->
-    <div id="grade-progress-container" style="width: 100%; box-sizing: border-box; padding: 0 4px;">
+    <!-- PROGRESS -->
+    <div id="grade-progress-container"
+         style="width:100%;box-sizing:border-box;padding:0 4px;">
         <div id="grade-progress-bar"></div>
     </div>
 
-    <!-- DYNAMIC CONTENT -->
+    <!-- MAIN CONTENT -->
     <main id="main-content"></main>
 
 </div>
+
+<!-- ==========================================================
+📱 NEW: BOTTOM NAVIGATION (ADDED - SAFE EXTENSION ONLY)
+========================================================== -->
+
+<nav class="bottom-nav" id="bottom-nav">
+
+    <button data-target="study" aria-label="Study Tracker">
+        📘
+        <span>Study</span>
+    </button>
+
+    <button data-target="timetable" aria-label="Weekly Timetable">
+        📅
+        <span>Plan</span>
+    </button>
+
+    <button data-target="dashboard" aria-label="Dashboard">
+        📊
+        <span>Dashboard</span>
+    </button>
+
+    <button data-target="topstudent" aria-label="Top Student Mode">
+        🏆
+        <span>Top</span>
+    </button>
+
+    <button data-target="sunnah" aria-label="Sunnah Tracker">
+        🕌
+        <span>Faith</span>
+    </button>
+
+</nav>
 
 <!-- SCRIPTS -->
 <script src="./Study-tracker.js"></script>
@@ -81,25 +113,50 @@
 <script>
 "use strict";
 
-// INSTALL PROMPT HANDLER
-let deferredPrompt;
-window.addEventListener("beforeinstallprompt", (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-    console.log("Install prompt is ready to trigger");
-});
+/* ==========================================================
+🧭 SAFE NAV SYNC (NO BREAKING CHANGES)
+========================================================== */
+function syncActiveNav(target) {
 
-// BOOT SYSTEM
+    document.querySelectorAll("[data-target]")
+        .forEach(btn => {
+            btn.classList.toggle(
+                "active",
+                btn.dataset.target === target
+            );
+        });
+}
+
+/* ==========================================================
+⚡ BOOT
+========================================================== */
 window.addEventListener("DOMContentLoaded", () => {
-    document.getElementById("app-navigation-container")?.addEventListener("click", (e) => {
+
+    const nav = document.getElementById("app-navigation-container");
+    const bottomNav = document.getElementById("bottom-nav");
+
+    function handleNavClick(e) {
         const btn = e.target.closest("button");
-        if (btn?.dataset.target) {
-            window.loadSection(btn.dataset.target, window.UI.load().grade);
-        }
-    });
+        if (!btn?.dataset.target) return;
+
+        const target = btn.dataset.target;
+
+        syncActiveNav(target);
+
+        window.loadSection(target, window.UI.load().grade);
+    }
+
+    nav?.addEventListener("click", handleNavClick);
+    bottomNav?.addEventListener("click", handleNavClick);
 
     const waitForSystem = () => {
-        const ready = window.DataService && window.maxPagesByGrade && window.SmartEngine;
+
+        const ready =
+            window.DataService &&
+            window.maxPagesByGrade &&
+            window.SmartEngine &&
+            typeof window.loadSection === "function";
+
         if (!ready) {
             setTimeout(waitForSystem, 50);
             return;
@@ -107,15 +164,27 @@ window.addEventListener("DOMContentLoaded", () => {
 
         const splash = document.getElementById("splash-screen");
         const app = document.getElementById("app");
+
         if (splash && app) {
-            splash.style.display = "none";
-            app.style.display = "block";
-            app.style.opacity = "1";
+            splash.style.opacity = "0";
+
+            setTimeout(() => {
+                splash.style.display = "none";
+                app.style.display = "block";
+                app.style.opacity = "1";
+            }, 250);
         }
+
+        const last = window.UI.load()?.section || "study";
+
+        syncActiveNav(last);
+
+        window.loadSection(last, window.UI.load().grade);
     };
+
     waitForSystem();
 });
 </script>
 
 </body>
-</html>
+    </html>
