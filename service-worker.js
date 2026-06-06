@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE_NAME = "mission-v53";
+const CACHE_NAME = "mission-v54";
 
 const APP_SHELL = [
   "./",
@@ -14,7 +14,8 @@ const APP_SHELL = [
   "./top-student-mode.js",
   "./Sunnah-tracker.js",
   "./manifest.json",
-  "./icon-192.png"
+  "./icon-192.png",
+  "./icon-512.png"
 ];
 
 self.addEventListener("install", (e) => {
@@ -51,3 +52,4 @@ self.addEventListener("fetch", (e) => {
       .catch(() => caches.match(e.request))
   );
 });
+                                                            
