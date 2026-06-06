@@ -1,6 +1,7 @@
 /* ==========================================================
-🌐 PROFESSIONAL PREMIUM DESIGN SYSTEM
+🌐 PROFESSIONAL PREMIUM DESIGN SYSTEM (UPGRADED v2)
 ========================================================== */
+
 :root{
     --bg:#070b11;
     --card:#101722;
@@ -36,6 +37,7 @@
 /* ==========================================================
 ⚠️ GLOBAL RESET
 ========================================================== */
+
 *,
 *::before,
 *::after{
@@ -46,7 +48,7 @@
 html,
 body{
     margin:0;
-    width:100vw;
+    width:100%;
     min-height:100vh;
 
     background:var(--bg);
@@ -64,56 +66,38 @@ body{
         0;
 
     background-image:
-        radial-gradient(
-            circle at top,
-            rgba(0,212,255,.08),
-            transparent 40%
-        );
+        radial-gradient(circle at top, rgba(0,212,255,.08), transparent 40%);
 }
 
 /* ==========================================================
 🏗️ LAYOUT
 ========================================================== */
+
 #main-content{
     width:100%;
     animation:viewTransition .25s ease;
 }
 
-.view-container{
+.view-container,
+.subjects-container,
+.top-student-container{
     width:100%;
     padding:16px;
-}
-
-.subjects-container{
-    padding:0 16px;
-}
-
-.top-student-container{
-    padding:0 16px;
 }
 
 /* ==========================================================
 📝 HEADINGS
 ========================================================== */
+
 h1{
-    display:block;
     width:100%;
-
     margin:20px auto;
-
     text-align:center;
 
     font-size:clamp(1.8rem,4vw,2.6rem);
     font-weight:800;
-    letter-spacing:.5px;
 
-    background:
-        linear-gradient(
-            90deg,
-            #00d4ff,
-            #00ffa6
-        );
-
+    background:linear-gradient(90deg,#00d4ff,#00ffa6);
     -webkit-background-clip:text;
     -webkit-text-fill-color:transparent;
 }
@@ -121,6 +105,7 @@ h1{
 /* ==========================================================
 📦 CARDS
 ========================================================== */
+
 .subject,
 .quran-progress,
 .top-student-card,
@@ -128,32 +113,20 @@ h1{
 .overall-summary-card{
 
     background:
-        linear-gradient(
-            180deg,
-            rgba(255,255,255,.03),
-            rgba(255,255,255,.01)
-        ),
+        linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.01)),
         var(--card);
 
     border:1px solid var(--border);
-
     border-radius:var(--border-radius-main);
 
     padding:20px;
-
     margin-bottom:16px;
 
     backdrop-filter:blur(12px);
 
-    box-shadow:
-        var(--shadow-md),
-        inset 0 1px 0 rgba(255,255,255,.04);
+    box-shadow:var(--shadow-md), inset 0 1px 0 rgba(255,255,255,.04);
 
-    transition:
-        transform .22s ease,
-        border-color .22s ease,
-        box-shadow .22s ease,
-        background .22s ease;
+    transition:all .22s ease;
 }
 
 .subject:hover,
@@ -163,28 +136,22 @@ h1{
 .overall-summary-card:hover{
 
     transform:translateY(-3px);
-
     background:var(--card-hover);
-
     border-color:rgba(0,212,255,.4);
 
-    box-shadow:
-        var(--shadow-lg),
-        0 0 20px rgba(0,212,255,.08);
+    box-shadow:var(--shadow-lg), 0 0 20px rgba(0,212,255,.08);
 }
 
 /* ==========================================================
 📊 TABLES
 ========================================================== */
+
 .table-wrapper{
     overflow-x:auto;
-
     margin:0 16px;
 
     background:var(--card);
-
     border:1px solid var(--border);
-
     border-radius:16px;
 
     box-shadow:var(--shadow-sm);
@@ -196,8 +163,7 @@ table{
     border-collapse:collapse;
 }
 
-th,
-td{
+th,td{
     padding:14px 12px;
     border-top:1px solid var(--border);
 }
@@ -213,36 +179,52 @@ tr:hover{
 }
 
 /* ==========================================================
-🎓 TOP STUDENT
+🔘 NAVIGATION BASE (CLEAN UNIFIED SYSTEM)
 ========================================================== */
-.top-student-intro{
-    color:var(--muted);
-    font-size:1.05rem;
-    line-height:1.6;
-    margin-bottom:24px;
-}
 
-.top-student-card h4{
-    color:var(--primary);
-
-    margin:20px 0 10px;
-
-    padding-bottom:6px;
-
-    border-bottom:1px solid var(--border);
-}
-
-/* ==========================================================
-🔘 BUTTON SYSTEM
-========================================================== */
 .section-buttons,
 .study-nav,
 #grade-nav{
+
     display:flex;
     flex-wrap:wrap;
     gap:10px;
+
     margin:16px;
+
+    position:relative;
 }
+
+/* ==========================================================
+📱 PREMIUM BOTTOM NAV DOCK (STUDY TRACKER)
+========================================================== */
+
+.study-nav,
+.section-buttons,
+#grade-nav{
+
+    position:sticky;
+    bottom:0;
+
+    padding:12px 12px calc(14px + env(safe-area-inset-bottom));
+
+    background:rgba(16,23,34,.75);
+    backdrop-filter:blur(22px);
+
+    border-top:1px solid rgba(36,50,66,.6);
+
+    border-radius:18px 18px 0 0;
+
+    box-shadow:
+        0 -12px 40px rgba(0,0,0,.45),
+        inset 0 1px 0 rgba(255,255,255,.04);
+
+    z-index:60;
+}
+
+/* ==========================================================
+🔘 NAV BUTTONS (UNIFIED PREMIUM STYLE)
+========================================================== */
 
 .nav-button,
 .study-nav-button,
@@ -250,73 +232,102 @@ tr:hover{
 #grade-nav button{
 
     flex:1;
-    min-width:120px;
+    min-width:86px;
 
-    padding:14px 16px;
+    padding:12px 10px;
+
+    border-radius:14px;
 
     display:flex;
     align-items:center;
     justify-content:center;
 
+    font-weight:700;
+    font-size:.85rem;
+
     cursor:pointer;
 
     color:var(--text);
 
-    font-weight:700;
-    letter-spacing:.3px;
+    border:1px solid rgba(36,50,66,.9);
 
-    border-radius:14px;
+    background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02));
 
-    border:1px solid var(--border);
+    box-shadow:0 6px 16px rgba(0,0,0,.22);
 
-    background:
-        linear-gradient(
-            180deg,
-            rgba(255,255,255,.04),
-            rgba(255,255,255,.01)
-        );
-
-    box-shadow:
-        0 2px 10px rgba(0,0,0,.15);
-
-    transition:all var(--transition-speed);
+    transition:all .2s ease;
 }
 
+/* ==========================================================
+✨ HOVER
+========================================================== */
+
 .nav-button:hover:not(:disabled),
-.study-nav-button:hover:not(:disabled){
+.study-nav-button:hover:not(:disabled),
+.section-buttons button:hover:not(:disabled),
+#grade-nav button:hover:not(:disabled){
 
     transform:translateY(-2px);
 
+    border-color:var(--primary);
     color:var(--primary);
 
-    background:var(--primary-soft);
+    background:rgba(0,212,255,.10);
 
-    border-color:var(--primary);
-
-    box-shadow:
-        0 8px 24px rgba(0,212,255,.18);
+    box-shadow:0 10px 26px rgba(0,212,255,.18);
 }
+
+/* ==========================================================
+👆 ACTIVE PRESS
+========================================================== */
 
 .nav-button:active:not(:disabled),
-.study-nav-button:active:not(:disabled){
-    transform:scale(.97);
+.study-nav-button:active:not(:disabled),
+.section-buttons button:active:not(:disabled),
+#grade-nav button:active:not(:disabled){
+
+    transform:scale(.96);
 }
 
+/* ==========================================================
+🚫 DISABLED
+========================================================== */
+
 .nav-button:disabled,
-.study-nav-button:disabled{
+.study-nav-button:disabled,
+.section-buttons button:disabled,
+#grade-nav button:disabled{
+
     opacity:.35;
-    cursor:not-allowed;
     pointer-events:none;
+}
+
+/* ==========================================================
+🟢 ACTIVE STATE
+========================================================== */
+
+.nav-button.active,
+.study-nav-button.active,
+.section-buttons button.active,
+#grade-nav button.active{
+
+    border-color:var(--primary);
+    background:rgba(0,212,255,.14);
+    color:var(--primary);
+
+    box-shadow:
+        0 0 0 2px rgba(0,212,255,.14),
+        0 10px 28px rgba(0,212,255,.12);
 }
 
 /* ==========================================================
 ✍️ INPUTS
 ========================================================== */
+
 input[type="number"],
 input[type="text"]{
 
     width:100%;
-
     margin:4px 0 16px;
 
     padding:14px;
@@ -324,69 +335,47 @@ input[type="text"]{
     font-size:1rem;
 
     color:var(--text);
-
     background:#081019;
 
     border:1px solid var(--border);
-
     border-radius:12px;
 
-    transition:
-        border-color .2s,
-        box-shadow .2s;
+    transition:.2s;
 }
 
-input[type="number"]:focus,
-input[type="text"]:focus{
+input:focus{
 
     outline:none;
-
     border-color:var(--primary);
 
-    box-shadow:
-        0 0 0 3px rgba(0,212,255,.15);
+    box-shadow:0 0 0 3px rgba(0,212,255,.15);
 }
 
 /* ==========================================================
 📈 PROGRESS BAR
 ========================================================== */
-progress{
-    display:block;
 
+progress{
     width:100%;
     height:14px;
 
+    border-radius:999px;
     overflow:hidden;
 
-    border-radius:999px;
-
-    background:#16202d;
-
     appearance:none;
-}
-
-progress::-webkit-progress-bar{
     background:#16202d;
 }
 
 progress::-webkit-progress-value{
 
-    border-radius:999px;
-
-    background:
-        linear-gradient(
-            90deg,
-            #00d4ff,
-            #00ffa6
-        );
-
-    box-shadow:
-        0 0 12px rgba(0,212,255,.4);
+    background:linear-gradient(90deg,#00d4ff,#00ffa6);
+    box-shadow:0 0 12px rgba(0,212,255,.4);
 }
 
 /* ==========================================================
 🖱️ SCROLLBAR
 ========================================================== */
+
 ::-webkit-scrollbar{
     width:8px;
 }
@@ -405,28 +394,18 @@ progress::-webkit-progress-value{
 }
 
 /* ==========================================================
-⏳ ANIMATIONS
+⏳ ANIMATION
 ========================================================== */
-@keyframes viewTransition{
-    from{
-        opacity:0;
-        transform:translateY(6px);
-    }
-    to{
-        opacity:1;
-        transform:translateY(0);
-    }
-}
 
-@keyframes spin{
-    to{
-        transform:rotate(360deg);
-    }
+@keyframes viewTransition{
+    from{opacity:0;transform:translateY(6px);}
+    to{opacity:1;transform:translateY(0);}
 }
 
 /* ==========================================================
 🚀 SPLASH SCREEN
 ========================================================== */
+
 #splash-screen{
 
     position:fixed;
@@ -436,196 +415,27 @@ progress::-webkit-progress-value{
     justify-content:center;
     align-items:center;
 
+    background:radial-gradient(circle,#0f1725,#070b11);
+
     z-index:99999;
-
-    background:
-        radial-gradient(
-            circle at center,
-            #0f1725,
-            #070b11
-        );
-
-    backdrop-filter:blur(8px);
 }
 
 /* ==========================================================
 🔄 LOADER
 ========================================================== */
+
 .loader{
 
     width:54px;
     height:54px;
 
-    margin:20px auto 0;
-
     border-radius:50%;
-
     border:4px solid rgba(255,255,255,.08);
     border-top:4px solid var(--primary);
 
     animation:spin .8s linear infinite;
-
-    box-shadow:
-        0 0 20px rgba(0,212,255,.25);
-            }
-
-
-                          /* ==========================================================
-📱 STUDY TRACKER BOTTOM NAV (PROFESSIONAL UPGRADE V2)
-========================================================== */
-
-.study-nav,
-.section-buttons,
-#grade-nav {
-
-    /* Make it feel like a fixed control panel */
-    position: sticky;
-    bottom: 0;
-
-    display: flex;
-    gap: 10px;
-
-    padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
-
-    margin: 18px 0 0;
-
-    background: rgba(16, 23, 34, 0.88);
-    backdrop-filter: blur(18px);
-
-    border-top: 1px solid var(--border);
-
-    z-index: 60;
-
-    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.35);
 }
 
-/* ==========================================================
-🔘 BUTTON BASE IMPROVEMENT (SMART TOUCH UX)
-========================================================== */
-
-.study-nav-button,
-.section-buttons button,
-#grade-nav button,
-.nav-button {
-
-    flex: 1;
-    min-width: 90px;
-
-    padding: 14px 12px;
-
-    border-radius: 14px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    gap: 6px;
-
-    font-weight: 700;
-    font-size: 0.88rem;
-
-    letter-spacing: 0.2px;
-
-    cursor: pointer;
-
-    color: var(--text);
-
-    border: 1px solid var(--border);
-
-    background: linear-gradient(
-        180deg,
-        rgba(255,255,255,.05),
-        rgba(255,255,255,.02)
-    );
-
-    box-shadow: 0 6px 18px rgba(0,0,0,.18);
-
-    transition: all 0.2s ease;
-}
-
-/* ==========================================================
-✨ HOVER STATE (CLEAN + MODERN)
-========================================================== */
-
-.study-nav-button:hover:not(:disabled),
-.section-buttons button:hover:not(:disabled),
-#grade-nav button:hover:not(:disabled),
-.nav-button:hover:not(:disabled) {
-
-    transform: translateY(-2px);
-
-    border-color: var(--primary);
-
-    color: var(--primary);
-
-    background: var(--primary-soft);
-
-    box-shadow: 0 10px 26px rgba(0,212,255,.18);
-}
-
-/* ==========================================================
-👆 ACTIVE PRESS FEEDBACK (MOBILE FEEL)
-========================================================== */
-
-.study-nav-button:active:not(:disabled),
-.section-buttons button:active:not(:disabled),
-#grade-nav button:active:not(:disabled),
-.nav-button:active:not(:disabled) {
-
-    transform: scale(0.96);
-}
-
-/* ==========================================================
-🚫 DISABLED STATE (CLEAR VISUAL SIGNAL)
-========================================================== */
-
-.study-nav-button:disabled,
-.section-buttons button:disabled,
-#grade-nav button:disabled,
-.nav-button:disabled {
-
-    opacity: 0.35;
-    cursor: not-allowed;
-    pointer-events: none;
-}
-
-/* ==========================================================
-🟢 ACTIVE STATE (IMPORTANT FOR FLOW TRACKING)
-========================================================== */
-
-.study-nav-button.active,
-.section-buttons button.active,
-#grade-nav button.active,
-.nav-button.active {
-
-    border-color: var(--primary);
-    background: rgba(0,212,255,.12);
-    color: var(--primary);
-
-    box-shadow: 0 0 0 2px rgba(0,212,255,.12);
-}
-
-/* ==========================================================
-📱 MOBILE OPTIMIZATION
-========================================================== */
-
-@media (max-width: 600px) {
-
-    .study-nav,
-    .section-buttons,
-    #grade-nav {
-
-        gap: 8px;
-        padding: 10px;
-    }
-
-    .study-nav-button,
-    .section-buttons button,
-    #grade-nav button,
-    .nav-button {
-
-        font-size: 0.8rem;
-        padding: 12px 10px;
-        min-width: 80px;
-    }
-}
+@keyframes spin{
+    to{transform:rotate(360deg);}
+                               }
