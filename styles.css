@@ -468,3 +468,164 @@ progress::-webkit-progress-value{
     box-shadow:
         0 0 20px rgba(0,212,255,.25);
             }
+
+
+                          /* ==========================================================
+📱 STUDY TRACKER BOTTOM NAV (PROFESSIONAL UPGRADE V2)
+========================================================== */
+
+.study-nav,
+.section-buttons,
+#grade-nav {
+
+    /* Make it feel like a fixed control panel */
+    position: sticky;
+    bottom: 0;
+
+    display: flex;
+    gap: 10px;
+
+    padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
+
+    margin: 18px 0 0;
+
+    background: rgba(16, 23, 34, 0.88);
+    backdrop-filter: blur(18px);
+
+    border-top: 1px solid var(--border);
+
+    z-index: 60;
+
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.35);
+}
+
+/* ==========================================================
+🔘 BUTTON BASE IMPROVEMENT (SMART TOUCH UX)
+========================================================== */
+
+.study-nav-button,
+.section-buttons button,
+#grade-nav button,
+.nav-button {
+
+    flex: 1;
+    min-width: 90px;
+
+    padding: 14px 12px;
+
+    border-radius: 14px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    gap: 6px;
+
+    font-weight: 700;
+    font-size: 0.88rem;
+
+    letter-spacing: 0.2px;
+
+    cursor: pointer;
+
+    color: var(--text);
+
+    border: 1px solid var(--border);
+
+    background: linear-gradient(
+        180deg,
+        rgba(255,255,255,.05),
+        rgba(255,255,255,.02)
+    );
+
+    box-shadow: 0 6px 18px rgba(0,0,0,.18);
+
+    transition: all 0.2s ease;
+}
+
+/* ==========================================================
+✨ HOVER STATE (CLEAN + MODERN)
+========================================================== */
+
+.study-nav-button:hover:not(:disabled),
+.section-buttons button:hover:not(:disabled),
+#grade-nav button:hover:not(:disabled),
+.nav-button:hover:not(:disabled) {
+
+    transform: translateY(-2px);
+
+    border-color: var(--primary);
+
+    color: var(--primary);
+
+    background: var(--primary-soft);
+
+    box-shadow: 0 10px 26px rgba(0,212,255,.18);
+}
+
+/* ==========================================================
+👆 ACTIVE PRESS FEEDBACK (MOBILE FEEL)
+========================================================== */
+
+.study-nav-button:active:not(:disabled),
+.section-buttons button:active:not(:disabled),
+#grade-nav button:active:not(:disabled),
+.nav-button:active:not(:disabled) {
+
+    transform: scale(0.96);
+}
+
+/* ==========================================================
+🚫 DISABLED STATE (CLEAR VISUAL SIGNAL)
+========================================================== */
+
+.study-nav-button:disabled,
+.section-buttons button:disabled,
+#grade-nav button:disabled,
+.nav-button:disabled {
+
+    opacity: 0.35;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* ==========================================================
+🟢 ACTIVE STATE (IMPORTANT FOR FLOW TRACKING)
+========================================================== */
+
+.study-nav-button.active,
+.section-buttons button.active,
+#grade-nav button.active,
+.nav-button.active {
+
+    border-color: var(--primary);
+    background: rgba(0,212,255,.12);
+    color: var(--primary);
+
+    box-shadow: 0 0 0 2px rgba(0,212,255,.12);
+}
+
+/* ==========================================================
+📱 MOBILE OPTIMIZATION
+========================================================== */
+
+@media (max-width: 600px) {
+
+    .study-nav,
+    .section-buttons,
+    #grade-nav {
+
+        gap: 8px;
+        padding: 10px;
+    }
+
+    .study-nav-button,
+    .section-buttons button,
+    #grade-nav button,
+    .nav-button {
+
+        font-size: 0.8rem;
+        padding: 12px 10px;
+        min-width: 80px;
+    }
+}
