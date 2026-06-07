@@ -1,11 +1,11 @@
 "use strict";
 
 /* ==========================================================
-🚀 MISSION APP SERVICE WORKER v2
-OFFLINE-FIRST + AUTO UPDATE + SAFE FALLBACK
+🚀 MISSION APP SERVICE WORKER v2.1 (IMPROVED)
+OFFLINE-FIRST + ROBUST INSTALL + SAFE NAVIGATION
 ========================================================== */
 
-const CACHE_NAME = "mission-v64";
+const CACHE_NAME = "mission-v65";
 
 const APP_SHELL = [
     "./",
@@ -27,7 +27,7 @@ const APP_SHELL = [
 ];
 
 /* ==========================================================
-📦 INSTALL
+📦 INSTALL (ROBUST VERSION)
 ========================================================== */
 
 self.addEventListener("install", (event) => {
@@ -35,8 +35,17 @@ self.addEventListener("install", (event) => {
     self.skipWaiting();
 
     event.waitUntil(
-        caches.open(CACHE_NAME)
-            .then(cache => cache.addAll(APP_SHELL))
+        caches.open(CACHE_NAME).then(async (cache) => {
+
+            // Safer than addAll (prevents full failure)
+            for (const file of APP_SHELL) {
+                try {
+                    await cache.add(file);
+                } catch (err) {
+                    console.warn("Cache failed:", file, err);
+                }
+            }
+        })
     );
 });
 
@@ -47,22 +56,18 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
 
     event.waitUntil(
-        caches.keys()
-            .then(keys =>
-                Promise.all(
-                    keys
-                        .filter(key => key !== CACHE_NAME)
-                        .map(key => caches.delete(key))
-                )
+        caches.keys().then(keys =>
+            Promise.all(
+                keys
+                    .filter(k => k !== CACHE_NAME)
+                    .map(k => caches.delete(k))
             )
-            .then(() => self.clients.claim())
+        ).then(() => self.clients.claim())
     );
 });
 
 /* ==========================================================
-🌐 FETCH HANDLER
-CACHE FIRST FOR APP FILES
-NETWORK FALLBACK FOR EVERYTHING ELSE
+🌐 FETCH HANDLER (IMPROVED OFFLINE RESILIENCE)
 ========================================================== */
 
 self.addEventListener("fetch", (event) => {
@@ -70,21 +75,20 @@ self.addEventListener("fetch", (event) => {
     const request = event.request;
 
     /* ------------------------------------------
-       PAGE NAVIGATION
+       NAVIGATION REQUESTS
+       (FULL OFFLINE SAFE FALLBACK CHAIN)
     ------------------------------------------ */
 
     if (request.mode === "navigate") {
 
         event.respondWith(
             caches.match("./index.html")
-                .then(cached => {
+                .then((cached) => {
 
-                    if (cached) {
-                        return cached;
-                    }
+                    return cached || fetch(request).catch(() => {
+                        return cached || caches.match("./index.html");
+                    });
 
-                    return fetch(request)
-                        .catch(() => caches.match("./index.html"));
                 })
         );
 
@@ -92,82 +96,46 @@ self.addEventListener("fetch", (event) => {
     }
 
     /* ------------------------------------------
-       APP SHELL FILES
-       CACHE FIRST
+       CACHE-FIRST WITH NETWORK UPDATE
     ------------------------------------------ */
 
     event.respondWith(
 
-        caches.match(request)
+        caches.match(request).then((cached) => {
 
-            .then(cachedResponse => {
+            const networkFetch = fetch(request)
+                .then((networkResponse) => {
 
-                if (cachedResponse) {
-
-                    fetch(request)
-                        .then(networkResponse => {
-
-                            if (
-                                networkResponse &&
-                                networkResponse.status === 200
-                            ) {
-
-                                caches.open(CACHE_NAME)
-                                    .then(cache =>
-                                        cache.put(
-                                            request,
-                                            networkResponse.clone()
-                                        )
-                                    );
-                            }
-
-                        })
-                        .catch(() => {});
-
-                    return cachedResponse;
-                }
-
-                return fetch(request)
-
-                    .then(networkResponse => {
-
-                        if (
-                            networkResponse &&
-                            networkResponse.status === 200
-                        ) {
-
-                            const clone =
-                                networkResponse.clone();
-
-                            caches.open(CACHE_NAME)
-                                .then(cache =>
-                                    cache.put(request, clone)
-                                );
-                        }
-
-                        return networkResponse;
-                    })
-
-                    .catch(() => {
-
-                        if (
-                            request.destination === "document"
-                        ) {
-                            return caches.match("./index.html");
-                        }
-
-                        return new Response("", {
-                            status: 404,
-                            statusText: "Offline"
+                    if (networkResponse && networkResponse.status === 200) {
+                        caches.open(CACHE_NAME).then(cache => {
+                            cache.put(request, networkResponse.clone());
                         });
-                    });
+                    }
 
-            })
+                    return networkResponse;
+                })
+                .catch(() => null);
+
+            // Return cache immediately if exists
+            return cached || networkFetch;
+
+        }).catch(() => {
+
+            if (request.destination === "document") {
+                return caches.match("./index.html");
+            }
+
+            return new Response("", {
+                status: 408,
+                statusText: "Offline"
+            });
+
+        })
     );
 });
 
 /* ==========================================================
-📩 OPTIONAL: FORCE UPDATE SUPPORT
+📩 FORCE UPDATE SUPPORT
 ========================================================== */
 
 self.addEventListener("message", (event) => {
