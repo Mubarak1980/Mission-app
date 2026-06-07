@@ -1,55 +1,178 @@
 "use strict";
 
-const CACHE_NAME = "mission-v62";
+/* ==========================================================
+🚀 MISSION APP SERVICE WORKER v2
+OFFLINE-FIRST + AUTO UPDATE + SAFE FALLBACK
+========================================================== */
+
+const CACHE_NAME = "mission-v63";
 
 const APP_SHELL = [
-  "./",
-  "./index.html",
-  "./styles.css",
-  "./main.js",
-  "./Study-tracker.js",
-  "./SmartEngine.js",
-  "./dashboard.js",
-  "./weekly-timetable.js",
-  "./top-student-mode.js",
-  "./Sunnah-tracker.js",
-  "./manifest.json",
-  "./icon-192.png",
-  "./icon-512.png"
+    "./",
+    "./index.html",
+    "./styles.css",
+
+    "./main.js",
+    "./Study-tracker.js",
+    "./SmartEngine.js",
+    "./dashboard.js",
+    "./weekly-timetable.js",
+    "./top-student-mode.js",
+    "./Sunnah-tracker.js",
+
+    "./manifest.json",
+
+    "./icon-192.png",
+    "./icon-512.png"
 ];
 
-self.addEventListener("install", (e) => {
-  self.skipWaiting();
-  e.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
+/* ==========================================================
+📦 INSTALL
+========================================================== */
+
+self.addEventListener("install", (event) => {
+
+    self.skipWaiting();
+
+    event.waitUntil(
+        caches.open(CACHE_NAME)
+            .then(cache => cache.addAll(APP_SHELL))
+    );
 });
 
-self.addEventListener("activate", (e) => {
-  e.waitUntil(
-    caches.keys().then((keys) => Promise.all(
-      keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
-    )).then(() => self.clients.claim())
-  );
+/* ==========================================================
+🔄 ACTIVATE
+========================================================== */
+
+self.addEventListener("activate", (event) => {
+
+    event.waitUntil(
+        caches.keys()
+            .then(keys =>
+                Promise.all(
+                    keys
+                        .filter(key => key !== CACHE_NAME)
+                        .map(key => caches.delete(key))
+                )
+            )
+            .then(() => self.clients.claim())
+    );
 });
 
-self.addEventListener("fetch", (e) => {
-  // Navigation fallback: Always return index.html for page navigation
-  if (e.request.mode === 'navigate') {
-    e.respondWith(caches.match("./index.html"));
-    return;
-  }
+/* ==========================================================
+🌐 FETCH HANDLER
+CACHE FIRST FOR APP FILES
+NETWORK FALLBACK FOR EVERYTHING ELSE
+========================================================== */
 
-  // Network-first strategy: Try network, fallback to cache
-  e.respondWith(
-    fetch(e.request)
-      .then((networkResponse) => {
-        // Cache the response if it's a valid file
-        if (networkResponse && networkResponse.status === 200) {
-          const responseClone = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(e.request, responseClone));
-        }
-        return networkResponse;
-      })
-      .catch(() => caches.match(e.request))
-  );
+self.addEventListener("fetch", (event) => {
+
+    const request = event.request;
+
+    /* ------------------------------------------
+       PAGE NAVIGATION
+    ------------------------------------------ */
+
+    if (request.mode === "navigate") {
+
+        event.respondWith(
+            caches.match("./index.html")
+                .then(cached => {
+
+                    if (cached) {
+                        return cached;
+                    }
+
+                    return fetch(request)
+                        .catch(() => caches.match("./index.html"));
+                })
+        );
+
+        return;
+    }
+
+    /* ------------------------------------------
+       APP SHELL FILES
+       CACHE FIRST
+    ------------------------------------------ */
+
+    event.respondWith(
+
+        caches.match(request)
+
+            .then(cachedResponse => {
+
+                if (cachedResponse) {
+
+                    fetch(request)
+                        .then(networkResponse => {
+
+                            if (
+                                networkResponse &&
+                                networkResponse.status === 200
+                            ) {
+
+                                caches.open(CACHE_NAME)
+                                    .then(cache =>
+                                        cache.put(
+                                            request,
+                                            networkResponse.clone()
+                                        )
+                                    );
+                            }
+
+                        })
+                        .catch(() => {});
+
+                    return cachedResponse;
+                }
+
+                return fetch(request)
+
+                    .then(networkResponse => {
+
+                        if (
+                            networkResponse &&
+                            networkResponse.status === 200
+                        ) {
+
+                            const clone =
+                                networkResponse.clone();
+
+                            caches.open(CACHE_NAME)
+                                .then(cache =>
+                                    cache.put(request, clone)
+                                );
+                        }
+
+                        return networkResponse;
+                    })
+
+                    .catch(() => {
+
+                        if (
+                            request.destination === "document"
+                        ) {
+                            return caches.match("./index.html");
+                        }
+
+                        return new Response("", {
+                            status: 404,
+                            statusText: "Offline"
+                        });
+                    });
+
+            })
+    );
 });
-                                                            
+
+/* ==========================================================
+📩 OPTIONAL: FORCE UPDATE SUPPORT
+========================================================== */
+
+self.addEventListener("message", (event) => {
+
+    if (event.data === "SKIP_WAITING") {
+        self.skipWaiting();
+    }
+});
