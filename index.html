@@ -7,14 +7,14 @@
 
     <!-- PWA MANIFEST -->
     <link rel="manifest" href="./manifest.json">
-    
-    <!-- SERVICE WORKER REGISTRATION (RELATIVE SCOPE) -->
+
+    <!-- SAFE SERVICE WORKER REGISTRATION -->
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener("load", () => {
                 navigator.serviceWorker.register('./service-worker.js', { scope: './' })
                     .then(() => console.log("SW registered successfully"))
-                    .catch(err => console.error("SW Registration failed:", err));
+                    .catch(err => console.warn("SW Registration failed (offline still works):", err));
             });
         }
     </script>
@@ -25,7 +25,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Mission">
-    
+
     <!-- ICONS -->
     <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png" />
     <link rel="apple-touch-icon" href="./icon-192.png" />
@@ -81,16 +81,22 @@
 <script>
 "use strict";
 
-// INSTALL PROMPT HANDLER
+// INSTALL PROMPT
 let deferredPrompt;
 window.addEventListener("beforeinstallprompt", (e) => {
     e.preventDefault();
     deferredPrompt = e;
-    console.log("Install prompt is ready to trigger");
 });
 
-// BOOT SYSTEM
+// ======================================================
+// 🚀 SAFE BOOT ENGINE (OFFLINE-FIRST)
+// ======================================================
 window.addEventListener("DOMContentLoaded", () => {
+
+    const splash = document.getElementById("splash-screen");
+    const app = document.getElementById("app");
+
+    // NAVIGATION
     document.getElementById("app-navigation-container")?.addEventListener("click", (e) => {
         const btn = e.target.closest("button");
         if (btn?.dataset.target) {
@@ -98,24 +104,62 @@ window.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    const waitForSystem = () => {
-        const ready = window.DataService && window.maxPagesByGrade && window.SmartEngine;
-        if (!ready) {
-            setTimeout(waitForSystem, 50);
-            return;
+    // ==================================================
+    // ⚡ INSTANT OFFLINE BOOT (NO HARD DEPENDENCY)
+    // ==================================================
+    const bootApp = () => {
+
+        try {
+            const lastUI = window.UI?.load?.() || { section: "study", grade: 9 };
+
+            if (typeof window.loadSection === "function") {
+                window.loadSection(lastUI.section, lastUI.grade);
+            }
+
+        } catch (err) {
+            console.warn("Boot error:", err);
         }
 
-        const splash = document.getElementById("splash-screen");
-        const app = document.getElementById("app");
+        // ALWAYS SHOW APP (NO FREEZE)
         if (splash && app) {
             splash.style.display = "none";
             app.style.display = "block";
             app.style.opacity = "1";
         }
     };
-    waitForSystem();
+
+    // ==================================================
+    // 🧠 SAFE SYSTEM CHECK (NON-BLOCKING)
+    // ==================================================
+    let tries = 0;
+    const maxTries = 20;
+
+    const waitSystem = setInterval(() => {
+
+        tries++;
+
+        const ready =
+            window.DataService &&
+            typeof window.loadSection === "function";
+
+        if (ready || tries >= maxTries) {
+            clearInterval(waitSystem);
+            bootApp();
+        }
+
+    }, 100);
+
+    // ==================================================
+    // ⛑️ EMERGENCY BOOT (NEVER GET STUCK)
+    // ==================================================
+    setTimeout(() => {
+        if (app.style.display === "none") {
+            console.warn("Emergency boot triggered");
+            bootApp();
+        }
+    }, 5000);
 });
 </script>
 
 </body>
-    </html>
+</html>
