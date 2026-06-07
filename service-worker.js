@@ -5,7 +5,7 @@
 OFFLINE-FIRST + AUTO UPDATE + SAFE FALLBACK
 ========================================================== */
 
-const CACHE_NAME = "mission-v63";
+const CACHE_NAME = "mission-v64";
 
 const APP_SHELL = [
     "./",
