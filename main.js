@@ -234,12 +234,35 @@ function waitForSystemReady(callback) {
 }
 
 // ======================================================
-// 6. START APP
+// 6. PERSISTENT STORAGE REQUEST (BROWSER PERMISSION)
+// ======================================================
+async function requestPersistentStorage() {
+    if (navigator.storage && navigator.storage.persist) {
+        try {
+            const isPersisted = await navigator.storage.persist();
+            if (isPersisted) {
+                console.log("✅ PERSISTENT STORAGE GRANTED! Data will survive Chrome cleanup.");
+            } else {
+                console.log("⚠️ Persistent storage not granted (but IndexedDB still protects data)");
+            }
+        } catch (err) {
+            console.warn("Persistent storage request failed:", err);
+        }
+    } else {
+        console.log("ℹ️ Persistent storage not available in this browser");
+    }
+}
+
+// ======================================================
+// 7. START APP
 // ======================================================
 document.addEventListener("DOMContentLoaded", () => {
     waitForSystemReady(() => {
         const lastUI = window.UI.load();
         window.loadSection(lastUI.section, lastUI.grade);
+        
+        // Request persistent storage after app boots
+        requestPersistentStorage();
     });
 });
 
