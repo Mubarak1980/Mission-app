@@ -1,5 +1,5 @@
 /* ==========================================================
-🌐 PROFESSIONAL PREMIUM DESIGN SYSTEM (OPTIMIZED)
+🌐 PROFESSIONAL PREMIUM DESIGN SYSTEM (IMPROVED STABLE VERSION)
 ========================================================== */
 :root{
     --bg:#070b11;
@@ -34,7 +34,7 @@
 }
 
 /* ==========================================================
-⚠️ GLOBAL RESET (FIXED MOBILE SCROLL ISSUES)
+⚠️ GLOBAL RESET (FIXED SCROLL + MOBILE STABILITY)
 ========================================================== */
 *,
 *::before,
@@ -52,7 +52,6 @@ html{
 body{
     margin:0;
 
-    /* FIX: prevents width overflow on some Android devices */
     width:100%;
     min-height:100vh;
 
@@ -61,16 +60,15 @@ body{
 
     font-family:var(--font-stack);
 
-    /* FIX: prevents horizontal scroll glitches */
+    /* FIX: prevents horizontal scroll bug on Android */
     overflow-x:hidden;
-
-    /* FIX: improves mobile scroll stability */
     overflow-y:auto;
-    -webkit-overflow-scrolling:touch;
 
+    /* FIX: smoother mobile scrolling */
+    -webkit-overflow-scrolling:touch;
     overscroll-behavior-y:none;
 
-    /* FIX: safer mobile viewport handling */
+    /* FIX: prevents layout jump on mobile UI bar */
     padding:
         env(safe-area-inset-top)
         0
@@ -84,16 +82,17 @@ body{
             transparent 40%
         );
 
-    /* FIX: improves GPU rendering */
+    /* GPU acceleration */
     transform:translateZ(0);
 }
 
 /* ==========================================================
-🏗️ LAYOUT (STABLE RENDERING)
+🏗️ LAYOUT (SMOOTHER RENDERING)
 ========================================================== */
 #main-content{
     width:100%;
     animation:viewTransition .25s ease;
+
     will-change:opacity, transform;
 }
 
@@ -105,7 +104,7 @@ body{
 }
 
 /* ==========================================================
-📝 HEADINGS (SMOOTHER TEXT RENDERING)
+📝 HEADINGS (SMOOTH TEXT)
 ========================================================== */
 h1{
     display:block;
@@ -123,12 +122,11 @@ h1{
     -webkit-background-clip:text;
     -webkit-text-fill-color:transparent;
 
-    /* FIX: smoother rendering on Android */
     transform:translateZ(0);
 }
 
 /* ==========================================================
-📦 CARDS (GPU SMOOTH HOVER FIX)
+📦 CARDS (GPU SMOOTH + NO JITTER)
 ========================================================== */
 .subject,
 .quran-progress,
@@ -162,7 +160,7 @@ h1{
         box-shadow .22s ease,
         background .22s ease;
 
-    /* FIX: smoother animation on low-end devices */
+    /* FIX: smoother animation on weak devices */
     will-change:transform;
     transform:translateZ(0);
 }
@@ -184,7 +182,7 @@ h1{
 }
 
 /* ==========================================================
-📊 TABLES (MOBILE SCROLL FIX)
+📊 TABLES (FIX MOBILE SCROLL)
 ========================================================== */
 .table-wrapper{
     overflow-x:auto;
@@ -195,6 +193,7 @@ h1{
     background:var(--card);
     border:1px solid var(--border);
     border-radius:16px;
+
     box-shadow:var(--shadow-sm);
 }
 
@@ -205,7 +204,7 @@ table{
 }
 
 /* ==========================================================
-🔘 BUTTON SYSTEM (ANTI-JITTER FIX)
+🔘 BUTTONS (TOUCH FIX)
 ========================================================== */
 .nav-button,
 .study-nav-button,
@@ -224,12 +223,10 @@ table{
     cursor:pointer;
 
     color:var(--text);
-
     font-weight:700;
     letter-spacing:.3px;
 
     border-radius:14px;
-
     border:1px solid var(--border);
 
     background:
@@ -239,12 +236,61 @@ table{
 
     transition:all var(--transition-speed);
 
-    /* FIX: smooth mobile tap response */
+    /* FIX: better mobile tap handling */
     touch-action:manipulation;
 }
 
+.nav-button:hover:not(:disabled),
+.study-nav-button:hover:not(:disabled){
+    transform:translateY(-2px);
+    color:var(--primary);
+    background:var(--primary-soft);
+    border-color:var(--primary);
+    box-shadow:0 8px 24px rgba(0,212,255,.18);
+}
+
+.nav-button:active:not(:disabled),
+.study-nav-button:active:not(:disabled){
+    transform:scale(.97);
+}
+
+.nav-button:disabled,
+.study-nav-button:disabled{
+    opacity:.35;
+    cursor:not-allowed;
+    pointer-events:none;
+}
+
 /* ==========================================================
-📈 PROGRESS BAR (SMOOTHER)
+✍️ INPUTS
+========================================================== */
+input[type="number"],
+input[type="text"]{
+
+    width:100%;
+    margin:4px 0 16px;
+    padding:14px;
+
+    font-size:1rem;
+
+    color:var(--text);
+    background:#081019;
+
+    border:1px solid var(--border);
+    border-radius:12px;
+
+    transition:border-color .2s, box-shadow .2s;
+}
+
+input[type="number"]:focus,
+input[type="text"]:focus{
+    outline:none;
+    border-color:var(--primary);
+    box-shadow:0 0 0 3px rgba(0,212,255,.15);
+}
+
+/* ==========================================================
+📈 PROGRESS BAR
 ========================================================== */
 progress{
     display:block;
@@ -276,6 +322,10 @@ progress{
     border-radius:999px;
 }
 
+::-webkit-scrollbar-thumb:hover{
+    background:var(--primary);
+}
+
 /* ==========================================================
 ⏳ ANIMATIONS (GPU SAFE)
 ========================================================== */
@@ -297,10 +347,9 @@ progress{
 }
 
 /* ==========================================================
-🚀 SPLASH SCREEN (STABLE ON ALL PHONES)
+🚀 SPLASH SCREEN (NO SCROLL BLOCK ISSUES)
 ========================================================== */
 #splash-screen{
-
     position:fixed;
     inset:0;
 
@@ -310,12 +359,10 @@ progress{
 
     z-index:99999;
 
-    background:
-        radial-gradient(circle at center,#0f1725,#070b11);
+    background:radial-gradient(circle at center,#0f1725,#070b11);
 
     backdrop-filter:blur(8px);
 
-    /* FIX: prevents scroll interference */
     touch-action:none;
 }
 
@@ -323,7 +370,6 @@ progress{
 🔄 LOADER
 ========================================================== */
 .loader{
-
     width:54px;
     height:54px;
 
