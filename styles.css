@@ -1,7 +1,6 @@
 /* ==========================================================
-🌐 PROFESSIONAL PREMIUM DESIGN SYSTEM (IMPROVED MOBILE FIXED)
+🌐 PROFESSIONAL PREMIUM DESIGN SYSTEM (OPTIMIZED)
 ========================================================== */
-
 :root{
     --bg:#070b11;
     --card:#101722;
@@ -35,39 +34,43 @@
 }
 
 /* ==========================================================
-⚠️ GLOBAL RESET (FIXED SCROLL SYSTEM)
+⚠️ GLOBAL RESET (FIXED MOBILE SCROLL ISSUES)
 ========================================================== */
-
 *,
 *::before,
 *::after{
     box-sizing:border-box;
     -webkit-font-smoothing:antialiased;
+    -webkit-tap-highlight-color:transparent;
 }
 
-/* IMPORTANT FIXES FOR MOBILE SCROLL */
 html{
     height:100%;
-    overflow-x:hidden;
+    scroll-behavior:smooth;
 }
 
 body{
     margin:0;
 
-    width:100%;              /* FIX: removed 100vw */
-    min-height:100dvh;       /* FIX: stable mobile viewport */
+    /* FIX: prevents width overflow on some Android devices */
+    width:100%;
+    min-height:100vh;
 
     background:var(--bg);
     color:var(--text);
 
     font-family:var(--font-stack);
 
+    /* FIX: prevents horizontal scroll glitches */
     overflow-x:hidden;
+
+    /* FIX: improves mobile scroll stability */
     overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
 
-    -webkit-overflow-scrolling:touch; /* smooth mobile scroll */
-    overscroll-behavior-y:contain;
+    overscroll-behavior-y:none;
 
+    /* FIX: safer mobile viewport handling */
     padding:
         env(safe-area-inset-top)
         0
@@ -80,21 +83,18 @@ body{
             rgba(0,212,255,.08),
             transparent 40%
         );
-}
 
-/* Prevent ANY horizontal overflow globally */
-body, html {
-    max-width:100%;
+    /* FIX: improves GPU rendering */
+    transform:translateZ(0);
 }
 
 /* ==========================================================
-🏗️ LAYOUT
+🏗️ LAYOUT (STABLE RENDERING)
 ========================================================== */
-
 #main-content{
     width:100%;
-    min-height:100%;
     animation:viewTransition .25s ease;
+    will-change:opacity, transform;
 }
 
 .view-container,
@@ -105,12 +105,12 @@ body, html {
 }
 
 /* ==========================================================
-📝 HEADINGS
+📝 HEADINGS (SMOOTHER TEXT RENDERING)
 ========================================================== */
-
 h1{
     display:block;
     width:100%;
+
     margin:20px auto;
     text-align:center;
 
@@ -119,14 +119,17 @@ h1{
     letter-spacing:.5px;
 
     background:linear-gradient(90deg,#00d4ff,#00ffa6);
+
     -webkit-background-clip:text;
     -webkit-text-fill-color:transparent;
+
+    /* FIX: smoother rendering on Android */
+    transform:translateZ(0);
 }
 
 /* ==========================================================
-📦 CARDS
+📦 CARDS (GPU SMOOTH HOVER FIX)
 ========================================================== */
-
 .subject,
 .quran-progress,
 .top-student-card,
@@ -134,11 +137,14 @@ h1{
 .overall-summary-card{
 
     background:
-        linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.01)),
+        linear-gradient(
+            180deg,
+            rgba(255,255,255,.03),
+            rgba(255,255,255,.01)
+        ),
         var(--card);
 
     border:1px solid var(--border);
-
     border-radius:var(--border-radius-main);
 
     padding:20px;
@@ -146,9 +152,19 @@ h1{
 
     backdrop-filter:blur(12px);
 
-    box-shadow:var(--shadow-md), inset 0 1px 0 rgba(255,255,255,.04);
+    box-shadow:
+        var(--shadow-md),
+        inset 0 1px 0 rgba(255,255,255,.04);
 
-    transition:all .22s ease;
+    transition:
+        transform .22s ease,
+        border-color .22s ease,
+        box-shadow .22s ease,
+        background .22s ease;
+
+    /* FIX: smoother animation on low-end devices */
+    will-change:transform;
+    transform:translateZ(0);
 }
 
 .subject:hover,
@@ -157,16 +173,19 @@ h1{
 .dashboard-subject:hover,
 .overall-summary-card:hover{
 
-    transform:translateY(-3px);
+    transform:translate3d(0,-3px,0);
+
     background:var(--card-hover);
     border-color:rgba(0,212,255,.4);
-    box-shadow:var(--shadow-lg),0 0 20px rgba(0,212,255,.08);
+
+    box-shadow:
+        var(--shadow-lg),
+        0 0 20px rgba(0,212,255,.08);
 }
 
 /* ==========================================================
-📊 TABLES (MOBILE SAFE SCROLL)
+📊 TABLES (MOBILE SCROLL FIX)
 ========================================================== */
-
 .table-wrapper{
     overflow-x:auto;
     -webkit-overflow-scrolling:touch;
@@ -174,11 +193,8 @@ h1{
     margin:0 16px;
 
     background:var(--card);
-
     border:1px solid var(--border);
-
     border-radius:16px;
-
     box-shadow:var(--shadow-sm);
 }
 
@@ -189,18 +205,8 @@ table{
 }
 
 /* ==========================================================
-🔘 BUTTON SYSTEM
+🔘 BUTTON SYSTEM (ANTI-JITTER FIX)
 ========================================================== */
-
-.section-buttons,
-.study-nav,
-#grade-nav{
-    display:flex;
-    flex-wrap:wrap;
-    gap:10px;
-    margin:16px;
-}
-
 .nav-button,
 .study-nav-button,
 .section-buttons button,
@@ -218,56 +224,117 @@ table{
     cursor:pointer;
 
     color:var(--text);
+
     font-weight:700;
+    letter-spacing:.3px;
 
     border-radius:14px;
+
     border:1px solid var(--border);
 
-    background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.01));
+    background:
+        linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.01));
+
+    box-shadow:0 2px 10px rgba(0,0,0,.15);
 
     transition:all var(--transition-speed);
+
+    /* FIX: smooth mobile tap response */
+    touch-action:manipulation;
 }
 
 /* ==========================================================
-⏳ ANIMATIONS
+📈 PROGRESS BAR (SMOOTHER)
 ========================================================== */
+progress{
+    display:block;
+    width:100%;
+    height:14px;
 
+    overflow:hidden;
+    border-radius:999px;
+
+    background:#16202d;
+
+    appearance:none;
+    -webkit-appearance:none;
+}
+
+/* ==========================================================
+🖱️ SCROLLBAR (SAFE)
+========================================================== */
+::-webkit-scrollbar{
+    width:8px;
+}
+
+::-webkit-scrollbar-track{
+    background:var(--bg);
+}
+
+::-webkit-scrollbar-thumb{
+    background:var(--border-light);
+    border-radius:999px;
+}
+
+/* ==========================================================
+⏳ ANIMATIONS (GPU SAFE)
+========================================================== */
 @keyframes viewTransition{
-    from{opacity:0; transform:translateY(6px);}
-    to{opacity:1; transform:translateY(0);}
+    from{
+        opacity:0;
+        transform:translate3d(0,6px,0);
+    }
+    to{
+        opacity:1;
+        transform:translate3d(0,0,0);
+    }
 }
 
 @keyframes spin{
-    to{transform:rotate(360deg);}
+    to{
+        transform:rotate(360deg);
+    }
 }
 
 /* ==========================================================
-🚀 SPLASH SCREEN
+🚀 SPLASH SCREEN (STABLE ON ALL PHONES)
 ========================================================== */
-
 #splash-screen{
+
     position:fixed;
     inset:0;
+
     display:flex;
     justify-content:center;
     align-items:center;
+
     z-index:99999;
 
-    background:radial-gradient(circle,#0f1725,#070b11);
+    background:
+        radial-gradient(circle at center,#0f1725,#070b11);
+
+    backdrop-filter:blur(8px);
+
+    /* FIX: prevents scroll interference */
+    touch-action:none;
 }
 
 /* ==========================================================
 🔄 LOADER
 ========================================================== */
-
 .loader{
+
     width:54px;
     height:54px;
+
     margin:20px auto 0;
 
     border-radius:50%;
+
     border:4px solid rgba(255,255,255,.08);
     border-top:4px solid var(--primary);
 
     animation:spin .8s linear infinite;
+
+    box-shadow:0 0 20px rgba(0,212,255,.25);
 }
