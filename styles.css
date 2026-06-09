@@ -1,6 +1,7 @@
 /* ==========================================================
-🌐 PROFESSIONAL PREMIUM DESIGN SYSTEM
+🌐 PROFESSIONAL PREMIUM DESIGN SYSTEM (IMPROVED MOBILE FIXED)
 ========================================================== */
+
 :root{
     --bg:#070b11;
     --card:#101722;
@@ -34,8 +35,9 @@
 }
 
 /* ==========================================================
-⚠️ GLOBAL RESET
+⚠️ GLOBAL RESET (FIXED SCROLL SYSTEM)
 ========================================================== */
+
 *,
 *::before,
 *::after{
@@ -43,11 +45,17 @@
     -webkit-font-smoothing:antialiased;
 }
 
-html,
+/* IMPORTANT FIXES FOR MOBILE SCROLL */
+html{
+    height:100%;
+    overflow-x:hidden;
+}
+
 body{
     margin:0;
-    width:100vw;
-    min-height:100vh;
+
+    width:100%;              /* FIX: removed 100vw */
+    min-height:100dvh;       /* FIX: stable mobile viewport */
 
     background:var(--bg);
     color:var(--text);
@@ -55,7 +63,10 @@ body{
     font-family:var(--font-stack);
 
     overflow-x:hidden;
-    overscroll-behavior-y:none;
+    overflow-y:auto;
+
+    -webkit-overflow-scrolling:touch; /* smooth mobile scroll */
+    overscroll-behavior-y:contain;
 
     padding:
         env(safe-area-inset-top)
@@ -71,49 +82,43 @@ body{
         );
 }
 
+/* Prevent ANY horizontal overflow globally */
+body, html {
+    max-width:100%;
+}
+
 /* ==========================================================
 🏗️ LAYOUT
 ========================================================== */
+
 #main-content{
     width:100%;
+    min-height:100%;
     animation:viewTransition .25s ease;
 }
 
-.view-container{
+.view-container,
+.subjects-container,
+.top-student-container{
     width:100%;
     padding:16px;
-}
-
-.subjects-container{
-    padding:0 16px;
-}
-
-.top-student-container{
-    padding:0 16px;
 }
 
 /* ==========================================================
 📝 HEADINGS
 ========================================================== */
+
 h1{
     display:block;
     width:100%;
-
     margin:20px auto;
-
     text-align:center;
 
     font-size:clamp(1.8rem,4vw,2.6rem);
     font-weight:800;
     letter-spacing:.5px;
 
-    background:
-        linear-gradient(
-            90deg,
-            #00d4ff,
-            #00ffa6
-        );
-
+    background:linear-gradient(90deg,#00d4ff,#00ffa6);
     -webkit-background-clip:text;
     -webkit-text-fill-color:transparent;
 }
@@ -121,6 +126,7 @@ h1{
 /* ==========================================================
 📦 CARDS
 ========================================================== */
+
 .subject,
 .quran-progress,
 .top-student-card,
@@ -128,11 +134,7 @@ h1{
 .overall-summary-card{
 
     background:
-        linear-gradient(
-            180deg,
-            rgba(255,255,255,.03),
-            rgba(255,255,255,.01)
-        ),
+        linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.01)),
         var(--card);
 
     border:1px solid var(--border);
@@ -140,20 +142,13 @@ h1{
     border-radius:var(--border-radius-main);
 
     padding:20px;
-
     margin-bottom:16px;
 
     backdrop-filter:blur(12px);
 
-    box-shadow:
-        var(--shadow-md),
-        inset 0 1px 0 rgba(255,255,255,.04);
+    box-shadow:var(--shadow-md), inset 0 1px 0 rgba(255,255,255,.04);
 
-    transition:
-        transform .22s ease,
-        border-color .22s ease,
-        box-shadow .22s ease,
-        background .22s ease;
+    transition:all .22s ease;
 }
 
 .subject:hover,
@@ -163,21 +158,18 @@ h1{
 .overall-summary-card:hover{
 
     transform:translateY(-3px);
-
     background:var(--card-hover);
-
     border-color:rgba(0,212,255,.4);
-
-    box-shadow:
-        var(--shadow-lg),
-        0 0 20px rgba(0,212,255,.08);
+    box-shadow:var(--shadow-lg),0 0 20px rgba(0,212,255,.08);
 }
 
 /* ==========================================================
-📊 TABLES
+📊 TABLES (MOBILE SAFE SCROLL)
 ========================================================== */
+
 .table-wrapper{
     overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
 
     margin:0 16px;
 
@@ -196,45 +188,10 @@ table{
     border-collapse:collapse;
 }
 
-th,
-td{
-    padding:14px 12px;
-    border-top:1px solid var(--border);
-}
-
-th{
-    color:var(--primary);
-    background:rgba(0,212,255,.06);
-    font-weight:700;
-}
-
-tr:hover{
-    background:rgba(255,255,255,.02);
-}
-
-/* ==========================================================
-🎓 TOP STUDENT
-========================================================== */
-.top-student-intro{
-    color:var(--muted);
-    font-size:1.05rem;
-    line-height:1.6;
-    margin-bottom:24px;
-}
-
-.top-student-card h4{
-    color:var(--primary);
-
-    margin:20px 0 10px;
-
-    padding-bottom:6px;
-
-    border-bottom:1px solid var(--border);
-}
-
 /* ==========================================================
 🔘 BUTTON SYSTEM
 ========================================================== */
+
 .section-buttons,
 .study-nav,
 #grade-nav{
@@ -261,210 +218,56 @@ tr:hover{
     cursor:pointer;
 
     color:var(--text);
-
     font-weight:700;
-    letter-spacing:.3px;
 
     border-radius:14px;
-
     border:1px solid var(--border);
 
-    background:
-        linear-gradient(
-            180deg,
-            rgba(255,255,255,.04),
-            rgba(255,255,255,.01)
-        );
-
-    box-shadow:
-        0 2px 10px rgba(0,0,0,.15);
+    background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.01));
 
     transition:all var(--transition-speed);
-}
-
-.nav-button:hover:not(:disabled),
-.study-nav-button:hover:not(:disabled){
-
-    transform:translateY(-2px);
-
-    color:var(--primary);
-
-    background:var(--primary-soft);
-
-    border-color:var(--primary);
-
-    box-shadow:
-        0 8px 24px rgba(0,212,255,.18);
-}
-
-.nav-button:active:not(:disabled),
-.study-nav-button:active:not(:disabled){
-    transform:scale(.97);
-}
-
-.nav-button:disabled,
-.study-nav-button:disabled{
-    opacity:.35;
-    cursor:not-allowed;
-    pointer-events:none;
-}
-
-/* ==========================================================
-✍️ INPUTS
-========================================================== */
-input[type="number"],
-input[type="text"]{
-
-    width:100%;
-
-    margin:4px 0 16px;
-
-    padding:14px;
-
-    font-size:1rem;
-
-    color:var(--text);
-
-    background:#081019;
-
-    border:1px solid var(--border);
-
-    border-radius:12px;
-
-    transition:
-        border-color .2s,
-        box-shadow .2s;
-}
-
-input[type="number"]:focus,
-input[type="text"]:focus{
-
-    outline:none;
-
-    border-color:var(--primary);
-
-    box-shadow:
-        0 0 0 3px rgba(0,212,255,.15);
-}
-
-/* ==========================================================
-📈 PROGRESS BAR
-========================================================== */
-progress{
-    display:block;
-
-    width:100%;
-    height:14px;
-
-    overflow:hidden;
-
-    border-radius:999px;
-
-    background:#16202d;
-
-    appearance:none;
-}
-
-progress::-webkit-progress-bar{
-    background:#16202d;
-}
-
-progress::-webkit-progress-value{
-
-    border-radius:999px;
-
-    background:
-        linear-gradient(
-            90deg,
-            #00d4ff,
-            #00ffa6
-        );
-
-    box-shadow:
-        0 0 12px rgba(0,212,255,.4);
-}
-
-/* ==========================================================
-🖱️ SCROLLBAR
-========================================================== */
-::-webkit-scrollbar{
-    width:8px;
-}
-
-::-webkit-scrollbar-track{
-    background:var(--bg);
-}
-
-::-webkit-scrollbar-thumb{
-    background:var(--border-light);
-    border-radius:999px;
-}
-
-::-webkit-scrollbar-thumb:hover{
-    background:var(--primary);
 }
 
 /* ==========================================================
 ⏳ ANIMATIONS
 ========================================================== */
+
 @keyframes viewTransition{
-    from{
-        opacity:0;
-        transform:translateY(6px);
-    }
-    to{
-        opacity:1;
-        transform:translateY(0);
-    }
+    from{opacity:0; transform:translateY(6px);}
+    to{opacity:1; transform:translateY(0);}
 }
 
 @keyframes spin{
-    to{
-        transform:rotate(360deg);
-    }
+    to{transform:rotate(360deg);}
 }
 
 /* ==========================================================
 🚀 SPLASH SCREEN
 ========================================================== */
-#splash-screen{
 
+#splash-screen{
     position:fixed;
     inset:0;
-
     display:flex;
     justify-content:center;
     align-items:center;
-
     z-index:99999;
 
-    background:
-        radial-gradient(
-            circle at center,
-            #0f1725,
-            #070b11
-        );
-
-    backdrop-filter:blur(8px);
+    background:radial-gradient(circle,#0f1725,#070b11);
 }
 
 /* ==========================================================
 🔄 LOADER
 ========================================================== */
-.loader{
 
+.loader{
     width:54px;
     height:54px;
-
     margin:20px auto 0;
 
     border-radius:50%;
-
     border:4px solid rgba(255,255,255,.08);
     border-top:4px solid var(--primary);
 
     animation:spin .8s linear infinite;
-
-    box-shadow:
-        0 0 20px rgba(0,212,255,.25);
-    }
+}
