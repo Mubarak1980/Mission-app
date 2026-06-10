@@ -400,7 +400,7 @@ tr:hover{
     transform:scale(.97);
 }
 
-.nav-button:Disabled{
+.nav-button:disabled{
     opacity:.35;
     cursor:not-allowed;
     pointer-events:none;
@@ -718,29 +718,49 @@ progress::-moz-progress-bar{
 }
 
 /* ==========================================================
-📱 MOBILE OPTIMIZATION
+📱 MOBILE OPTIMIZATION (ANY DEVICE FRIENDLY)
 ========================================================== */
 @media (max-width:768px){
     h1{font-size:clamp(1.5rem,5vw,2rem);}
     h2{font-size:clamp(1.2rem,4vw,1.5rem);}
     .subjects-container,.top-student-container{grid-template-columns:1fr;}
     .nav-button{min-width:100px;padding:12px 14px;font-size:.9rem;}
+    .study-nav-button{min-width:130px;padding:14px 16px;font-size:.9rem;}
     input[type="number"],input[type="text"]{padding:12px;}
     .subject,.dashboard-subject{padding:16px;}
 }
 
 @media (max-width:600px){
     .study-nav{
-        flex-direction:column;
-        margin:20px 12px;
+        flex-direction:row;
+        justify-content:space-between;
+        margin:16px 12px;
         padding:12px;
-        gap:10px;
+        gap:8px;
     }
-    .study-nav-button{max-width:100%;padding:14px 16px;width:100%;}
-    .button-grade{display:none;}
-    .button-text{font-size:1rem;}
-    .button-icon{font-size:1.4rem;}
-    .subjects-container{grid-template-columns:1fr;}
+    .study-nav-button{
+        flex:1;
+        min-width:auto;
+        max-width:none;
+        padding:14px 12px;
+        font-size:.85rem;
+        gap:6px;
+    }
+    .button-icon{
+        font-size:1.2rem;
+        width:1.2rem;
+        height:1.2rem;
+    }
+    .button-text{
+        font-size:.85rem;
+    }
+    .button-grade{
+        font-size:.75rem;
+        margin-left:2px;
+    }
+    .subjects-container{
+        grid-template-columns:1fr;
+    }
 }
 
 /* ==========================================================
