@@ -107,7 +107,6 @@ body{
     background-image:var(--gradient-bg);
 }
 
-/* Smooth scrolling */
 html{
     scroll-behavior:smooth;
 }
@@ -130,10 +129,10 @@ html{
 }
 
 .subjects-container{
-    padding:0 16px;
     display:grid;
     grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
     gap:16px;
+    padding:16px;
 }
 
 .top-student-container{
@@ -165,22 +164,16 @@ html{
 h1{
     display:block;
     width:100%;
-
     margin:20px auto;
-
     text-align:center;
-
     font-size:clamp(1.8rem,4vw,2.6rem);
     font-weight:800;
     letter-spacing:.5px;
     line-height:1.2;
-
     background:var(--gradient-primary);
-
     -webkit-background-clip:text;
     -webkit-text-fill-color:transparent;
     background-clip:text;
-
     text-shadow:0 0 30px var(--primary-glow);
 }
 
@@ -214,28 +207,14 @@ h4{
 .top-student-card,
 .dashboard-subject,
 .overall-summary-card{
-
     background:var(--gradient-card),var(--card);
-
     border:1px solid var(--border);
-
     border-radius:var(--border-radius-card);
-
     padding:20px;
-
     margin-bottom:16px;
-
     backdrop-filter:blur(12px);
-
-    box-shadow:
-        var(--shadow-md),
-        inset 0 1px 0 rgba(255,255,255,.04);
-
-    transition:
-        transform var(--transition-speed),
-        border-color var(--transition-speed),
-        box-shadow var(--transition-speed),
-        background var(--transition-speed);
+    box-shadow:var(--shadow-md),inset 0 1px 0 rgba(255,255,255,.04);
+    transition:transform var(--transition-speed),border-color var(--transition-speed),box-shadow var(--transition-speed),background var(--transition-speed);
 }
 
 .subject:hover,
@@ -243,22 +222,22 @@ h4{
 .top-student-card:hover,
 .dashboard-subject:hover,
 .overall-summary-card:hover{
-
     transform:translateY(-3px);
-
     background:var(--card-hover);
-
     border-color:var(--primary);
-
-    box-shadow:
-        var(--shadow-lg),
-        0 0 30px var(--primary-glow);
+    box-shadow:var(--shadow-lg),0 0 30px var(--primary-glow);
 }
 
-/* Enhanced overall summary card */
 .overall-summary-card{
     background:var(--gradient-card),rgba(0,212,255,.05);
     border-color:var(--primary);
+}
+
+.subjects-container .overall-summary-card{
+    grid-column:1 / -1;
+    width:100%;
+    max-width:100%;
+    margin:0;
 }
 
 .overall-summary-card .overall-percent{
@@ -278,15 +257,10 @@ h4{
 ========================================================== */
 .table-wrapper{
     overflow-x:auto;
-
     margin:0 16px;
-
     background:var(--card);
-
     border:1px solid var(--border);
-
     border-radius:16px;
-
     box-shadow:var(--shadow-sm);
 }
 
@@ -296,8 +270,7 @@ table{
     border-collapse:collapse;
 }
 
-th,
-td{
+th,td{
     padding:14px 12px;
     border-top:1px solid var(--border);
     text-align:left;
@@ -333,11 +306,8 @@ tr:hover{
 
 .top-student-card h4{
     color:var(--primary);
-
     margin:20px 0 10px;
-
     padding-bottom:6px;
-
     border-bottom:1px solid var(--border);
 }
 
@@ -370,9 +340,7 @@ tr:hover{
 /* ==========================================================
 🔘 BUTTON SYSTEM
 ========================================================== */
-.section-buttons,
-.study-nav,
-#grade-nav{
+.section-buttons,#grade-nav{
     display:flex;
     flex-wrap:wrap;
     gap:10px;
@@ -380,47 +348,28 @@ tr:hover{
 }
 
 .nav-button,
-.study-nav-button,
 .section-buttons button,
 #grade-nav button{
-
     flex:1;
     min-width:120px;
-
     padding:14px 16px;
-
     display:flex;
     align-items:center;
     justify-content:center;
-
     cursor:pointer;
-
     color:var(--text);
-
     font-weight:700;
     letter-spacing:.3px;
     font-size:.95rem;
-
     border-radius:var(--border-radius-btn);
-
     border:1px solid var(--border);
-
-    background:
-        linear-gradient(
-            180deg,
-            rgba(255,255,255,.04),
-            rgba(255,255,255,.01)
-        );
-
-    box-shadow:
-        0 2px 10px rgba(0,0,0,.15);
-
+    background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.01));
+    box-shadow:0 2px 10px rgba(0,0,0,.15);
     transition:all var(--transition-speed);
     position:relative;
     overflow:hidden;
 }
 
-/* Button hover effect */
 .nav-button::before,
 .study-nav-button::before{
     content:'';
@@ -439,33 +388,24 @@ tr:hover{
     opacity:.1;
 }
 
-.nav-button:hover:not(:disabled),
-.study-nav-button:hover:not(:disabled){
-
+.nav-button:hover:not(:disabled){
     transform:translateY(-2px);
-
     color:var(--primary);
-
     background:var(--primary-soft);
-
     border-color:var(--primary);
-
     box-shadow:var(--shadow-primary);
 }
 
-.nav-button:active:not(:disabled),
-.study-nav-button:active:not(:disabled){
+.nav-button:active:not(:disabled){
     transform:scale(.97);
 }
 
-.nav-button:disabled,
-.study-nav-button:disabled{
+.nav-button:disabled{
     opacity:.35;
     cursor:not-allowed;
     pointer-events:none;
 }
 
-/* Primary button variant */
 .nav-button.primary{
     background:var(--primary);
     color:#070b11;
@@ -477,7 +417,6 @@ tr:hover{
     color:#070b11;
 }
 
-/* Success button variant */
 .nav-button.success{
     background:var(--success);
     color:#070b11;
@@ -485,42 +424,129 @@ tr:hover{
 }
 
 /* ==========================================================
+🎓 STUDY NAV BUTTONS (CENTERED ICONS)
+========================================================== */
+.study-nav{
+    display:flex;
+    justify-content:center;
+    gap:12px;
+    margin:24px 16px;
+    padding:16px;
+    background:var(--card);
+    border-radius:var(--border-radius-card);
+    border:1px solid var(--border);
+    box-shadow:var(--shadow-sm);
+}
+
+.study-nav-button{
+    flex:1;
+    min-width:140px;
+    max-width:200px;
+    padding:16px 20px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    cursor:pointer;
+    color:var(--text);
+    font-weight:700;
+    font-size:.95rem;
+    letter-spacing:.3px;
+    border-radius:var(--border-radius-btn);
+    border:1px solid var(--border);
+    background:var(--gradient-card);
+    box-shadow:var(--shadow-sm);
+    transition:all var(--transition-speed);
+    position:relative;
+    overflow:hidden;
+}
+
+.study-nav-button:hover:not(:disabled){
+    transform:translateY(-3px);
+    color:var(--primary);
+    background:var(--primary-soft);
+    border-color:var(--primary);
+    box-shadow:var(--shadow-primary);
+}
+
+.study-nav-button:active:not(:disabled){
+    transform:translateY(-1px) scale(.98);
+}
+
+.study-nav-button:disabled{
+    opacity:.3;
+    cursor:not-allowed;
+    pointer-events:none;
+    transform:none;
+}
+
+.button-icon{
+    font-size:1.3rem;
+    font-weight:700;
+    line-height:1;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    vertical-align:middle;
+    margin-right:2px;
+}
+
+.button-text{
+    font-weight:700;
+}
+
+.button-grade{
+    font-size:.8rem;
+    color:var(--muted);
+    font-weight:600;
+    margin-left:4px;
+}
+
+.prev-button:hover:not(:disabled){
+    border-color:var(--primary);
+    box-shadow:var(--shadow-primary);
+    color:var(--primary);
+}
+
+.prev-button .button-icon{
+    color:var(--primary);
+}
+
+.next-button:hover:not(:disabled){
+    border-color:var(--success);
+    box-shadow:0 8px 24px var(--success-soft);
+    color:var(--success);
+}
+
+.next-button .button-icon{
+    color:var(--success);
+}
+
+.next-button:hover:not(:disabled) .button-icon{
+    text-shadow:0 0 10px var(--success-soft);
+}
+
+/* ==========================================================
 ✍️ INPUTS
 ========================================================== */
 input[type="number"],
 input[type="text"]{
-
     width:100%;
-
     margin:4px 0 16px;
-
     padding:14px;
-
     font-size:1rem;
-
     color:var(--text);
-
     background:#081019;
-
     border:1px solid var(--border);
-
     border-radius:var(--border-radius-input);
-
-    transition:
-        border-color var(--transition-fast),
-        box-shadow var(--transition-fast);
+    transition:border-color var(--transition-fast),box-shadow var(--transition-fast);
 }
 
 input[type="number"]:focus,
 input[type="text"]:focus{
-
     outline:none;
-
     border-color:var(--primary);
-
-    box-shadow:
-        0 0 0 3px rgba(0,212,255,.15),
-        0 0 15px var(--primary-glow);
+    box-shadow:0 0 0 3px rgba(0,212,255,.15),0 0 15px var(--primary-glow);
 }
 
 input[type="number"]::placeholder,
@@ -533,18 +559,12 @@ input[type="text"]::placeholder{
 ========================================================== */
 progress{
     display:block;
-
     width:100%;
     height:14px;
-
     overflow:hidden;
-
     border-radius:var(--border-radius-progress);
-
     background:#16202d;
-
     appearance:none;
-
     box-shadow:inset 0 1px 3px rgba(0,0,0,.3);
 }
 
@@ -554,15 +574,9 @@ progress::-webkit-progress-bar{
 }
 
 progress::-webkit-progress-value{
-
     border-radius:var(--border-radius-progress);
-
     background:var(--gradient-primary);
-
-    box-shadow:
-        0 0 12px rgba(0,212,255,.4),
-        0 0 20px rgba(0,212,255,.2);
-
+    box-shadow:0 0 12px rgba(0,212,255,.4),0 0 20px rgba(0,212,255,.2);
     transition:width var(--transition-slow);
 }
 
@@ -636,20 +650,12 @@ progress::-moz-progress-bar{
 ⏳ ANIMATIONS
 ========================================================== */
 @keyframes viewTransition{
-    from{
-        opacity:0;
-        transform:translateY(6px);
-    }
-    to{
-        opacity:1;
-        transform:translateY(0);
-    }
+    from{opacity:0;transform:translateY(6px);}
+    to{opacity:1;transform:translateY(0);}
 }
 
 @keyframes spin{
-    to{
-        transform:rotate(360deg);
-    }
+    to{transform:rotate(360deg);}
 }
 
 @keyframes fadeIn{
@@ -658,17 +664,10 @@ progress::-moz-progress-bar{
 }
 
 @keyframes slideUp{
-    from{
-        opacity:0;
-        transform:translateY(10px);
-    }
-    to{
-        opacity:1;
-        transform:translateY(0);
-    }
+    from{opacity:0;transform:translateY(10px);}
+    to{opacity:1;transform:translateY(0);}
 }
 
-/* Apply animations to elements */
 .animate-fade{animation:fadeIn var(--transition-slow);}
 .animate-slide{animation:slideUp var(--transition-slow);}
 
@@ -676,23 +675,13 @@ progress::-moz-progress-bar{
 🚀 SPLASH SCREEN
 ========================================================== */
 #splash-screen{
-
     position:fixed;
     inset:0;
-
     display:flex;
     justify-content:center;
     align-items:center;
-
     z-index:99999;
-
-    background:
-        radial-gradient(
-            circle at center,
-            #0f1725,
-            #070b11
-        );
-
+    background:radial-gradient(circle at center,#0f1725,#070b11);
     backdrop-filter:blur(8px);
 }
 
@@ -716,66 +705,47 @@ progress::-moz-progress-bar{
 🔄 LOADER
 ========================================================== */
 .loader{
-
     width:54px;
     height:54px;
-
     margin:20px auto 0;
-
     border-radius:50%;
-
     border:4px solid rgba(255,255,255,.08);
     border-top:4px solid var(--primary);
-
     animation:spin .8s linear infinite;
-
-    box-shadow:
-        0 0 20px rgba(0,212,255,.25);
+    box-shadow:0 0 20px rgba(0,212,255,.25);
 }
 
 /* ==========================================================
 📱 MOBILE OPTIMIZATION
 ========================================================== */
 @media (max-width:768px){
-    h1{
-        font-size:clamp(1.5rem,5vw,2rem);
-    }
+    h1{font-size:clamp(1.5rem,5vw,2rem);}
+    h2{font-size:clamp(1.2rem,4vw,1.5rem);}
+    .subjects-container,.top-student-container{grid-template-columns:1fr;}
+    .nav-button{min-width:100px;padding:12px 14px;font-size:.9rem;}
+    input[type="number"],input[type="text"]{padding:12px;}
+    .subject,.dashboard-subject{padding:16px;}
+}
 
-    h2{
-        font-size:clamp(1.2rem,4vw,1.5rem);
-    }
-
-    .subjects-container,
-    .top-student-container{
-        grid-template-columns:1fr;
-    }
-
-    .nav-button,
-    .study-nav-button{
-        min-width:100px;
-        padding:12px 14px;
-        font-size:.9rem;
-    }
-
-    input[type="number"],
-    input[type="text"]{
+@media (max-width:600px){
+    .study-nav{
+        flex-direction:column;
+        margin:20px 12px;
         padding:12px;
+        gap:10px;
     }
-
-    .subject,
-    .dashboard-subject{
-        padding:16px;
-    }
+    .study-nav-button{max-width:100%;padding:14px 16px;width:100%;}
+    .button-grade{display:none;}
+    .button-text{font-size:1rem;}
+    .button-icon{font-size:1.4rem;margin-right:0;}
+    .subjects-container{grid-template-columns:1fr;}
 }
 
 /* ==========================================================
 💻 TABLET OPTIMIZATION
 ========================================================== */
 @media (min-width:769px) and (max-width:1024px){
-    .subjects-container,
-    .top-student-container{
-        grid-template-columns:repeat(2,1fr);
-    }
+    .subjects-container,.top-student-container{grid-template-columns:repeat(2,1fr);}
 }
 
 /* ==========================================================
@@ -784,12 +754,10 @@ progress::-moz-progress-bar{
 .text-center{text-align:center;}
 .text-left{text-align:left;}
 .text-right{text-align:right;}
-
 .mt-8{margin-top:8px;}
 .mt-16{margin-top:16px;}
 .mb-8{margin-bottom:8px;}
 .mb-16{margin-bottom:16px;}
-
 .flex{display:flex;}
 .flex-col{flex-direction:column;}
 .items-center{align-items:center;}
@@ -804,187 +772,5 @@ progress::-moz-progress-bar{
 .accent-success{color:var(--success);}
 .accent-warning{color:var(--warning);}
 .accent-error{color:var(--error);}
-
 .bg-primary{background:var(--primary-soft);}
 .bg-success{background:var(--success-soft);}
-
-
-
-
-/* ==========================================================
-🎓 OVERALL SUMMARY CARD (FIXED SIZE - SPANS FULL WIDTH)
-========================================================== */
-
-/* Make subjects container use grid properly */
-.subjects-container{
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
-    gap:16px;
-    padding:16px;
-}
-
-/* Overall summary card spans full row */
-.subjects-container .overall-summary-card{
-    grid-column:1 / -1;
-    width:100%;
-    max-width:100%;
-    margin:0;
-}
-
-/* Better header layout */
-.overall-summary-card .summary-header{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin-bottom:12px;
-}
-
-.overall-summary-card .summary-progress{
-    height:16px;
-    margin:8px 0;
-}
-
-/* ==========================================================
-🎓 STUDY NAV BUTTONS (ENHANCED WITH ICONS)
-========================================================== */
-.study-nav{
-    display:flex;
-    justify-content:center;
-    gap:12px;
-    margin-top:24px;
-    padding:16px;
-    background:var(--card);
-    border-radius:var(--border-radius-card);
-    border:1px solid var(--border);
-    box-shadow:var(--shadow-sm);
-}
-
-.study-nav-button{
-    flex:1;
-    min-width:140px;
-    max-width:200px;
-    padding:16px 20px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    gap:8px;
-    cursor:pointer;
-    color:var(--text);
-    font-weight:700;
-    font-size:.95rem;
-    letter-spacing:.3px;
-    border-radius:var(--border-radius-btn);
-    border:1px solid var(--border);
-    background:var(--gradient-card);
-    box-shadow:var(--shadow-sm);
-    transition:all var(--transition-speed);
-    position:relative;
-    overflow:hidden;
-}
-
-.study-nav-button::before{
-    content:'';
-    position:absolute;
-    top:0;
-    left:0;
-    width:100%;
-    height:100%;
-    background:var(--primary-glow);
-    opacity:0;
-    transition:opacity var(--transition-speed);
-}
-
-.study-nav-button:hover:not(:disabled)::before{
-    opacity:.15;
-}
-
-.study-nav-button:hover:not(:disabled){
-    transform:translateY(-3px);
-    color:var(--primary);
-    background:var(--primary-soft);
-    border-color:var(--primary);
-    box-shadow:var(--shadow-primary);
-}
-
-.study-nav-button:active:not(:disabled){
-    transform:translateY(-1px) scale(.98);
-}
-
-.study-nav-button:disabled{
-    opacity:.3;
-    cursor:not-allowed;
-    pointer-events:none;
-    transform:none;
-}
-
-.button-icon{
-    font-size:1.3rem;
-    font-weight:700;
-    line-height:1;
-}
-
-.button-text{
-    font-weight:700;
-}
-
-.button-grade{
-    font-size:.8rem;
-    color:var(--muted);
-    font-weight:600;
-    margin-left:4px;
-}
-
-.prev-button:hover:not(:disabled){
-    border-color:var(--primary);
-    box-shadow:var(--shadow-primary);
-    color:var(--primary);
-}
-
-.prev-button .button-icon{
-    color:var(--primary);
-}
-
-.next-button:hover:not(:disabled){
-    border-color:var(--success);
-    box-shadow:0 8px 24px var(--success-soft);
-    color:var(--success);
-}
-
-.next-button .button-icon{
-    color:var(--success);
-}
-
-.next-button:hover:not(:disabled) .button-icon{
-    text-shadow:0 0 10px var(--success-soft);
-}
-
-/* Mobile optimization */
-@media (max-width:600px){
-    .study-nav{
-        flex-direction:column;
-        padding:12px;
-        gap:10px;
-    }
-
-    .study-nav-button{
-        max-width:100%;
-        padding:14px 16px;
-        width:100%;
-    }
-
-    .button-grade{
-        display:none;
-    }
-
-    .button-text{
-        font-size:1rem;
-    }
-
-    .button-icon{
-        font-size:1.4rem;
-    }
-
-    .subjects-container{
-        grid-template-columns:1fr;
-    }
-}
