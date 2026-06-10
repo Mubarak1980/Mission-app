@@ -86,9 +86,9 @@ window.loadStudySection = function (grade) {
         const prev = Math.max(9, gradeNum - 1);
         const next = Math.min(12, gradeNum + 1);
 
-        // Enhanced Previous/Next buttons with icons
+        // Enhanced Previous/Next buttons with icons (NO content-spacing - FIXED!)
         html += `
-            <div class="study-nav content-spacing">
+            <div class="study-nav">
                 <button class="study-nav-button prev-button"
                     onclick="loadStudySection(${prev})"
                     ${gradeNum === 9 ? "disabled" : ""}>
