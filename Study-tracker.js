@@ -32,70 +32,86 @@ window.loadStudySection = function (grade) {
     const mainContent = document.getElementById("main-content");
     const gradeNum = parseInt(grade);
     if (!mainContent) return;
-    mainContent.innerHTML = "";
+    
+    // Add fade animation
+    mainContent.style.opacity = "0";
+    mainContent.style.transform = "translateY(-5px)";
+    
+    setTimeout(() => {
+        mainContent.innerHTML = "";
+        
+        const masterData = (window.DataService && window.DataService.get()) || { studyProgress: {} };
+        const savedData = masterData.studyProgress?.[gradeNum] || {};
+        const config = window.maxPagesByGrade?.[gradeNum];
+        if (!config) return;
 
-    const masterData = (window.DataService && window.DataService.get()) || { studyProgress: {} };
-    const savedData = masterData.studyProgress?.[gradeNum] || {};
-    const config = window.maxPagesByGrade?.[gradeNum];
-    if (!config) return;
+        window.activeStudyGrade = gradeNum;
+        window.activeStudySavedData = savedData;
 
-    window.activeStudyGrade = gradeNum;
-    window.activeStudySavedData = savedData;
+        let totalMax = 0;
+        let totalSaved = 0;
 
-    let totalMax = 0;
-    let totalSaved = 0;
+        SUBJECTS.forEach(s => {
+            const max = config[s] || 0;
+            const saved = Math.min(savedData[s] || 0, max);
+            totalMax += max;
+            totalSaved += saved;
+        });
 
-    SUBJECTS.forEach(s => {
-        const max = config[s] || 0;
-        const saved = Math.min(savedData[s] || 0, max);
-        totalMax += max;
-        totalSaved += saved;
-    });
+        const totalPercent = totalMax > 0 ? Math.round((totalSaved / totalMax) * 100) : 0;
 
-    const totalPercent = totalMax > 0 ? Math.round((totalSaved / totalMax) * 100) : 0;
+        let html = `<h2>📚 Grade ${gradeNum} Study Tracker</h2>`;
 
-    let html = `<h2>📚 Grade ${gradeNum} Study Tracker</h2>`;
-
-    html += `
-        <div class="overall-summary-card content-spacing">
-            <div style="display:flex; justify-content:space-between; margin-bottom: 8px;">
-                <span><b>Overall Progress</b></span>
-                <span class="overall-percent">${totalPercent}%</span>
+        html += `
+            <div class="overall-summary-card content-spacing">
+                <div style="display:flex; justify-content:space-between; margin-bottom: 8px;">
+                    <span><b>Overall Progress</b></span>
+                    <span class="overall-percent">${totalPercent}%</span>
+                </div>
+                <progress value="${totalSaved}" max="${totalMax}"></progress>
+                <p class="overall-text">
+                    ${totalSaved.toLocaleString()} / ${totalMax.toLocaleString()} Total
+                </p>
             </div>
-            <progress value="${totalSaved}" max="${totalMax}"></progress>
-            <p class="overall-text">
-                ${totalSaved.toLocaleString()} / ${totalMax.toLocaleString()} Total
-            </p>
-        </div>
 
-        <div class="subjects-container content-spacing">
-    `;
+            <div class="subjects-container content-spacing">
+        `;
 
-    SUBJECTS.forEach(subject => {
-        html += createSubjectHtml(subject, config[subject], savedData[subject] || 0);
-    });
+        SUBJECTS.forEach(subject => {
+            html += createSubjectHtml(subject, config[subject], savedData[subject] || 0);
+        });
 
-    html += `</div>`;
+        html += `</div>`;
 
-    const prev = Math.max(9, gradeNum - 1);
-    const next = Math.min(12, gradeNum + 1);
+        const prev = Math.max(9, gradeNum - 1);
+        const next = Math.min(12, gradeNum + 1);
 
-    html += `
-        <div class="study-nav content-spacing">
-            <button class="study-nav-button"
-                onclick="loadStudySection(${prev})"
-                ${gradeNum === 9 ? "disabled" : ""}>
-                Previous
-            </button>
-            <button class="study-nav-button"
-                onclick="loadStudySection(${next})"
-                ${gradeNum === 12 ? "disabled" : ""}>
-                Next
-            </button>
-        </div>
-    `;
+        // Enhanced Previous/Next buttons with icons
+        html += `
+            <div class="study-nav content-spacing">
+                <button class="study-nav-button prev-button"
+                    onclick="loadStudySection(${prev})"
+                    ${gradeNum === 9 ? "disabled" : ""}>
+                    <span class="button-icon">←</span>
+                    <span class="button-text">Previous</span>
+                    <span class="button-grade">Grade ${prev}</span>
+                </button>
+                <button class="study-nav-button next-button"
+                    onclick="loadStudySection(${next})"
+                    ${gradeNum === 12 ? "disabled" : ""}>
+                    <span class="button-icon">→</span>
+                    <span class="button-text">Next</span>
+                    <span class="button-grade">Grade ${next}</span>
+                </button>
+            </div>
+        `;
 
-    mainContent.innerHTML = html;
+        mainContent.innerHTML = html;
+        
+        // Fade in animation
+        mainContent.style.opacity = "1";
+        mainContent.style.transform = "translateY(0)";
+    }, 150);
 };
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -139,4 +155,3 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 });
-    
