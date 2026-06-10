@@ -400,7 +400,7 @@ tr:hover{
     transform:scale(.97);
 }
 
-.nav-button:disabled{
+.nav-button:Disabled{
     opacity:.35;
     cursor:not-allowed;
     pointer-events:none;
