@@ -424,7 +424,7 @@ tr:hover{
 }
 
 /* ==========================================================
-🎓 STUDY NAV BUTTONS (CENTERED ICONS)
+🎓 STUDY NAV BUTTONS (PERFECT CENTERED ICONS)
 ========================================================== */
 .study-nav{
     display:flex;
@@ -446,7 +446,7 @@ tr:hover{
     display:flex;
     align-items:center;
     justify-content:center;
-    gap:10px;
+    gap:8px;
     cursor:pointer;
     color:var(--text);
     font-weight:700;
@@ -480,15 +480,16 @@ tr:hover{
     transform:none;
 }
 
+/* PERFECT CENTERED ICONS */
 .button-icon{
     font-size:1.3rem;
     font-weight:700;
     line-height:1;
-    display:inline-flex;
+    display:flex;
     align-items:center;
     justify-content:center;
-    vertical-align:middle;
-    margin-right:2px;
+    width:1.3rem;
+    height:1.3rem;
 }
 
 .button-text{
@@ -499,7 +500,7 @@ tr:hover{
     font-size:.8rem;
     color:var(--muted);
     font-weight:600;
-    margin-left:4px;
+    margin-left:2px;
 }
 
 .prev-button:hover:not(:disabled){
@@ -737,7 +738,7 @@ progress::-moz-progress-bar{
     .study-nav-button{max-width:100%;padding:14px 16px;width:100%;}
     .button-grade{display:none;}
     .button-text{font-size:1rem;}
-    .button-icon{font-size:1.4rem;margin-right:0;}
+    .button-icon{font-size:1.4rem;}
     .subjects-container{grid-template-columns:1fr;}
 }
 
