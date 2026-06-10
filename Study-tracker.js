@@ -86,7 +86,7 @@ window.loadStudySection = function (grade) {
         const prev = Math.max(9, gradeNum - 1);
         const next = Math.min(12, gradeNum + 1);
 
-        // Enhanced Previous/Next buttons with icons (NO content-spacing - FIXED!)
+        // Enhanced Previous/Next buttons with icons (FIXED: "Previous 9" and "Next 10")
         html += `
             <div class="study-nav">
                 <button class="study-nav-button prev-button"
@@ -94,14 +94,14 @@ window.loadStudySection = function (grade) {
                     ${gradeNum === 9 ? "disabled" : ""}>
                     <span class="button-icon">←</span>
                     <span class="button-text">Previous</span>
-                    <span class="button-grade">Grade ${prev}</span>
+                    <span class="button-grade">${prev}</span>
                 </button>
                 <button class="study-nav-button next-button"
                     onclick="loadStudySection(${next})"
                     ${gradeNum === 12 ? "disabled" : ""}>
                     <span class="button-icon">→</span>
                     <span class="button-text">Next</span>
-                    <span class="button-grade">Grade ${next}</span>
+                    <span class="button-grade">${next}</span>
                 </button>
             </div>
         `;
