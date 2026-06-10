@@ -424,11 +424,12 @@ tr:hover{
 }
 
 /* ==========================================================
-🎓 STUDY NAV BUTTONS (PERFECT CENTERED ICONS)
+🎓 STUDY NAV BUTTONS (SIDE BY SIDE - NO OVERLAP)
 ========================================================== */
 .study-nav{
     display:flex;
     justify-content:center;
+    align-items:center;
     gap:12px;
     margin:24px 16px;
     padding:16px;
@@ -436,10 +437,11 @@ tr:hover{
     border-radius:var(--border-radius-card);
     border:1px solid var(--border);
     box-shadow:var(--shadow-sm);
+    flex-wrap:wrap;
 }
 
 .study-nav-button{
-    flex:1;
+    flex:0 1 auto;
     min-width:140px;
     max-width:200px;
     padding:16px 20px;
@@ -480,7 +482,6 @@ tr:hover{
     transform:none;
 }
 
-/* PERFECT CENTERED ICONS */
 .button-icon{
     font-size:1.3rem;
     font-weight:700;
