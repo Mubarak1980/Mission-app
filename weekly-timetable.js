@@ -28,26 +28,22 @@ window.loadWeeklyTimetable = function() {
     `).join("");
 
     // ===============================
-    // 2. SMART ENGINE (v3 COMPLETE INTEGRATION)
+    // 2. SMART ENGINE (v2 SAFE INTEGRATION)
     // ===============================
     let mission = null;
     let progress = null;
-    let weekly = null;
-    let streak = 0;
 
     try {
         if (window.SmartEngine) {
             mission = window.SmartEngine.getDailyMission?.() || null;
             progress = window.SmartEngine.getProgress?.() || null;
-            weekly = window.SmartEngine.getWeeklyPlanner?.() || null;
-            streak = window.SmartEngine.getStudyStreak?.() || 0;
         }
     } catch (e) {
         console.error("SmartEngine error:", e);
     }
 
     // ===============================
-    // 🔥 SAFE BREAKDOWN ACCESS
+    // 🔥 PWA SAFE FIX: Guard breakdown access
     // ===============================
     const safeBreakdown = mission?.breakdown || {
         Math: 0,
@@ -79,21 +75,6 @@ window.loadWeeklyTimetable = function() {
                 Total System: 360 Days (4 Cycles × 90 Days)
             </div>
 
-            ${mission.isWeekend ? `
-                <div style="
-                    margin:12px 0;
-                    padding:10px;
-                    background:#ffcc0015;
-                    border-radius:8px;
-                    color:#ffcc00;
-                    font-size:14px;
-                    font-weight:600;
-                    text-align:center;
-                ">
-                    🌟 Weekend boost! You have 20% more capacity today
-                </div>
-            ` : ''}
-
             <h3 style="margin:10px 0;">🎯 Today's Mission</h3>
 
             <div style="
@@ -118,22 +99,9 @@ window.loadWeeklyTimetable = function() {
                 Total: ${mission.total || 0} pages
             </div>
 
-            ${mission.prediction ? `
-                <div style="
-                    margin-top:15px;
-                    padding:12px;
-                    background:${mission.prediction.riskLevel === 'HIGH' ? '#ff444415' : mission.prediction.riskLevel === 'MEDIUM' ? '#ffaa0015' : '#00d4ff15'};
-                    border-radius:10px;
-                    border-left:4px solid ${mission.prediction.riskLevel === 'HIGH' ? '#ff4444' : mission.prediction.riskLevel === 'MEDIUM' ? '#ffaa00' : '#00d4ff'};
-                ">
-                    <p style="margin:0 0 8px;font-weight:600;color:${mission.prediction.riskLevel === 'HIGH' ? '#ff4444' : mission.prediction.riskLevel === 'MEDIUM' ? '#ffaa00' : '#00d4ff'};">
-                        ${mission.prediction.onTrack ? '✅' : '⚠️'} ${mission.prediction.riskMessage}
-                    </p>
-                    <p style="margin:0;font-size:14px;color:#8b949e;">
-                        📅 Estimated completion: <strong style="color:#00d4ff;">${mission.prediction.estimatedCompletionDate}</strong>
-                    </p>
-                </div>
-            ` : ''}
+            <!-- =============================== -->
+            <!-- 3. PROGRESS BARS (REQUIRED) -->
+            <!-- =============================== -->
 
             <div style="margin-top:15px;">
 
@@ -147,7 +115,7 @@ window.loadWeeklyTimetable = function() {
                     </progress>
                 </div>
 
-                <div style="margin-bottom:10px;">
+                <div>
                     📚 Total Pages Progress:
                     <strong>${progress?.pagesDone || 0} / ${progress?.pagesTotal || 0}</strong>
                     <progress 
@@ -155,11 +123,6 @@ window.loadWeeklyTimetable = function() {
                         max="${progress?.pagesTotal || 1}"
                         style="width:100%;height:10px;">
                     </progress>
-                    ${progress?.nextMilestone ? `
-                        <p style="margin:6px 0 0 0;color:#00d4ff;font-size:13px;font-weight:600;">
-                            🎯 Next milestone: ${progress.nextMilestone}%
-                        </p>
-                    ` : ''}
                 </div>
 
             </div>
@@ -178,135 +141,7 @@ window.loadWeeklyTimetable = function() {
     `;
 
     // ===============================
-    // 3. WEEKLY PERFORMANCE CARD (NEW)
-    // ===============================
-    const weeklyHtml = weekly && weekly.status !== "NO_DATA" && weekly.status !== "ERROR" ? `
-        <div style="
-            margin-top:20px;
-            background:#0d1117;
-            padding:18px;
-            border-radius:12px;
-            border:1px solid #30363d;
-            color:white;
-        ">
-
-            <h2 style="margin-top:0;color:#00d4ff;">
-                📅 Weekly Performance
-            </h2>
-
-            <div style="display:flex;justify-content:space-between;margin-bottom:12px;">
-                <div><strong>Week:</strong> ${weekly.week}</div>
-                <div><strong>Efficiency:</strong> <span style="color:#00d4ff;font-weight:bold;">${weekly.efficiency}%</span></div>
-            </div>
-
-            <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
-                <span style="color:#8b949e;">Planned</span>
-                <span style="font-weight:600;">${weekly.planned} pages</span>
-            </div>
-
-            <div style="display:flex;justify-content:space-between;margin-bottom:12px;">
-                <span style="color:#8b949e;">Actual</span>
-                <span style="font-weight:600;color:#00ff88;">${weekly.actual} pages</span>
-            </div>
-
-            <div style="
-                padding:10px;
-                background:${weekly.status === 'ON_TRACK' ? '#00ff8815' : weekly.status === 'SLIGHT_DELAY' ? '#ffaa0015' : weekly.status === 'BEHIND' ? '#ff444415' : '#ff000015'};
-                border-radius:8px;
-                text-align:center;
-                font-weight:600;
-                color:${weekly.status === 'ON_TRACK' ? '#00ff88' : weekly.status === 'SLIGHT_DELAY' ? '#ffaa00' : weekly.status === 'BEHIND' ? '#ff4444' : '#ff0000'};
-            ">
-                Status: ${weekly.status.replace('_', ' ')}
-            </div>
-
-            ${weekly.suggestedRestDay ? `
-                <div style="
-                    margin-top:12px;
-                    padding:12px;
-                    background:#00ff8815;
-                    border-radius:10px;
-                    border-left:4px solid #00ff88;
-                ">
-                    <p style="margin:0;font-weight:600;color:#00ff88;">
-                        🏖️ ${weekly.restDayMessage}
-                    </p>
-                </div>
-            ` : ''}
-        </div>
-    ` : '';
-
-    // ===============================
-    // 4. STUDY STREAK CARD (NEW)
-    // ===============================
-    const streakHtml = streak > 0 ? `
-        <div style="
-            margin-top:20px;
-            background:#0d1117;
-            padding:18px;
-            border-radius:12px;
-            border:1px solid #30363d;
-            color:white;
-        ">
-
-            <h2 style="margin-top:0;color:#00d4ff;">
-                🔥 Study Streak
-            </h2>
-
-            <div style="text-align:center;margin:16px 0;">
-                <div style="
-                    font-size:48px;
-                    font-weight:800;
-                    color:#00d4ff;
-                    margin-bottom:8px;
-                    line-height:1;
-                ">
-                    ${streak}
-                </div>
-                <p style="margin:0;color:#8b949e;font-size:14px;">
-                    Consecutive days studied
-                </p>
-            </div>
-
-            ${streak > 7 ? `
-                <div style="
-                    padding:12px;
-                    background:#00ff8815;
-                    border-radius:10px;
-                    text-align:center;
-                    font-weight:600;
-                    color:#00ff88;
-                ">
-                    🎉 Amazing! You're on a ${streak}-day streak! Keep it up!
-                </div>
-            ` : streak > 3 ? `
-                <div style="
-                    padding:12px;
-                    background:#00d4ff15;
-                    border-radius:10px;
-                    text-align:center;
-                    font-weight:600;
-                    color:#00d4ff;
-                ">
-                    🔥 Great momentum! Keep studying to build your streak!
-                </div>
-            ` : streak > 1 ? `
-                <div style="
-                    padding:12px;
-                    background:#ffaa0015;
-                    border-radius:10px;
-                    text-align:center;
-                    font-weight:600;
-                    color:#ffaa00;
-                ">
-                   💪 Good start! Keep going to build your streak!
-                </div>
-            ` : ''}
-        </div>
-    ` : '';
-
-    // ===============================
-    // 5. FINAL RENDER
+    // 3. FINAL RENDER
     // ===============================
     container.innerHTML = `
         <div style="background:#121821;padding:15px;border-radius:10px;color:white;">
@@ -337,8 +172,6 @@ window.loadWeeklyTimetable = function() {
             </div>
 
             ${missionHtml}
-            ${weeklyHtml}
-            ${streakHtml}
 
         </div>
     `;
