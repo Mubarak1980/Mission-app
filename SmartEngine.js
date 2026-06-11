@@ -23,17 +23,17 @@ window.SmartEngine = (function () {
     });
 
     // ======================================================
-    // 🧠 DYNAMIC SUBJECT DIFFICULTY (IMPROVEMENT #2)
+    // 🧠 DYNAMIC SUBJECT DIFFICULTY
     // ======================================================
     const SUBJECT_DIFFICULTY = Object.freeze({
-        Math: 0.30,      // Harder = more weight
+        Math: 0.30,
         Physics: 0.25,
         Chemistry: 0.25,
-        Biology: 0.20    // Easier = less weight
+        Biology: 0.20
     });
 
     // ======================================================
-    // 📦 CACHE FOR PERFORMANCE (IMPROVEMENT #10)
+    // 📦 CACHE FOR PERFORMANCE
     // ======================================================
     const cache = {
         mission: null,
@@ -41,11 +41,13 @@ window.SmartEngine = (function () {
         progress: null,
         progressTimestamp: 0,
         weekly: null,
-        weeklyTimestamp: 0
+        weeklyTimestamp: 0,
+        streak: null,
+        streakTimestamp: 0
     };
 
     // ======================================================
-    // 🔐 SAFE HELPERS (IMPROVEMENT #9 - Error Handling)
+    // 🔐 SAFE HELPERS
     // ======================================================
     function getData() {
         try {
@@ -75,7 +77,7 @@ window.SmartEngine = (function () {
     }
 
     // ======================================================
-    // 📈 HISTORY HELPERS (IMPROVEMENT #3, #4)
+    // 📈 HISTORY HELPERS
     // ======================================================
     function getLast3DaysProgress() {
         try {
@@ -87,7 +89,7 @@ window.SmartEngine = (function () {
             for (let d = day - 2; d <= day; d++) {
                 if (d < 1) continue;
                 SUBJECTS.forEach(s => {
-                    total += safeNumber(progress)?.[s] || 0;
+                    total += safeNumber(progress[d]?.[s]);
                 });
             }
             return total;
@@ -110,7 +112,7 @@ window.SmartEngine = (function () {
                 if (d < 1) continue;
                 let dayTotal = 0;
                 SUBJECTS.forEach(s => {
-                    dayTotal += safeNumber(progress)?.[s] || 0;
+                    dayTotal += safeNumber(progress[d]?.[s]);
                 });
                 total += dayTotal;
                 count++;
@@ -130,7 +132,7 @@ window.SmartEngine = (function () {
             
             let total = 0;
             for (let g = 9; g <= 12; g++) {
-                total += safeNumber(progress?.[g]?.[subject]);
+                total += safeNumber(progress[g]?.[subject]);
             }
             return total;
         } catch (error) {
@@ -194,7 +196,7 @@ window.SmartEngine = (function () {
     }
 
     // ======================================================
-    // 📦 REMAINING WORK ENGINE (IMPROVEMENT #9)
+    // 📦 REMAINING WORK ENGINE
     // ======================================================
     function getRemainingPages() {
         try {
@@ -230,7 +232,7 @@ window.SmartEngine = (function () {
     }
 
     // ======================================================
-    // 📈 BACKLOG SYSTEM (IMPROVEMENT #3 - Smart Backlog Detection)
+    // 📈 BACKLOG SYSTEM
     // ======================================================
     function getBacklogFactor(done, expected) {
         if (expected <= 0) return 1;
@@ -239,19 +241,17 @@ window.SmartEngine = (function () {
 
         if (ratio >= 1) return 1;
 
-        // Detect streak breaks (last 3 days)
         const last3DaysDone = getLast3DaysProgress();
         const expected3Days = (PAGES_PER_CYCLE / DAYS_PER_CYCLE) * 3;
         const streakBroken = last3DaysDone < expected3Days;
 
-        // Amplify backlog if streak broken
         const multiplier = streakBroken ? 1.2 : 0.6;
 
         return 1 + (1 - ratio) * multiplier;
     }
 
     // ======================================================
-    // 🧠 WEEKLY WEIGHTS (IMPROVEMENT #2 - Dynamic Weight Learning)
+    // 🧠 WEEKLY WEIGHTS
     // ======================================================
     function getWeeklyWeights() {
         try {
@@ -271,7 +271,6 @@ window.SmartEngine = (function () {
                 });
             }
 
-            // Blend: 60% user behavior + 40% subject difficulty
             return SUBJECTS.reduce((acc, s) => {
                 const userWeight = overall ? totals[s] / overall : WEIGHTS[s];
                 acc[s] = (userWeight * 0.6) + (SUBJECT_DIFFICULTY[s] * 0.4);
@@ -284,18 +283,15 @@ window.SmartEngine = (function () {
     }
 
     // ======================================================
-    // 📉 BURNOUT PROTECTION (IMPROVEMENT #4 - Adaptive Burnout)
+    // 📉 BURNOUT PROTECTION
     // ======================================================
     function applyBurnoutCap(value, avg) {
         try {
-            // Get user's recent average (last 7 days)
             const recentAvg = getRecentAverage(7);
             
-            // Dynamic cap based on user's tolerance
             const tolerance = recentAvg > 0 ? avg / recentAvg : 1;
             
-            // More tolerant = higher cap, less tolerant = lower cap
-            const capFactor = 1 + (tolerance * 0.3); // 1.0 to 1.3
+            const capFactor = 1 + (tolerance * 0.3);
             const cap = avg * capFactor;
             
             return Math.min(value, Math.ceil(cap));
@@ -306,7 +302,7 @@ window.SmartEngine = (function () {
     }
 
     // ======================================================
-    // 🔮 COMPLETION PREDICTION (IMPROVEMENT #6 - Risk Messages)
+    // 🔮 COMPLETION PREDICTION
     // ======================================================
     function predictCompletion(remaining, dailyTarget) {
         try {
@@ -337,7 +333,6 @@ window.SmartEngine = (function () {
                 LOW: "✅ Great progress! You're ahead of schedule 🎉"
             };
 
-            // Calculate estimated completion date
             const startDate = getStartDate();
             const completionDate = new Date(startDate);
             completionDate.setDate(completionDate.getDate() + Math.ceil(estimatedDays));
@@ -366,11 +361,10 @@ window.SmartEngine = (function () {
     }
 
     // ======================================================
-    // 📌 DAILY MISSION ENGINE (IMPROVEMENT #5 - Weekend Boost)
+    // 📌 DAILY MISSION ENGINE
     // ======================================================
     function getDailyMission() {
         try {
-            // Cache for 5 seconds (prevents excessive recalculations)
             const now = Date.now();
             if (cache.mission && (now - cache.missionTimestamp) < 5000) {
                 return cache.mission;
@@ -399,7 +393,6 @@ window.SmartEngine = (function () {
             const cycleTotalRemaining =
                 remaining.Math + remaining.Physics + remaining.Chemistry + remaining.Biology;
 
-            // IMPROVEMENT #5: Weekend Boost
             const currentDate = new Date(getStartDate());
             currentDate.setDate(currentDate.getDate() + day - 1);
             const isWeekend = currentDate.getDay() === 0 || currentDate.getDay() === 6;
@@ -410,7 +403,6 @@ window.SmartEngine = (function () {
             const expectedProgress = (TOTAL_DAYS - (TOTAL_DAYS - day + 1)) / TOTAL_DAYS;
             const doneProgress = 1 - (cycleTotalRemaining / TOTAL_PAGES);
 
-            // IMPROVEMENT #7: Subject-Specific Backlog
             const adjustedTarget = Math.ceil(baseTarget * getBacklogFactor(doneProgress, expectedProgress));
 
             const dynamicWeights = getWeeklyWeights();
@@ -419,7 +411,6 @@ window.SmartEngine = (function () {
             let sum = 0;
 
             SUBJECTS.forEach(subject => {
-                // Subject-specific expected progress
                 const expectedSubject = (TOTAL_PAGES * WEIGHTS[subject]) / TOTAL_CYCLES;
                 const doneSubject = getTotalProgress(subject);
                 const subjectBacklog = getBacklogFactor(doneSubject / expectedSubject, expectedSubject);
@@ -438,7 +429,6 @@ window.SmartEngine = (function () {
                 sum += value;
             });
 
-            // safe correction (no explosion)
             const correction = adjustedTarget - sum;
 
             const targetSubject =
@@ -449,11 +439,6 @@ window.SmartEngine = (function () {
             breakdown[targetSubject] += correction;
 
             const prediction = predictCompletion(remaining, adjustedTarget);
-
-            // IMPROVEMENT #8: Milestone Tracking
-            const progress = getProgress();
-            const milestones = [25, 50, 75, 90, 100];
-            const nextMilestone = milestones.find(m => progress.pagesPercent < m) || null;
 
             const result = {
                 cycle,
@@ -468,7 +453,6 @@ window.SmartEngine = (function () {
                 weekendMultiplier
             };
 
-            // Update cache
             cache.mission = result;
             cache.missionTimestamp = now;
 
@@ -491,11 +475,10 @@ window.SmartEngine = (function () {
     }
 
     // ======================================================
-    // 📊 PROGRESS ENGINE (IMPROVEMENT #8 - Milestone Tracking)
+    // 📊 PROGRESS ENGINE
     // ======================================================
     function getProgress() {
         try {
-            // Cache for 5 seconds
             const now = Date.now();
             if (cache.progress && (now - cache.progressTimestamp) < 5000) {
                 return cache.progress;
@@ -547,7 +530,6 @@ window.SmartEngine = (function () {
                 milestoneReached: nextMilestone && pagesPercent >= nextMilestone
             };
 
-            // Update cache
             cache.progress = result;
             cache.progressTimestamp = now;
 
@@ -567,11 +549,10 @@ window.SmartEngine = (function () {
     }
 
     // ======================================================
-    // 📅 WEEKLY PLANNER (IMPROVEMENT #1 - Fixed Bug)
+    // 📅 WEEKLY PLANNER
     // ======================================================
     function getWeeklyPlanner() {
         try {
-            // Cache for 5 seconds
             const now = Date.now();
             if (cache.weekly && (now - cache.weeklyTimestamp) < 5000) {
                 return cache.weekly;
@@ -609,14 +590,11 @@ window.SmartEngine = (function () {
                 Biology: { planned: 0, actual: 0 }
             };
 
-            // IMPROVEMENT #1: Fixed - use deterministic daily simulation per day index
             for (let d = weekStart; d <= weekEnd; d++) {
-                // Simulate mission for day d (not current day)
                 const { cycle, dayInCycle } = getCycleInfo(d);
                 const cycleRemainingDays = DAYS_PER_CYCLE - dayInCycle + 1;
                 const baseTarget = Math.ceil(PAGES_PER_CYCLE / cycleRemainingDays);
                 
-                // Weekend boost for simulated day
                 const simulatedDate = new Date(getStartDate());
                 simulatedDate.setDate(simulatedDate.getDate() + d - 1);
                 const isWeekend = simulatedDate.getDay() === 0 || simulatedDate.getDay() === 6;
@@ -646,7 +624,6 @@ window.SmartEngine = (function () {
                 ? actualTotal / plannedTotal
                 : 1;
 
-            // Bonus: Rest Day Recommendation
             const recentAvg = getRecentAverage(7);
             const targetAvg = PAGES_PER_CYCLE / DAYS_PER_CYCLE;
             const suggestedRestDay = recentAvg > targetAvg * 1.5;
@@ -666,7 +643,6 @@ window.SmartEngine = (function () {
                 restDayMessage: suggestedRestDay ? "🏖️ You've been pushing hard! Consider a rest day tomorrow" : null
             };
 
-            // Update cache
             cache.weekly = result;
             cache.weeklyTimestamp = now;
 
@@ -687,9 +663,16 @@ window.SmartEngine = (function () {
         }
     }
 
-    // Bonus: Study Streak Counter
+    // ======================================================
+    // 🔥 STUDY STREAK (FIXED)
+    // ======================================================
     function getStudyStreak() {
         try {
+            const now = Date.now();
+            if (cache.streak && (now - cache.streakTimestamp) < 5000) {
+                return cache.streak;
+            }
+
             const day = getCurrentDay();
             const data = getData();
             const progress = data.studyProgress || {};
@@ -698,15 +681,21 @@ window.SmartEngine = (function () {
             
             for (let d = day; d >= 1; d--) {
                 let dayTotal = 0;
-                SUBJECTS.forEach(s => {
-                    dayTotal += safeNumber(progress?.[g]?.[s]);
-                });
+                for (let g = 9; g <= 12; g++) {
+                    SUBJECTS.forEach(s => {
+                        dayTotal += safeNumber(progress[g]?.[s]);
+                    });
+                }
                 
                 if (dayTotal > 0) streak++;
                 else break;
             }
             
-            return streak;
+            const result = streak;
+            cache.streak = result;
+            cache.streakTimestamp = now;
+            
+            return result;
         } catch (error) {
             console.error("Error in getStudyStreak:", error);
             return 0;
