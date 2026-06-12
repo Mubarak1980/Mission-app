@@ -5,7 +5,7 @@
 OFFLINE-FIRST + ROBUST INSTALL + SAFE NAVIGATION
 ========================================================== */
 
-const CACHE_NAME = "mission-v94";
+const CACHE_NAME = "mission-v95";
 
 const APP_SHELL = [
     "./",
