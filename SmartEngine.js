@@ -23,10 +23,23 @@ window.SmartEngine = (function () {
     });
 
     // ======================================================
-    // 🔐 SAFE HELPERS
+    // 🔐 SAFE HELPERS (FIXED: Wait for DataService)
     // ======================================================
     function getData() {
-        return (window.DataService && window.DataService.get()) || {};
+        if (!window.DataService) {
+            console.warn("DataService not available");
+            return {};
+        }
+        
+        const data = window.DataService.get();
+        
+        // If data is not initialized yet, return default
+        if (!data || data === undefined) {
+            console.warn("DataService not initialized - using default");
+            return window.DataService.defaultData();
+        }
+        
+        return data;
     }
 
     function isDataReady() {
@@ -216,15 +229,14 @@ window.SmartEngine = (function () {
             sum += value;
         });
 
-        // safe correction (no explosion)
+        // FIXED: No negative values
         const correction = adjustedTarget - sum;
 
         const targetSubject =
             SUBJECTS.reduce((a, b) =>
-                breakdown[a] < breakdown[b] ? a : b
+                breakdown[a] > breakdown[b] ? a : b  // ✅ Use LARGEST
             );
 
-        // 🔥 FIXED: Only 1 line changed - added Math.max(1, ...)
         breakdown[targetSubject] = Math.max(1, breakdown[targetSubject] + correction);
 
         const prediction = predictCompletion(remaining, adjustedTarget);
