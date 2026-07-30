@@ -85,8 +85,9 @@
 html,
 body{
     margin:0;
-    width:100vw;
-    min-height:100vh;
+    width:100%;
+    min-height:100%;
+    height:auto;
 
     background:var(--bg);
     color:var(--text);
@@ -96,6 +97,7 @@ body{
     line-height:1.5;
 
     overflow-x:hidden;
+    overflow-y:auto;
     overscroll-behavior-y:none;
 
     padding:
@@ -119,6 +121,8 @@ html{
     max-width:100%;
     animation:viewTransition .25s ease;
     padding-bottom:20px;
+    display:block;
+    position:relative;
 }
 
 .view-container{
@@ -126,6 +130,7 @@ html{
     padding:16px;
     max-width:1200px;
     margin:0 auto;
+    display:block;
 }
 
 .subjects-container{
@@ -783,7 +788,7 @@ progress::-moz-progress-bar{
 .flex{display:flex;}
 .flex-col{flex-direction:column;}
 .items-center{align-items:center;}
-.justify-between{justify-content:space-between;}
+.justify-between{justify-content:between;}
 .gap-8{gap:8px;}
 .gap-16{gap:16px;}
 
