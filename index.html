@@ -2,36 +2,41 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
     <title>Mission App</title>
 
     <!-- PWA MANIFEST -->
     <link rel="manifest" href="./manifest.json">
 
-    <!-- SAFE SERVICE WORKER REGISTRATION -->
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener("load", () => {
-                navigator.serviceWorker.register('./service-worker.js', { scope: './' })
-                    .then(() => console.log("SW registered successfully"))
-                    .catch(err => console.warn("SW Registration failed (offline still works):", err));
-            });
-        }
-    </script>
-
     <!-- PWA META TAGS -->
-    <meta name="theme-color" content="#0b0f14" />
+    <meta name="theme-color" content="#0b0f14">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Mission">
 
     <!-- ICONS -->
-    <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png" />
-    <link rel="apple-touch-icon" href="./icon-192.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+    <link rel="apple-touch-icon" href="./icon-192.png">
 
     <!-- STYLES -->
-    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./styles.css">
+
+    <!-- SERVICE WORKER -->
+    <script>
+        if ("serviceWorker" in navigator) {
+            window.addEventListener("load", () => {
+                navigator.serviceWorker
+                    .register("./service-worker.js", { scope: "./" })
+                    .then(() => console.log("SW registered successfully"))
+                    .catch(err =>
+                        console.warn("SW Registration failed:", err)
+                    );
+            });
+        }
+    </script>
 </head>
 
 <body>
@@ -40,126 +45,217 @@
 <div id="splash-screen">
     <div class="splash-content">
         <h1>📘 Mission App</h1>
-        <p style="color: #8b949e; font-weight: 500;">Initializing Dashboard...</p>
+        <p style="color:#8b949e;font-weight:500;">
+            Initializing Dashboard...
+        </p>
         <div class="loader"></div>
     </div>
 </div>
 
-<!-- MAIN APP -->
-<div id="app" style="display: none; opacity: 0; transition: opacity 0.25s ease;">
 
-    <h1 id="app-time-heading">MISSION</h1>
+<!-- MAIN APP -->
+<div id="app" style="display:none;opacity:0;transition:opacity .25s ease;">
+
+    <h1 id="app-time-heading">
+        MISSION
+    </h1>
+
 
     <!-- GLOBAL NAVIGATION -->
     <nav id="app-navigation-container" class="section-buttons">
-        <button data-target="study" class="nav-button">Study Tracker</button>
-        <button data-target="timetable" class="nav-button">Weekly Timetable</button>
-        <button data-target="dashboard" class="nav-button">Dashboard</button>
-        <button data-target="topstudent" class="nav-button">Top Student Mode</button>
-        <button data-target="sunnah" class="nav-button">Sunnah Tracker</button>
+
+        <button data-target="study" class="nav-button">
+            Study Tracker
+        </button>
+
+        <button data-target="timetable" class="nav-button">
+            Weekly Timetable
+        </button>
+
+        <button data-target="dashboard" class="nav-button">
+            Dashboard
+        </button>
+
+        <button data-target="topstudent" class="nav-button">
+            Top Student Mode
+        </button>
+
+        <button data-target="sunnah" class="nav-button">
+            Sunnah Tracker
+        </button>
+
     </nav>
 
+
     <!-- GRADE PROGRESS -->
-    <div id="grade-progress-container" style="width: 100%; box-sizing: border-box; padding: 0 4px;">
+    <div id="grade-progress-container">
         <div id="grade-progress-bar"></div>
     </div>
+
 
     <!-- DYNAMIC CONTENT -->
     <main id="main-content"></main>
 
 </div>
 
-<!-- SCRIPTS -->
-<script src="./Study-tracker.js"></script>
-<script src="./main.js"></script>
-<script src="./SmartEngine.js"></script>
-<script src="./weekly-timetable.js"></script>
-<script src="./dashboard.js"></script>
-<script src="./top-student-mode.js"></script>
-<script src="./Sunnah-tracker.js"></script>
 
-<script src="./SmartEngine.js"></script>
+<!-- SCRIPTS -->
+<script defer src="./Study-tracker.js"></script>
+<script defer src="./main.js"></script>
+<script defer src="./SmartEngine.js"></script>
+<script defer src="./weekly-timetable.js"></script>
+<script defer src="./dashboard.js"></script>
+<script defer src="./top-student-mode.js"></script>
+<script defer src="./Sunnah-tracker.js"></script>
+
+
 <script>
 "use strict";
 
-// INSTALL PROMPT
 let deferredPrompt;
+
+
 window.addEventListener("beforeinstallprompt", (e) => {
     e.preventDefault();
     deferredPrompt = e;
 });
 
-// ======================================================
-// 🚀 SAFE BOOT ENGINE (OFFLINE-FIRST)
-// ======================================================
+
 window.addEventListener("DOMContentLoaded", () => {
 
     const splash = document.getElementById("splash-screen");
     const app = document.getElementById("app");
 
+
     // NAVIGATION
-    document.getElementById("app-navigation-container")?.addEventListener("click", (e) => {
+    document
+    .getElementById("app-navigation-container")
+    ?.addEventListener("click", (e) => {
+
         const btn = e.target.closest("button");
-        if (btn?.dataset.target) {
-            window.loadSection(btn.dataset.target, window.UI.load().grade);
+
+        if (
+            btn?.dataset.target &&
+            typeof window.loadSection === "function"
+        ) {
+
+            const grade =
+                window.UI?.load?.()?.grade || 9;
+
+            window.loadSection(
+                btn.dataset.target,
+                grade
+            );
+
         }
+
     });
 
-    // ==================================================
-    // ⚡ INSTANT OFFLINE BOOT (NO HARD DEPENDENCY)
-    // ==================================================
+
+
     const bootApp = () => {
 
         try {
-            const lastUI = window.UI?.load?.() || { section: "study", grade: 9 };
 
-            if (typeof window.loadSection === "function") {
-                window.loadSection(lastUI.section, lastUI.grade);
+            const lastUI =
+                window.UI?.load?.() ||
+                {
+                    section:"study",
+                    grade:9
+                };
+
+
+            if (
+                typeof window.loadSection === "function"
+            ) {
+
+                window.loadSection(
+                    lastUI.section,
+                    lastUI.grade
+                );
+
             }
 
-        } catch (err) {
-            console.warn("Boot error:", err);
+
+        } catch(err) {
+
+            console.warn(
+                "Boot error:",
+                err
+            );
+
         }
 
-        // ALWAYS SHOW APP (NO FREEZE)
-        if (splash && app) {
-            splash.style.display = "none";
-            app.style.display = "block";
-            app.style.opacity = "1";
+
+
+        if(splash && app){
+
+            splash.style.display="none";
+
+            app.style.display="block";
+
+            requestAnimationFrame(() => {
+                app.style.opacity="1";
+            });
+
         }
+
     };
 
-    // ==================================================
-    // 🧠 SAFE SYSTEM CHECK (NON-BLOCKING)
-    // ==================================================
+
+
     let tries = 0;
+
     const maxTries = 20;
 
-    const waitSystem = setInterval(() => {
 
-        tries++;
+    const waitSystem =
+        setInterval(() => {
 
-        const ready =
-            window.DataService &&
-            typeof window.loadSection === "function";
+            tries++;
 
-        if (ready || tries >= maxTries) {
-            clearInterval(waitSystem);
-            bootApp();
-        }
 
-    }, 100);
+            const ready =
+                window.DataService &&
+                typeof window.loadSection === "function";
 
-    // ==================================================
-    // ⛑️ EMERGENCY BOOT (NEVER GET STUCK)
-    // ==================================================
+
+            if(
+                ready ||
+                tries >= maxTries
+            ){
+
+                clearInterval(waitSystem);
+
+                bootApp();
+
+            }
+
+
+        },100);
+
+
+
     setTimeout(() => {
-        if (app.style.display === "none") {
-            console.warn("Emergency boot triggered");
+
+        if(
+            app &&
+            app.style.display === "none"
+        ){
+
+            console.warn(
+                "Emergency boot triggered"
+            );
+
             bootApp();
+
         }
-    }, 5000);
+
+    },5000);
+
+
 });
+
 </script>
 
 </body>
