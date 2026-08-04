@@ -1,390 +1,1340 @@
 "use strict";
 
 // ======================================================
-// 1. DATA SERVICE (INDEXEDDB VERSION - PERSISTENT)
+// 1. DATA SERVICE (INDEXEDDB VERSION - IMPROVED ENGINE)
 // ======================================================
+
 window.DataService = {
+
     DB_NAME: "StudyTrackerDB",
     STORE_NAME: "mainData",
     KEY: "study_progress",
+
     _cachedData: null,
     _initPromise: null,
+    _db: null,
+
+
+    async _openDB() {
+
+        if (this._db) return this._db;
+
+        return new Promise((resolve) => {
+
+            try {
+
+                const request = indexedDB.open(this.DB_NAME);
+
+
+                request.addEventListener("upgradeneeded", (event) => {
+
+                    const db = event.target.result;
+
+                    if (!db.objectStoreNames.contains(this.STORE_NAME)) {
+                        db.createObjectStore(this.STORE_NAME);
+                    }
+
+                });
+
+
+                request.addEventListener("success", () => {
+
+                    this._db = request.result;
+                    resolve(this._db);
+
+                });
+
+
+                request.addEventListener("error", () => {
+
+                    console.warn("IndexedDB unavailable");
+                    resolve(null);
+
+                });
+
+
+            } catch (err) {
+
+                console.warn("Database open failed:", err);
+                resolve(null);
+
+            }
+
+        });
+
+    },
+
 
     async _init() {
-        if (this._cachedData !== null) return this._cachedData;
-        if (this._initPromise) return this._initPromise;
 
-        this._initPromise = new Promise((resolve) => {
+        if (this._cachedData !== null) {
+            return this._cachedData;
+        }
 
-            const request = indexedDB.open(this.DB_NAME);
 
-            request.addEventListener("upgradeneeded", (event) => {
-                const db = event.target.result;
-                if (!db.objectStoreNames.contains(this.STORE_NAME)) {
-                    db.createObjectStore(this.STORE_NAME);
-                }
-            });
+        if (this._initPromise) {
+            return this._initPromise;
+        }
 
-            request.addEventListener("success", () => {
-                const db = request.result;
-                const tx = db.transaction(this.STORE_NAME, "readonly");
-                const store = tx.objectStore(this.STORE_NAME);
 
-                const req = store.get(this.KEY);
+        this._initPromise = (async () => {
 
-                req.addEventListener("success", () => {
-                    this._cachedData = req.result || this.defaultData();
-                    resolve(this._cachedData);
-                });
+            const db = await this._openDB();
 
-                req.addEventListener("error", () => {
-                    this._cachedData = this.defaultData();
-                    resolve(this._cachedData);
-                });
-            });
 
-            request.addEventListener("error", () => {
+            if (!db) {
+
                 this._cachedData = this.defaultData();
-                resolve(this._cachedData);
+                return this._cachedData;
+
+            }
+
+
+            return new Promise((resolve) => {
+
+
+                try {
+
+                    const tx = db.transaction(
+                        this.STORE_NAME,
+                        "readonly"
+                    );
+
+
+                    const store = tx.objectStore(
+                        this.STORE_NAME
+                    );
+
+
+                    const request = store.get(this.KEY);
+
+
+                    request.addEventListener(
+                        "success",
+                        () => {
+
+                            this._cachedData =
+                                request.result ||
+                                this.defaultData();
+
+                            resolve(this._cachedData);
+
+                        }
+                    );
+
+
+                    request.addEventListener(
+                        "error",
+                        () => {
+
+                            this._cachedData =
+                                this.defaultData();
+
+                            resolve(this._cachedData);
+
+                        }
+                    );
+
+
+                } catch (err) {
+
+                    console.warn(
+                        "Data load failed:",
+                        err
+                    );
+
+                    this._cachedData =
+                        this.defaultData();
+
+                    resolve(this._cachedData);
+
+                }
+
+
             });
-        });
+
+
+        })();
+
 
         return this._initPromise;
+
     },
+
 
     get(fallback) {
-        if (!this._cachedData) {
-            this._init();
-        }
-        return this._cachedData || fallback || this.defaultData();
+
+        return (
+            this._cachedData ||
+            fallback ||
+            this.defaultData()
+        );
+
     },
 
-    set(data) {
+
+    async set(data) {
+
         this._cachedData = data;
 
-        setTimeout(() => {
-            this._init().then(() => {
-                const dbReq = indexedDB.open(this.DB_NAME);
 
-                dbReq.addEventListener("success", () => {
-                    const db = dbReq.result;
-                    const tx = db.transaction(this.STORE_NAME, "readwrite");
-                    tx.objectStore(this.STORE_NAME).put(data, this.KEY);
-                });
-            });
-        }, 0);
+        try {
+
+            const db = await this._openDB();
+
+            if (!db) return;
+
+
+            const tx = db.transaction(
+                this.STORE_NAME,
+                "readwrite"
+            );
+
+
+            tx.objectStore(this.STORE_NAME)
+                .put(data, this.KEY);
+
+
+        } catch (err) {
+
+            console.warn(
+                "Data save failed:",
+                err
+            );
+
+        }
+
     },
+
 
     defaultData() {
+
         return {
-            startDate: new Date().toISOString().split("T")[0],
-            studyProgress: {},
-            ui: { section: "study", grade: 9 }
+
+            startDate:
+                new Date()
+                .toISOString()
+                .split("T")[0],
+
+            studyProgress:{},
+
+            ui:{
+                section:"study",
+                grade:9
+            }
+
         };
+
     }
+
 };
 
 
+
 // ======================================================
-// 2. UI CONTROLLER (INDEXEDDB VERSION - PERSISTENT)
+// 2. UI CONTROLLER (INDEXEDDB VERSION - IMPROVED)
 // ======================================================
+
 window.UI = {
-    DB_NAME: "UITrackerDB",
-    STORE_NAME: "uiData",
-    KEY: "mission_ui",
-    _cachedUI: null,
-    _initPromise: null,
 
-    async _initUI() {
-        if (this._cachedUI !== null) return this._cachedUI;
-        if (this._initPromise) return this._initPromise;
+    DB_NAME:"UITrackerDB",
+    STORE_NAME:"uiData",
+    KEY:"mission_ui",
 
-        this._initPromise = new Promise((resolve) => {
+    _cachedUI:null,
+    _initPromise:null,
+    _db:null,
 
-            const request = indexedDB.open(this.DB_NAME);
 
-            request.addEventListener("upgradeneeded", (event) => {
-                const db = event.target.result;
-                if (!db.objectStoreNames.contains(this.STORE_NAME)) {
-                    db.createObjectStore(this.STORE_NAME);
-                }
-            });
+    async _openDB(){
 
-            request.addEventListener("success", () => {
-                const db = request.result;
-                const tx = db.transaction(this.STORE_NAME, "readonly");
-                const store = tx.objectStore(this.STORE_NAME);
+        if(this._db) return this._db;
 
-                const req = store.get(this.KEY);
 
-                req.addEventListener("success", () => {
-                    this._cachedUI = req.result || { section: "study", grade: 9 };
-                    resolve(this._cachedUI);
+        return new Promise((resolve)=>{
+
+
+            try{
+
+
+                const request =
+                    indexedDB.open(this.DB_NAME);
+
+
+                request.addEventListener(
+                    "upgradeneeded",
+                    (event)=>{
+
+                    const db =
+                        event.target.result;
+
+
+                    if(
+                        !db.objectStoreNames
+                        .contains(this.STORE_NAME)
+                    ){
+
+                        db.createObjectStore(
+                            this.STORE_NAME
+                        );
+
+                    }
+
                 });
 
-                req.addEventListener("error", () => {
-                    this._cachedUI = { section: "study", grade: 9 };
-                    resolve(this._cachedUI);
-                });
-            });
 
-            request.addEventListener("error", () => {
-                this._cachedUI = { section: "study", grade: 9 };
-                resolve(this._cachedUI);
-            });
+                request.addEventListener(
+                    "success",
+                    ()=>{
+
+                    this._db=request.result;
+                    resolve(this._db);
+
+                });
+
+
+                request.addEventListener(
+                    "error",
+                    ()=>resolve(null)
+                );
+
+
+            }catch{
+
+                resolve(null);
+
+            }
+
+
         });
 
-        return this._initPromise;
     },
 
-    save(section, grade) {
-        const uiData = { section, grade };
-        this._cachedUI = uiData;
 
-        setTimeout(() => {
-            this._initUI().then(() => {
-                const dbReq = indexedDB.open(this.DB_NAME);
+    async _initUI(){
 
-                dbReq.addEventListener("success", () => {
-                    const db = dbReq.result;
-                    const tx = db.transaction(this.STORE_NAME, "readwrite");
-                    tx.objectStore(this.STORE_NAME).put(uiData, this.KEY);
+        if(this._cachedUI !== null)
+            return this._cachedUI;
+
+
+        if(this._initPromise)
+            return this._initPromise;
+
+
+
+        this._initPromise =
+            (async()=>{
+
+
+            const db =
+                await this._openDB();
+
+
+
+            if(!db){
+
+                this._cachedUI =
+                {
+                    section:"study",
+                    grade:9
+                };
+
+                return this._cachedUI;
+
+            }
+
+
+
+            return new Promise((resolve)=>{
+
+
+                const tx =
+                    db.transaction(
+                        this.STORE_NAME,
+                        "readonly"
+                    );
+
+
+                const request =
+                    tx.objectStore(
+                        this.STORE_NAME
+                    )
+                    .get(this.KEY);
+
+
+
+                request.addEventListener(
+                    "success",
+                    ()=>{
+
+                    this._cachedUI =
+                        request.result ||
+                        {
+                            section:"study",
+                            grade:9
+                        };
+
+
+                    resolve(this._cachedUI);
+
                 });
+
+
+                request.addEventListener(
+                    "error",
+                    ()=>{
+
+                    this._cachedUI =
+                    {
+                        section:"study",
+                        grade:9
+                    };
+
+
+                    resolve(this._cachedUI);
+
+                });
+
+
             });
-        }, 0);
+
+
+        })();
+
+
+        return this._initPromise;
+
     },
 
-    load() {
-        this._initUI();
-        return this._cachedUI || { section: "study", grade: 9 };
+
+    async save(section,grade){
+
+        const uiData={
+            section,
+            grade
+        };
+
+
+        this._cachedUI=uiData;
+
+
+        try{
+
+            const db =
+                await this._openDB();
+
+
+            if(!db) return;
+
+
+            const tx =
+                db.transaction(
+                    this.STORE_NAME,
+                    "readwrite"
+                );
+
+
+            tx.objectStore(this.STORE_NAME)
+            .put(uiData,this.KEY);
+
+
+        }catch(err){
+
+            console.warn(
+                "UI save failed:",
+                err
+            );
+
+        }
+
+    },
+
+
+    load(){
+
+        return (
+            this._cachedUI ||
+            {
+                section:"study",
+                grade:9
+            }
+        );
+
     }
+
 };
 
+// ======================================================
+// 3. MODULE REGISTRY (COMPATIBLE)
+// ======================================================
 
-// ======================================================
-// 3. MODULE REGISTRY (UNCHANGED)
-// ======================================================
 window.SectionMap = {
+
     study: "loadStudySection",
+
     timetable: "loadWeeklyTimetable",
+
     dashboard: "loadDashboard",
+
     topstudent: "loadTopStudentMode",
+
     sunnah: "loadSunnahTracker"
+
 };
 
 
+
+
 // ======================================================
-// 4. SAFE LOADER (UNCHANGED LOGIC)
+// 4. SAFE LOADER (IMPROVED)
 // ======================================================
+
 const MAX_RETRIES = 20;
 
-window.loadSection = function (type, grade = 9, retry = 0) {
-    const main = document.getElementById("main-content");
-    if (!main) return;
 
-    if (retry > MAX_RETRIES) {
+window.loadSection = function(
+    type,
+    grade = 9,
+    retry = 0
+){
+
+    const main =
+        document.getElementById(
+            "main-content"
+        );
+
+
+    if(!main) {
+
+        console.warn(
+            "Main content missing"
+        );
+
+        return;
+
+    }
+
+
+
+    if(retry > MAX_RETRIES){
+
         main.innerHTML = `
-            <div style="padding:20px;color:red;">
-                Failed to load module: ${type}
-            </div>
+
+        <div style="
+            padding:20px;
+            color:#ff4757;
+        ">
+
+        Failed to load module:
+        ${type}
+
+        </div>
+
         `;
+
         return;
+
     }
 
-    if (type === "dashboard" && !window.maxPagesByGrade) {
-        setTimeout(() => {
-            window.loadSection(type, grade, retry + 1);
-        }, 150);
+
+
+
+    // Dashboard waits for curriculum data
+
+    if(
+        type === "dashboard" &&
+        !window.maxPagesByGrade
+    ){
+
+        setTimeout(()=>{
+
+            window.loadSection(
+                type,
+                grade,
+                retry + 1
+            );
+
+        },150);
+
+
         return;
+
     }
 
-    const fnName = window.SectionMap[type];
 
-    if (!fnName || typeof window[fnName] !== "function") {
-        setTimeout(() => {
-            window.loadSection(type, grade, retry + 1);
-        }, 150);
+
+
+
+    const fnName =
+        window.SectionMap[type];
+
+
+
+    if(
+        !fnName ||
+        typeof window[fnName] !== "function"
+    ){
+
+        setTimeout(()=>{
+
+            window.loadSection(
+                type,
+                grade,
+                retry + 1
+            );
+
+        },150);
+
+
         return;
+
     }
 
-    try {
-        window.UI.save(type, grade);
 
-        if (type === "study") {
-            window[fnName](grade);
-        } else {
-            window[fnName]();
-        }
 
-    } catch (err) {
-        console.error("Module error:", err);
+
+    try{
+
+
+        window.UI.save(
+            type,
+            grade
+        );
+
+
+
+        requestAnimationFrame(()=>{
+
+
+            if(type === "study"){
+
+                window[fnName](grade);
+
+
+            }else{
+
+
+                window[fnName]();
+
+
+            }
+
+
+        });
+
+
+
+    }
+    catch(err){
+
+
+        console.error(
+            "Module error:",
+            err
+        );
+
+
+
         main.innerHTML = `
-            <div style="padding:20px;color:red;">
-                ${err.message}
-            </div>
+
+        <div style="
+            padding:20px;
+            color:#ff4757;
+        ">
+
+        ${err.message}
+
+        </div>
+
         `;
+
+
     }
+
+
 };
 
 
+
+
 // ======================================================
-// 5. SYSTEM BOOT (UNCHANGED STRUCTURE, FIXED SAFETY)
+// 5. SYSTEM BOOT (RACE CONDITION PROTECTED)
 // ======================================================
-function waitForSystemReady(callback) {
-    const check = () => {
+
+
+function waitForSystemReady(callback){
+
+
+    let attempts = 0;
+
+
+    const check = ()=>{
+
+
+        attempts++;
+
+
         const ready =
+
             window.DataService &&
+
             window.SectionMap &&
+
             typeof window.loadSection === "function";
 
-        if (!ready) {
-            setTimeout(check, 50);
+
+
+
+        if(ready){
+
+            callback();
+
             return;
+
         }
 
-        callback();
+
+
+
+        if(attempts > 100){
+
+            console.error(
+                "System boot timeout"
+            );
+
+            return;
+
+        }
+
+
+
+        setTimeout(
+            check,
+            50
+        );
+
+
     };
 
+
     check();
+
+
 }
 
 
+
+
 // ======================================================
-// 6. PERSISTENT STORAGE REQUEST (UNCHANGED)
+// 6. PERSISTENT STORAGE REQUEST
 // ======================================================
-async function requestPersistentStorage() {
-    if (navigator.storage && navigator.storage.persist) {
-        try {
-            const isPersisted = await navigator.storage.persist();
-            if (isPersisted) {
-                console.log("✅ PERSISTENT STORAGE GRANTED!");
-            } else {
-                console.log("⚠️ Persistent storage not granted");
-            }
-        } catch (err) {
-            console.warn("Persistent storage request failed:", err);
+
+
+async function requestPersistentStorage(){
+
+
+    try{
+
+
+        if(
+            navigator.storage &&
+            navigator.storage.persist
+        ){
+
+
+            const result =
+                await navigator.storage.persist();
+
+
+
+            console.log(
+
+                result ?
+
+                "✅ PERSISTENT STORAGE GRANTED" :
+
+                "⚠️ Persistent storage unavailable"
+
+            );
+
+
         }
+
+
+
     }
+    catch(err){
+
+
+        console.warn(
+            "Persistent storage error:",
+            err
+        );
+
+
+    }
+
+
 }
 
 
+
+
+
 // ======================================================
-// 7. START APP (FIXED RACE CONDITION)
+// 7. START APP (IMPROVED STARTUP)
 // ======================================================
-document.addEventListener("DOMContentLoaded", async () => {
 
-    await window.DataService._init();
-    await window.UI._initUI();
 
-    waitForSystemReady(() => {
-        const lastUI = window.UI.load();
-        window.loadSection(lastUI.section, lastUI.grade);
+document.addEventListener(
+"DOMContentLoaded",
+async()=>{
 
-        requestPersistentStorage();
-    });
+
+    try{
+
+
+        await window.DataService._init();
+
+
+        await window.UI._initUI();
+
+
+
+
+        waitForSystemReady(()=>{
+
+
+            const lastUI =
+                window.UI.load();
+
+
+
+            window.loadSection(
+
+                lastUI.section || "study",
+
+                lastUI.grade || 9
+
+            );
+
+
+
+            requestPersistentStorage();
+
+
+
+        });
+
+
+
+    }
+    catch(err){
+
+
+        console.error(
+            "Application startup failed:",
+            err
+        );
+
+
+        const main =
+            document.getElementById(
+                "main-content"
+            );
+
+
+        if(main){
+
+            main.innerHTML = `
+
+            <div style="
+                padding:20px;
+                color:#ff4757;
+            ">
+
+            Application failed to start.
+
+            </div>
+
+            `;
+
+        }
+
+
+    }
+
+
 });
 
 
 // ======================================================
-// 🛡️ RELIABILITY SYSTEM (FIXED SNAPSHOT BUG ONLY)
+// 🛡️ RELIABILITY SYSTEM (IMPROVED SNAPSHOT ENGINE)
 // ======================================================
-(function () {
 
-    const SNAPSHOT_PREFIX = "study_snapshot_";
+(function(){
+
+
+    const SNAPSHOT_PREFIX =
+        "study_snapshot_";
+
+
     const MAX_SNAPSHOTS = 5;
-    const SNAPSHOT_DB_NAME = "SnapshotTrackerDB";
-    const SNAPSHOT_STORE_NAME = "snapshots";
 
-    async function _openSnapshotDB() {
-        return new Promise((resolve) => {
-            const request = indexedDB.open(SNAPSHOT_DB_NAME);
 
-            request.addEventListener("upgradeneeded", (event) => {
-                const db = event.target.result;
-                if (!db.objectStoreNames.contains(SNAPSHOT_STORE_NAME)) {
-                    db.createObjectStore(SNAPSHOT_STORE_NAME);
-                }
-            });
+    const SNAPSHOT_DB_NAME =
+        "SnapshotTrackerDB";
 
-            request.addEventListener("success", () => resolve(request.result));
-            request.addEventListener("error", () => resolve(null));
+
+    const SNAPSHOT_STORE_NAME =
+        "snapshots";
+
+
+
+
+    async function _openSnapshotDB(){
+
+
+        return new Promise((resolve)=>{
+
+
+            try{
+
+
+                const request =
+                    indexedDB.open(
+                        SNAPSHOT_DB_NAME
+                    );
+
+
+
+                request.addEventListener(
+                    "upgradeneeded",
+                    (event)=>{
+
+
+                    const db =
+                        event.target.result;
+
+
+
+                    if(
+                        !db.objectStoreNames
+                        .contains(
+                            SNAPSHOT_STORE_NAME
+                        )
+                    ){
+
+
+                        db.createObjectStore(
+                            SNAPSHOT_STORE_NAME
+                        );
+
+
+                    }
+
+
+                });
+
+
+
+                request.addEventListener(
+                    "success",
+                    ()=>{
+
+                    resolve(
+                        request.result
+                    );
+
+                });
+
+
+
+                request.addEventListener(
+                    "error",
+                    ()=>resolve(null)
+                );
+
+
+
+            }
+            catch(err){
+
+                console.warn(
+                    "Snapshot DB error:",
+                    err
+                );
+
+                resolve(null);
+
+            }
+
+
         });
+
+
     }
 
-    function createSnapshot() {
-        const raw = window.DataService._cachedData;
-        if (!raw) return;
 
-        _openSnapshotDB().then((db) => {
-            if (!db) return;
 
-            const key = SNAPSHOT_PREFIX + Date.now();
-            const tx = db.transaction(SNAPSHOT_STORE_NAME, "readwrite");
-            tx.objectStore(SNAPSHOT_STORE_NAME).put(raw, key);
+
+
+
+    async function createSnapshot(){
+
+
+        try{
+
+
+            const raw =
+                window.DataService
+                ._cachedData;
+
+
+
+            if(!raw)
+                return;
+
+
+
+
+            const db =
+                await _openSnapshotDB();
+
+
+
+            if(!db)
+                return;
+
+
+
+
+            const snapshot =
+                structuredClone ?
+
+                structuredClone(raw) :
+
+                JSON.parse(
+                    JSON.stringify(raw)
+                );
+
+
+
+
+            const key =
+                SNAPSHOT_PREFIX +
+                Date.now();
+
+
+
+
+            const tx =
+                db.transaction(
+                    SNAPSHOT_STORE_NAME,
+                    "readwrite"
+                );
+
+
+
+            tx.objectStore(
+                SNAPSHOT_STORE_NAME
+            )
+            .put(
+                snapshot,
+                key
+            );
+
+
 
             cleanupSnapshots(db);
-        });
-    }
 
-    function cleanupSnapshots(db) {
-        const tx = db.transaction(SNAPSHOT_STORE_NAME, "readonly");
-        const store = tx.objectStore(SNAPSHOT_STORE_NAME);
-        const req = store.openCursor();
 
-        const keys = [];
 
-        req.addEventListener("success", function handler(e) {
-            const cursor = e.target.result;
-
-            if (cursor) {
-                keys.push(cursor.key);
-                cursor.continue();
-            } else {
-                keys.sort();
-
-                while (keys.length > MAX_SNAPSHOTS) {
-                    const delTx = db.transaction(SNAPSHOT_STORE_NAME, "readwrite");
-                    delTx.objectStore(SNAPSHOT_STORE_NAME).delete(keys.shift());
-                }
-            }
-        });
-    }
-
-    function recover() {
-        try {
-            const raw = window.DataService._cachedData;
-            if (raw) JSON.parse(JSON.stringify(raw));
-        } catch {
-            _openSnapshotDB().then((db) => {
-                if (!db) return;
-
-                const tx = db.transaction(SNAPSHOT_STORE_NAME, "readonly");
-                const store = tx.objectStore(SNAPSHOT_STORE_NAME);
-                const req = store.openCursor(null, "prev");
-
-                req.addEventListener("success", (e) => {
-                    const cursor = e.target.result;
-                    if (cursor) {
-                        window.DataService._cachedData = cursor.value;
-                        window.DataService.set(cursor.value);
-                    }
-                });
-            });
         }
+        catch(err){
+
+
+            console.warn(
+                "Snapshot creation failed:",
+                err
+            );
+
+
+        }
+
+
     }
 
-    function updateConnectionStatus() {
-        document.body.dataset.online = navigator.onLine ? "true" : "false";
+
+
+
+
+
+    function cleanupSnapshots(db){
+
+
+        try{
+
+
+            const tx =
+                db.transaction(
+                    SNAPSHOT_STORE_NAME,
+                    "readonly"
+                );
+
+
+            const store =
+                tx.objectStore(
+                    SNAPSHOT_STORE_NAME
+                );
+
+
+
+            const request =
+                store.getAllKeys();
+
+
+
+
+            request.addEventListener(
+                "success",
+                ()=>{
+
+
+                const keys =
+                    request.result
+                    .sort();
+
+
+
+                while(
+                    keys.length >
+                    MAX_SNAPSHOTS
+                ){
+
+
+                    const old =
+                        keys.shift();
+
+
+
+                    const deleteTx =
+                        db.transaction(
+                            SNAPSHOT_STORE_NAME,
+                            "readwrite"
+                        );
+
+
+
+                    deleteTx.objectStore(
+                        SNAPSHOT_STORE_NAME
+                    )
+                    .delete(old);
+
+
+                }
+
+
+
+            });
+
+
+        }
+        catch(err){
+
+            console.warn(
+                "Snapshot cleanup failed:",
+                err
+            );
+
+        }
+
+
     }
 
-    window.addEventListener("online", updateConnectionStatus);
-    window.addEventListener("offline", updateConnectionStatus);
 
-    document.addEventListener("DOMContentLoaded", () => {
+
+
+
+
+    async function recover(){
+
+
+        try{
+
+
+            const data =
+                window.DataService
+                ._cachedData;
+
+
+
+            if(
+                data &&
+                typeof data === "object" &&
+                data.studyProgress
+            ){
+
+                return;
+
+            }
+
+
+
+
+            const db =
+                await _openSnapshotDB();
+
+
+
+            if(!db)
+                return;
+
+
+
+
+            const tx =
+                db.transaction(
+                    SNAPSHOT_STORE_NAME,
+                    "readonly"
+                );
+
+
+
+            const store =
+                tx.objectStore(
+                    SNAPSHOT_STORE_NAME
+                );
+
+
+
+            const request =
+                store.openCursor(
+                    null,
+                    "prev"
+                );
+
+
+
+
+            request.addEventListener(
+                "success",
+                (event)=>{
+
+
+                const cursor =
+                    event.target.result;
+
+
+
+                if(cursor){
+
+
+                    window.DataService
+                    ._cachedData =
+                        cursor.value;
+
+
+
+                    window.DataService
+                    .set(
+                        cursor.value
+                    );
+
+
+
+                    console.log(
+                        "Recovered latest snapshot"
+                    );
+
+
+                }
+
+
+
+            });
+
+
+
+        }
+        catch(err){
+
+
+            console.warn(
+                "Recovery failed:",
+                err
+            );
+
+
+        }
+
+
+    }
+
+
+
+
+
+
+    function updateConnectionStatus(){
+
+
+        document.body.dataset.online =
+            navigator.onLine
+            ? "true"
+            : "false";
+
+
+    }
+
+
+
+
+
+
+    window.addEventListener(
+        "online",
+        updateConnectionStatus
+    );
+
+
+    window.addEventListener(
+        "offline",
+        updateConnectionStatus
+    );
+
+
+
+
+
+
+    document.addEventListener(
+        "DOMContentLoaded",
+        ()=>{
+
+
         recover();
+
+
         updateConnectionStatus();
-        createSnapshot();
-        setInterval(createSnapshot, 1000 * 60 * 60);
+
+
+        setTimeout(
+            createSnapshot,
+            3000
+        );
+
+
+
+        setInterval(
+            createSnapshot,
+            1000 * 60 * 60
+        );
+
+
+
     });
+
+
 
 })();
