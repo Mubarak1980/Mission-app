@@ -2445,56 +2445,71 @@ textarea:focus-visible{
 
 }
 
+
+
 /* ==========================================================
-📱 MAIN NAVIGATION LAYOUT FIX
-4 BUTTONS TOP + SUNNAH FULL WIDTH BOTTOM
+📱 MOBILE NAVIGATION EXACT LAYOUT
+2x2 BUTTONS + FULL WIDTH SUNNAH
 ========================================================== */
 
-#app-navigation-container{
-    display:grid;
-    grid-template-columns:repeat(4,1fr);
-    gap:10px;
-}
-
-
-#app-navigation-container .nav-button{
-    width:100%;
-    min-width:0;
-}
-
-
-/* Sunnah Tracker becomes full row */
-#app-navigation-container .nav-button[data-target="sunnah"]{
-    grid-column:1 / -1;
-}
-
-
-/* Mobile layout */
 @media(max-width:768px){
 
     #app-navigation-container{
-        grid-template-columns:repeat(2,1fr);
+
+        display:grid;
+
+        grid-template-columns:repeat(2, 1fr);
+
         gap:10px;
+
+        margin:12px;
+
     }
 
 
-    #app-navigation-container .nav-button[data-target="sunnah"]{
-        grid-column:1 / -1;
+    #app-navigation-container .nav-button{
+
+        width:100%;
+
+        min-width:0;
+
+        flex:none;
+
+    }
+
+
+    /* Sunnah Tracker full bottom row */
+
+    #app-navigation-container 
+    .nav-button[data-target="sunnah"]{
+
+        grid-column:1 / 3;
+
     }
 
 }
 
 
-/* Very small phones */
-@media(max-width:400px){
+/* Desktop keeps 4 buttons in one row + Sunnah below */
+
+@media(min-width:769px){
 
     #app-navigation-container{
-        grid-template-columns:1fr;
+
+        display:grid;
+
+        grid-template-columns:repeat(4,1fr);
+
+        gap:10px;
+
     }
 
 
-    #app-navigation-container .nav-button[data-target="sunnah"]{
-        grid-column:auto;
+    #app-navigation-container 
+    .nav-button[data-target="sunnah"]{
+
+        grid-column:1 / 5;
+
     }
 
 }
