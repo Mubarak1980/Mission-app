@@ -2445,7 +2445,59 @@ textarea:focus-visible{
 
 }
 
+/* ==========================================================
+📱 MAIN NAVIGATION LAYOUT FIX
+4 BUTTONS TOP + SUNNAH FULL WIDTH BOTTOM
+========================================================== */
 
+#app-navigation-container{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:10px;
+}
+
+
+#app-navigation-container .nav-button{
+    width:100%;
+    min-width:0;
+}
+
+
+/* Sunnah Tracker becomes full row */
+#app-navigation-container .nav-button[data-target="sunnah"]{
+    grid-column:1 / -1;
+}
+
+
+/* Mobile layout */
+@media(max-width:768px){
+
+    #app-navigation-container{
+        grid-template-columns:repeat(2,1fr);
+        gap:10px;
+    }
+
+
+    #app-navigation-container .nav-button[data-target="sunnah"]{
+        grid-column:1 / -1;
+    }
+
+}
+
+
+/* Very small phones */
+@media(max-width:400px){
+
+    #app-navigation-container{
+        grid-template-columns:1fr;
+    }
+
+
+    #app-navigation-container .nav-button[data-target="sunnah"]{
+        grid-column:auto;
+    }
+
+}
 
 /* ==========================================================
 END OF MISSION APP PREMIUM CSS ENGINE
