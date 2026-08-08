@@ -3,10 +3,10 @@
 const SUBJECTS = ["Math", "Physics", "Chemistry", "Biology"];
 
 window.maxPagesByGrade = {
-    9:  { Math: 363, Physics: 174, Chemistry: 175, Biology: 164 },
-    10: { Math: 385, Physics: 249, Chemistry: 298, Biology: 174 },
-    11: { Math: 479, Physics: 329, Chemistry: 330, Biology: 284 },
-    12: { Math: 416, Physics: 177, Chemistry: 287, Biology: 354 }
+    9:  { Math: 311, Physics: 138, Chemistry: 152, Biology: 153 },
+    10: { Math: 335, Physics: 217, Chemistry: 202, Biology: 150 },
+    11: { Math: 120, Physics: 308, Chemistry: 295, Biology: 243 },
+    12: { Math: 306, Physics: 154, Chemistry: 245, Biology: 325 }
 };
 
 function createSubjectHtml(name, max, saved) {
