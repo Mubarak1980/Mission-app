@@ -8,7 +8,9 @@ window.loadWeeklyTimetable = function() {
     // 1. FIXED CURRICULUM DATA
     // ===============================
     const totalPages = 3654;
+    const totalCycles = 5;
     const totalDays = 60;
+    const totalSystemDays = totalCycles * totalDays;
     const dailyTarget = 61;
 
     const gradePages = [
@@ -30,7 +32,7 @@ window.loadWeeklyTimetable = function() {
         target: dailyTarget
     }));
 
-    const dayInCycle = new Date().getDate() % 4;
+    const dayInCycle = (new Date().getDate() - 1) % 4;
 
     const dailyBreakdown = [
         { Math: 16, Physics: 15, Chemistry: 15, Biology: 15 },
@@ -53,7 +55,7 @@ window.loadWeeklyTimetable = function() {
     `).join("");
 
     // ===============================
-    // 2. SMART ENGINE (v2 SAFE INTEGRATION)
+    // 2. SMART ENGINE
     // ===============================
     let mission = null;
     let progress = null;
@@ -68,10 +70,34 @@ window.loadWeeklyTimetable = function() {
     }
 
     // ===============================
-    // PWA SAFE FIX: Guard breakdown access
+    // 3. SAFE MISSION DATA
     // ===============================
-    const safeBreakdown = dailyBreakdown;
+    const safeBreakdown = mission?.breakdown &&
+        Object.keys(mission.breakdown).length
+        ? mission.breakdown
+        : dailyBreakdown;
 
+    const displayedMissionTotal =
+        Object.values(safeBreakdown)
+            .reduce((sum, value) => sum + Number(value || 0), 0);
+
+    const displayedCycle =
+        mission?.cycle || 1;
+
+    const displayedDay =
+        mission?.day || 1;
+
+    const displayedSystemDays =
+        mission?.totalDays || totalSystemDays;
+
+    const displayedCycleDays =
+        mission?.totalDays
+            ? Math.min(totalDays, mission.totalDays)
+            : totalDays;
+
+    // ===============================
+    // 4. MISSION HTML
+    // ===============================
     const missionHtml = mission ? `
         <div style="
             margin-top:20px;
@@ -87,12 +113,21 @@ window.loadWeeklyTimetable = function() {
             </h2>
 
             <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
-                <div><strong>Cycle:</strong> ${mission.cycle} / 4</div>
-                <div><strong>Day:</strong> ${mission.day} / ${totalDays}</div>
+                <div>
+                    <strong>Cycle:</strong>
+                    ${displayedCycle} / ${totalCycles}
+                </div>
+
+                <div>
+                    <strong>Day:</strong>
+                    ${displayedDay} / ${displayedCycleDays}
+                </div>
             </div>
 
             <div style="color:#8b949e;margin-bottom:10px;">
-                Total System: 240 Days (4 Cycles × 60 Days)
+                Total System:
+                ${displayedSystemDays} Days
+                (${totalCycles} Cycles × ${totalDays} Days)
             </div>
 
             <h3 style="margin:10px 0;">🎯 Today's Mission</h3>
@@ -103,10 +138,25 @@ window.loadWeeklyTimetable = function() {
                 gap:8px;
                 margin-bottom:10px;
             ">
-                <div>Math: <strong>${safeBreakdown.Math}</strong></div>
-                <div>Physics: <strong>${safeBreakdown.Physics}</strong></div>
-                <div>Chemistry: <strong>${safeBreakdown.Chemistry}</strong></div>
-                <div>Biology: <strong>${safeBreakdown.Biology}</strong></div>
+                <div>
+                    Math:
+                    <strong>${safeBreakdown.Math}</strong>
+                </div>
+
+                <div>
+                    Physics:
+                    <strong>${safeBreakdown.Physics}</strong>
+                </div>
+
+                <div>
+                    Chemistry:
+                    <strong>${safeBreakdown.Chemistry}</strong>
+                </div>
+
+                <div>
+                    Biology:
+                    <strong>${safeBreakdown.Biology}</strong>
+                </div>
             </div>
 
             <div style="
@@ -116,26 +166,32 @@ window.loadWeeklyTimetable = function() {
                 border-top:1px solid #30363d;
                 padding-top:10px;
             ">
-                Total: ${dailyTarget} pages
+                Total: ${displayedMissionTotal} pages
             </div>
 
             <div style="margin-top:15px;">
 
                 <div style="margin-bottom:10px;">
                     📅 Days Progress:
-                    <strong>${progress?.day || 0} / ${totalDays}</strong>
-                    <progress 
-                        value="${progress?.day || 0}" 
-                        max="${totalDays}"
+                    <strong>
+                        ${progress?.day || 0} / ${displayedCycleDays}
+                    </strong>
+
+                    <progress
+                        value="${progress?.day || 0}"
+                        max="${displayedCycleDays}"
                         style="width:100%;height:10px;">
                     </progress>
                 </div>
 
                 <div>
                     📚 Total Pages Progress:
-                    <strong>${progress?.pagesDone || 0} / ${totalPages}</strong>
-                    <progress 
-                        value="${progress?.pagesDone || 0}" 
+                    <strong>
+                        ${progress?.pagesDone || 0} / ${totalPages}
+                    </strong>
+
+                    <progress
+                        value="${progress?.pagesDone || 0}"
                         max="${totalPages}"
                         style="width:100%;height:10px;">
                     </progress>
@@ -157,7 +213,7 @@ window.loadWeeklyTimetable = function() {
     `;
 
     // ===============================
-    // 3. FINAL RENDER
+    // 5. FINAL RENDER
     // ===============================
     container.innerHTML = `
         <div style="background:#121821;padding:15px;border-radius:10px;color:white;">
@@ -168,8 +224,14 @@ window.loadWeeklyTimetable = function() {
                 <table style="width:100%;border-collapse:collapse;text-align:center;color:white;">
                     <thead>
                         <tr style="color:#8b949e;border-bottom:2px solid #30363d;">
-                            <th>Gr</th><th>Pgs</th><th>Dys</th>
-                            <th>M</th><th>Ph</th><th>Ch</th><th>Bi</th><th>Tgt</th>
+                            <th>Gr</th>
+                            <th>Pgs</th>
+                            <th>Dys</th>
+                            <th>M</th>
+                            <th>Ph</th>
+                            <th>Ch</th>
+                            <th>Bi</th>
+                            <th>Tgt</th>
                         </tr>
                     </thead>
 
