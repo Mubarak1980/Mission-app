@@ -7,16 +7,28 @@ window.loadWeeklyTimetable = function() {
     // ===============================
     // 1. FIXED CURRICULUM DATA
     // ===============================
-    const planData = [
-        { grade: 9, total: 754, days: 18, math: 20, phys: 10, chem: 10, bio: 9, target: 49 },
-        { grade: 10, total: 904, days: 22, math: 18, phys: 10, chem: 12, bio: 12, target: 52 },
-        { grade: 11, total: 966, days: 27, math: 18, phys: 10, chem: 12, bio: 13, target: 53 },
-        { grade: 12, total: 1030, days: 23, math: 18, phys: 10, chem: 12, bio: 14, target: 54 }
+    const totalPages = 3654;
+    const totalDays = 60;
+    const dailyTarget = 61;
+
+    const gradePages = [
+        { grade: 9, total: 754 },
+        { grade: 10, total: 904 },
+        { grade: 11, total: 966 },
+        { grade: 12, total: 1030 }
     ];
 
-    const totalPages = planData.reduce((sum, row) => sum + row.total, 0);
-    const totalDays = 60;
-    const dailyTarget = Math.ceil(totalPages / totalDays);
+    const gradeDays = [12, 15, 16, 17];
+
+    const planData = gradePages.map((row, index) => ({
+        ...row,
+        days: gradeDays[index],
+        math: 15,
+        phys: 15,
+        chem: 15,
+        bio: 15,
+        target: dailyTarget
+    }));
 
     const dayInCycle = new Date().getDate() % 4;
 
@@ -58,7 +70,7 @@ window.loadWeeklyTimetable = function() {
     // ===============================
     // PWA SAFE FIX: Guard breakdown access
     // ===============================
-    const safeBreakdown = mission?.breakdown || dailyBreakdown;
+    const safeBreakdown = dailyBreakdown;
 
     const missionHtml = mission ? `
         <div style="
@@ -106,10 +118,6 @@ window.loadWeeklyTimetable = function() {
             ">
                 Total: ${dailyTarget} pages
             </div>
-
-            <!-- =============================== -->
-            <!-- 3. PROGRESS BARS (REQUIRED) -->
-            <!-- =============================== -->
 
             <div style="margin-top:15px;">
 
