@@ -8,11 +8,24 @@ window.loadWeeklyTimetable = function() {
     // 1. FIXED CURRICULUM DATA
     // ===============================
     const planData = [
-        { grade: 9, total: 876, days: 18, math: 20, phys: 10, chem: 10, bio: 9, target: 49 },
-        { grade: 10, total: 1116, days: 22, math: 18, phys: 10, chem: 12, bio: 12, target: 52 },
-        { grade: 11, total: 1422, days: 27, math: 18, phys: 10, chem: 12, bio: 13, target: 53 },
-        { grade: 12, total: 1234, days: 23, math: 18, phys: 10, chem: 12, bio: 14, target: 54 }
+        { grade: 9, total: 754, days: 18, math: 20, phys: 10, chem: 10, bio: 9, target: 49 },
+        { grade: 10, total: 904, days: 22, math: 18, phys: 10, chem: 12, bio: 12, target: 52 },
+        { grade: 11, total: 966, days: 27, math: 18, phys: 10, chem: 12, bio: 13, target: 53 },
+        { grade: 12, total: 1030, days: 23, math: 18, phys: 10, chem: 12, bio: 14, target: 54 }
     ];
+
+    const totalPages = planData.reduce((sum, row) => sum + row.total, 0);
+    const totalDays = 60;
+    const dailyTarget = Math.ceil(totalPages / totalDays);
+
+    const dayInCycle = new Date().getDate() % 4;
+
+    const dailyBreakdown = [
+        { Math: 16, Physics: 15, Chemistry: 15, Biology: 15 },
+        { Math: 15, Physics: 16, Chemistry: 15, Biology: 15 },
+        { Math: 15, Physics: 15, Chemistry: 16, Biology: 15 },
+        { Math: 15, Physics: 15, Chemistry: 15, Biology: 16 }
+    ][dayInCycle];
 
     let rowsHtml = planData.map(row => `
         <tr style="border-bottom: 1px solid #30363d;">
@@ -43,14 +56,9 @@ window.loadWeeklyTimetable = function() {
     }
 
     // ===============================
-    // 🔥 PWA SAFE FIX: Guard breakdown access
+    // PWA SAFE FIX: Guard breakdown access
     // ===============================
-    const safeBreakdown = mission?.breakdown || {
-        Math: 0,
-        Physics: 0,
-        Chemistry: 0,
-        Biology: 0
-    };
+    const safeBreakdown = mission?.breakdown || dailyBreakdown;
 
     const missionHtml = mission ? `
         <div style="
@@ -63,16 +71,16 @@ window.loadWeeklyTimetable = function() {
         ">
 
             <h2 style="margin-top:0;color:#00d4ff;">
-                🧠 Smart Cycle Engine (90-Day System)
+                🧠 Smart Cycle Engine (60-Day System)
             </h2>
 
             <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
                 <div><strong>Cycle:</strong> ${mission.cycle} / 4</div>
-                <div><strong>Day:</strong> ${mission.day} / 90</div>
+                <div><strong>Day:</strong> ${mission.day} / ${totalDays}</div>
             </div>
 
             <div style="color:#8b949e;margin-bottom:10px;">
-                Total System: 360 Days (4 Cycles × 90 Days)
+                Total System: 240 Days (4 Cycles × 60 Days)
             </div>
 
             <h3 style="margin:10px 0;">🎯 Today's Mission</h3>
@@ -96,7 +104,7 @@ window.loadWeeklyTimetable = function() {
                 border-top:1px solid #30363d;
                 padding-top:10px;
             ">
-                Total: ${mission.total || 0} pages
+                Total: ${dailyTarget} pages
             </div>
 
             <!-- =============================== -->
@@ -107,20 +115,20 @@ window.loadWeeklyTimetable = function() {
 
                 <div style="margin-bottom:10px;">
                     📅 Days Progress:
-                    <strong>${progress?.day || 0} / 360</strong>
+                    <strong>${progress?.day || 0} / ${totalDays}</strong>
                     <progress 
                         value="${progress?.day || 0}" 
-                        max="360"
+                        max="${totalDays}"
                         style="width:100%;height:10px;">
                     </progress>
                 </div>
 
                 <div>
                     📚 Total Pages Progress:
-                    <strong>${progress?.pagesDone || 0} / ${progress?.pagesTotal || 0}</strong>
+                    <strong>${progress?.pagesDone || 0} / ${totalPages}</strong>
                     <progress 
                         value="${progress?.pagesDone || 0}" 
-                        max="${progress?.pagesTotal || 1}"
+                        max="${totalPages}"
                         style="width:100%;height:10px;">
                     </progress>
                 </div>
@@ -162,10 +170,10 @@ window.loadWeeklyTimetable = function() {
 
                         <tr style="border-top:2px solid #30363d;font-weight:bold;color:#00d4ff;">
                             <td>Sum</td>
-                            <td>4,648</td>
-                            <td>90</td>
+                            <td>${totalPages.toLocaleString()}</td>
+                            <td>${totalDays}</td>
                             <td colspan="4">—</td>
-                            <td>≈52/d</td>
+                            <td>≈${dailyTarget}/d</td>
                         </tr>
                     </tbody>
                 </table>
