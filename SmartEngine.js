@@ -5,11 +5,11 @@ window.SmartEngine = (function () {
     // ======================================================
     // 📊 CORE CONSTANTS
     // ======================================================
-    const TOTAL_CYCLES = 4;
-    const DAYS_PER_CYCLE = 90;
+    const TOTAL_CYCLES = 5;
+    const DAYS_PER_CYCLE = 60;
     const TOTAL_DAYS = TOTAL_CYCLES * DAYS_PER_CYCLE;
 
-    const TOTAL_PAGES = 4638;
+    const TOTAL_PAGES = 3654;
     const PAGES_PER_CYCLE = TOTAL_PAGES / TOTAL_CYCLES;
 
     const SUBJECTS = Object.freeze(["Math", "Physics", "Chemistry", "Biology"]);
