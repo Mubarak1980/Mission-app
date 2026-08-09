@@ -7,21 +7,21 @@ window.SmartEngine = (function () {
     // ======================================================
     const TOTAL_CYCLES = 5;
     const DAYS_PER_CYCLE = 60;
-    const TOTAL_DAYS = TOTAL_CYCLES * DAYS_PER_CYCLE;
+    const TOTAL_DAYS =
+        TOTAL_CYCLES * DAYS_PER_CYCLE;
 
     // Pages in one complete curriculum reading
     const TOTAL_PAGES = 3654;
 
-    // The curriculum must be completed five times
+    // Five complete readings
     const TOTAL_READINGS = 5;
     const TOTAL_READING_PAGES =
         TOTAL_PAGES * TOTAL_READINGS;
 
-    // One cycle represents one complete reading
+    // One cycle equals one complete reading
     const PAGES_PER_CYCLE = TOTAL_PAGES;
 
-    // Normal daily target:
-    // 18,270 ÷ 300 = 60.9, rounded up to 61
+    // 18,270 ÷ 300 = 60.9 → 61
     const FIXED_DAILY_TARGET = 61;
 
     // Recovery limits
@@ -85,23 +85,61 @@ window.SmartEngine = (function () {
     }
 
     function formatNumber(value) {
-        return safeNumber(value).toLocaleString("en-US");
+        return safeNumber(value)
+            .toLocaleString("en-US");
+    }
+
+    function getTodayKey() {
+        const now = new Date();
+
+        const year = now.getFullYear();
+        const month = String(
+            now.getMonth() + 1
+        ).padStart(2, "0");
+        const day = String(
+            now.getDate()
+        ).padStart(2, "0");
+
+        return `${year}-${month}-${day}`;
+    }
+
+    function createLocalDate(
+        year,
+        month,
+        day
+    ) {
+        return new Date(
+            year,
+            month - 1,
+            day,
+            0,
+            0,
+            0,
+            0
+        );
     }
 
     // ======================================================
     // 📚 CURRICULUM TOTALS
     // ======================================================
     function getCurriculumTotals() {
-        const totals = createEmptySubjectObject();
+        const totals =
+            createEmptySubjectObject();
 
         if (!isDataReady()) {
             return totals;
         }
 
-        for (let grade = 9; grade <= 12; grade++) {
+        for (
+            let grade = 9;
+            grade <= 12;
+            grade++
+        ) {
             SUBJECTS.forEach(subject => {
                 totals[subject] += safeNumber(
-                    window.maxPagesByGrade?.[grade]?.[subject]
+                    window.maxPagesByGrade
+                        ?. [grade]
+                        ?. [subject]
                 );
             });
         }
@@ -114,20 +152,65 @@ window.SmartEngine = (function () {
     // ======================================================
     function getStartDate() {
         const data = getData();
-        const fallback = new Date()
-            .toISOString()
-            .split("T")[0];
 
-        return new Date(data.startDate || fallback);
+        const fallback = getTodayKey();
+        const value = data.startDate || fallback;
+
+        if (value instanceof Date) {
+            return createLocalDate(
+                value.getFullYear(),
+                value.getMonth() + 1,
+                value.getDate()
+            );
+        }
+
+        const text = String(value);
+        const match = text.match(
+            /^(d{4})-(d{2})-(d{2})/
+        );
+
+        if (match) {
+            return createLocalDate(
+                Number(match[1]),
+                Number(match[2]),
+                Number(match[3])
+            );
+        }
+
+        const parsed = new Date(value);
+
+        return Number.isNaN(parsed.getTime())
+            ? createLocalDate(
+                ...getTodayKey()
+                    .split("-")
+                    .map(Number)
+            )
+            : createLocalDate(
+                parsed.getFullYear(),
+                parsed.getMonth() + 1,
+                parsed.getDate()
+            );
     }
 
     function getCurrentDay() {
         const millisecondsPerDay =
             24 * 60 * 60 * 1000;
 
+        const today = new Date();
+
+        const todayStart = createLocalDate(
+            today.getFullYear(),
+            today.getMonth() + 1,
+            today.getDate()
+        );
+
+        const startDate = getStartDate();
+
         const difference = Math.floor(
-            (new Date() - getStartDate()) /
-            millisecondsPerDay
+            (
+                todayStart.getTime() -
+                startDate.getTime()
+            ) / millisecondsPerDay
         ) + 1;
 
         return Math.min(
@@ -156,16 +239,26 @@ window.SmartEngine = (function () {
     // ======================================================
     function getCompletedPages() {
         const data = getData();
-        const progress = data.studyProgress || {};
-        const completed = createEmptySubjectObject();
+        const progress =
+            data.studyProgress || {};
 
-        for (let grade = 9; grade <= 12; grade++) {
-            const gradeData = progress[grade] || {};
+        const completed =
+            createEmptySubjectObject();
+
+        for (
+            let grade = 9;
+            grade <= 12;
+            grade++
+        ) {
+            const gradeData =
+                progress[grade] || {};
 
             SUBJECTS.forEach(subject => {
                 completed[subject] += Math.max(
                     0,
-                    safeNumber(gradeData?.[subject])
+                    safeNumber(
+                        gradeData?.[subject]
+                    )
                 );
             });
         }
@@ -174,7 +267,7 @@ window.SmartEngine = (function () {
     }
 
     function getRemainingPages() {
-        const curriculumTotals =
+        const totals =
             getCurriculumTotals();
 
         const completed =
@@ -184,7 +277,7 @@ window.SmartEngine = (function () {
             (remaining, subject) => {
                 remaining[subject] = Math.max(
                     0,
-                    curriculumTotals[subject] -
+                    totals[subject] -
                     completed[subject]
                 );
 
@@ -206,28 +299,77 @@ window.SmartEngine = (function () {
             : {};
     }
 
-    function getCompletedReadingPages() {
-        const studyLog = getStudyLog();
+    function getDayRecord(day) {
+        return getStudyLog()[String(day)] ||
+            null;
+    }
 
-        return Object.values(studyLog).reduce(
-            (total, record) => {
-                return total + Math.max(
-                    0,
-                    safeNumber(record?.completed)
-                );
-            },
-            0
+    function getCompletedReadingPages() {
+        const studyLog =
+            getStudyLog();
+
+        const loggedPages =
+            Object.values(studyLog).reduce(
+                (total, record) => {
+                    return total + Math.max(
+                        0,
+                        safeNumber(
+                            record?.completed
+                        )
+                    );
+                },
+                0
+            );
+
+        const curriculumPages =
+            sumSubjects(
+                getCompletedPages()
+            );
+
+        return Math.max(
+            loggedPages,
+            curriculumPages
         );
     }
 
+    function getCompletedPagesThroughDay(day) {
+        const studyLog =
+            getStudyLog();
+
+        return Object.entries(studyLog)
+            .reduce((total, [key, record]) => {
+                const recordDay =
+                    safeNumber(key);
+
+                if (recordDay > day) {
+                    return total;
+                }
+
+                return total + Math.max(
+                    0,
+                    safeNumber(
+                        record?.completed
+                    )
+                );
+            }, 0);
+    }
+
     function countMissedDays() {
-        const currentDay = getCurrentDay();
-        const studyLog = getStudyLog();
+        const currentDay =
+            getCurrentDay();
+
+        const studyLog =
+            getStudyLog();
 
         let missedDays = 0;
 
-        for (let day = 1; day < currentDay; day++) {
-            const record = studyLog[String(day)];
+        for (
+            let day = 1;
+            day < currentDay;
+            day++
+        ) {
+            const record =
+                studyLog[String(day)];
 
             if (!record) {
                 missedDays++;
@@ -236,7 +378,9 @@ window.SmartEngine = (function () {
 
             if (
                 record.missed === true ||
-                safeNumber(record.completed) === 0
+                safeNumber(
+                    record.completed
+                ) === 0
             ) {
                 missedDays++;
             }
@@ -246,13 +390,21 @@ window.SmartEngine = (function () {
     }
 
     function getMissedBacklog() {
-        const currentDay = getCurrentDay();
-        const studyLog = getStudyLog();
+        const currentDay =
+            getCurrentDay();
+
+        const studyLog =
+            getStudyLog();
 
         let backlog = 0;
 
-        for (let day = 1; day < currentDay; day++) {
-            const record = studyLog[String(day)];
+        for (
+            let day = 1;
+            day < currentDay;
+            day++
+        ) {
+            const record =
+                studyLog[String(day)];
 
             if (!record) {
                 backlog += FIXED_DAILY_TARGET;
@@ -261,12 +413,16 @@ window.SmartEngine = (function () {
 
             const target = Math.max(
                 FIXED_DAILY_TARGET,
-                safeNumber(record.target)
+                safeNumber(
+                    record.target
+                )
             );
 
             const completed = Math.max(
                 0,
-                safeNumber(record.completed)
+                safeNumber(
+                    record.completed
+                )
             );
 
             backlog += Math.max(
@@ -283,8 +439,13 @@ window.SmartEngine = (function () {
         subjectPages = {}
     ) {
         const data = getData();
-        const currentDay = getCurrentDay();
-        const { cycle } = getCycleInfo(currentDay);
+        const currentDay =
+            getCurrentDay();
+
+        const {
+            cycle,
+            dayInCycle
+        } = getCycleInfo(currentDay);
 
         const completed = Math.max(
             0,
@@ -293,27 +454,34 @@ window.SmartEngine = (function () {
             )
         );
 
-        const target = getDailyTarget();
+        const target =
+            getDailyTarget();
+
         const studyLog = {
             ...getStudyLog()
         };
 
         studyLog[String(currentDay)] = {
             cycle,
+            day: dayInCycle,
             target,
             completed,
             missed: completed === 0,
             recorded: true,
+            recordedAt: new Date()
+                .toISOString(),
             subjects: SUBJECTS.reduce(
                 (result, subject) => {
-                    result[subject] = Math.max(
-                        0,
-                        Math.floor(
-                            safeNumber(
-                                subjectPages?.[subject]
+                    result[subject] =
+                        Math.max(
+                            0,
+                            Math.floor(
+                                safeNumber(
+                                    subjectPages
+                                        ?. [subject]
+                                )
                             )
-                        )
-                    );
+                        );
 
                     return result;
                 },
@@ -326,31 +494,87 @@ window.SmartEngine = (function () {
             studyLog
         });
 
-        return studyLog[String(currentDay)];
+        return studyLog[
+            String(currentDay)
+        ];
+    }
+
+    function closePreviousUnrecordedDays() {
+        const data = getData();
+        const studyLog = {
+            ...getStudyLog()
+        };
+
+        const currentDay =
+            getCurrentDay();
+
+        let changed = false;
+
+        for (
+            let day = 1;
+            day < currentDay;
+            day++
+        ) {
+            const key = String(day);
+
+            if (studyLog[key]) {
+                continue;
+            }
+
+            const {
+                cycle,
+                dayInCycle
+            } = getCycleInfo(day);
+
+            studyLog[key] = {
+                cycle,
+                day: dayInCycle,
+                target: FIXED_DAILY_TARGET,
+                completed: 0,
+                missed: true,
+                recorded: true,
+                automaticallyClosed: true,
+                subjects:
+                    createEmptySubjectObject()
+            };
+
+            changed = true;
+        }
+
+        if (changed) {
+            saveData({
+                ...data,
+                studyLog
+            });
+        }
+
+        return studyLog;
     }
 
     // ======================================================
     // 📈 CYCLE TRACKING
     // ======================================================
     function getCycleCompletedPages(cycle) {
-        const studyLog = getStudyLog();
+        const studyLog =
+            getStudyLog();
 
-        return Object.values(studyLog).reduce(
-            (total, record) => {
+        return Object.values(studyLog)
+            .reduce((total, record) => {
                 if (
-                    safeNumber(record?.cycle) !==
-                    safeNumber(cycle)
+                    safeNumber(
+                        record?.cycle
+                    ) !== safeNumber(cycle)
                 ) {
                     return total;
                 }
 
                 return total + Math.max(
                     0,
-                    safeNumber(record.completed)
+                    safeNumber(
+                        record.completed
+                    )
                 );
-            },
-            0
-        );
+            }, 0);
     }
 
     function getCycleRemainingPages(cycle) {
@@ -365,18 +589,22 @@ window.SmartEngine = (function () {
     // 🧠 SUBJECT DISTRIBUTION
     // ======================================================
     function getSubjectRatios() {
-        const remaining = getRemainingPages();
-        const remainingTotal = sumSubjects(remaining);
+        const remaining =
+            getRemainingPages();
 
-        if (remainingTotal <= 0) {
-            return { ...WEIGHTS };
+        const total =
+            sumSubjects(remaining);
+
+        if (total <= 0) {
+            return {
+                ...WEIGHTS
+            };
         }
 
         return SUBJECTS.reduce(
             (ratios, subject) => {
                 ratios[subject] =
-                    remaining[subject] /
-                    remainingTotal;
+                    remaining[subject] / total;
 
                 return ratios;
             },
@@ -385,7 +613,9 @@ window.SmartEngine = (function () {
     }
 
     function createExactBreakdown(target) {
-        const ratios = getSubjectRatios();
+        const ratios =
+            getSubjectRatios();
+
         const breakdown = {};
         const fractions = [];
 
@@ -398,7 +628,9 @@ window.SmartEngine = (function () {
             const wholeValue =
                 Math.floor(exactValue);
 
-            breakdown[subject] = wholeValue;
+            breakdown[subject] =
+                wholeValue;
+
             assigned += wholeValue;
 
             fractions.push({
@@ -408,7 +640,8 @@ window.SmartEngine = (function () {
             });
         });
 
-        let remainingPages = target - assigned;
+        let remainingPages =
+            target - assigned;
 
         fractions.sort((a, b) => {
             return b.fraction - a.fraction;
@@ -417,12 +650,12 @@ window.SmartEngine = (function () {
         let index = 0;
 
         while (remainingPages > 0) {
-            const subject =
+            const item =
                 fractions[
                     index % fractions.length
-                ].subject;
+                ];
 
-            breakdown[subject]++;
+            breakdown[item.subject]++;
             remainingPages--;
             index++;
         }
@@ -433,32 +666,78 @@ window.SmartEngine = (function () {
     // ======================================================
     // 🎯 RECOVERY TARGET
     // ======================================================
-    function getDailyTarget() {
-        const currentDay = getCurrentDay();
+    function getCurrentDayState() {
+        const currentDay =
+            getCurrentDay();
 
-        const remainingDays = Math.max(
-            1,
-            TOTAL_DAYS - currentDay + 1
-        );
+        const record =
+            getDayRecord(currentDay);
+
+        const recorded =
+            record?.recorded === true;
+
+        const completed =
+            Math.max(
+                0,
+                safeNumber(
+                    record?.completed
+                )
+            );
+
+        return {
+            record,
+            recorded,
+            completed,
+            missed:
+                recorded && completed === 0
+        };
+    }
+
+    function getDailyTarget() {
+        const currentDay =
+            getCurrentDay();
+
+        const remainingDays =
+            Math.max(
+                1,
+                TOTAL_DAYS -
+                currentDay + 1
+            );
 
         const completedPages =
             getCompletedReadingPages();
 
-        const remainingPages = Math.max(
-            0,
-            TOTAL_READING_PAGES -
-            completedPages
-        );
+        const remainingPages =
+            Math.max(
+                0,
+                TOTAL_READING_PAGES -
+                completedPages
+            );
 
         const backlog =
             getMissedBacklog();
 
-        const requiredTarget = Math.ceil(
-            (
-                remainingPages +
-                backlog
-            ) / remainingDays
-        );
+        const state =
+            getCurrentDayState();
+
+        const currentDayBacklog =
+            state.missed
+                ? Math.max(
+                    FIXED_DAILY_TARGET,
+                    safeNumber(
+                        state.record?.target
+                    )
+                )
+                : 0;
+
+        const requiredTarget =
+            Math.ceil(
+                (
+                    remainingPages +
+                    backlog +
+                    currentDayBacklog
+                ) / remainingDays
+            );
 
         return Math.min(
             Math.max(
@@ -470,54 +749,108 @@ window.SmartEngine = (function () {
     }
 
     function getRecoveryStatus() {
-        const currentDay = getCurrentDay();
+        const currentDay =
+            getCurrentDay();
 
-        const remainingDays = Math.max(
-            0,
-            TOTAL_DAYS - currentDay + 1
-        );
+        const remainingDays =
+            Math.max(
+                0,
+                TOTAL_DAYS -
+                currentDay + 1
+            );
 
         const completedPages =
             getCompletedReadingPages();
 
-        const remainingPages = Math.max(
-            0,
-            TOTAL_READING_PAGES -
-            completedPages
-        );
+        const remainingPages =
+            Math.max(
+                0,
+                TOTAL_READING_PAGES -
+                completedPages
+            );
 
-        const backlog =
+        const previousBacklog =
             getMissedBacklog();
 
-        const requiredTarget = remainingDays > 0
-            ? Math.ceil(
-                (
-                    remainingPages +
-                    backlog
-                ) / remainingDays
-            )
-            : Infinity;
+        const state =
+            getCurrentDayState();
+
+        const currentDayBacklog =
+            state.missed
+                ? Math.max(
+                    FIXED_DAILY_TARGET,
+                    safeNumber(
+                        state.record?.target
+                    )
+                )
+                : 0;
+
+        const backlog =
+            previousBacklog +
+            currentDayBacklog;
+
+        const requiredTarget =
+            remainingDays > 0
+                ? Math.ceil(
+                    (
+                        remainingPages +
+                        backlog
+                    ) / remainingDays
+                )
+                : Infinity;
 
         const dailyTarget =
-            getDailyTarget();
+            Math.min(
+                Math.max(
+                    requiredTarget,
+                    MIN_DAILY_TARGET
+                ),
+                MAX_DAILY_TARGET
+            );
 
         const deadlineAtRisk =
-            requiredTarget > MAX_DAILY_TARGET;
+            requiredTarget >
+            MAX_DAILY_TARGET;
+
+        let status;
+
+        if (!state.recorded) {
+            status = "NOT_RECORDED";
+        } else if (state.missed) {
+            status = "MISSED_TODAY";
+        } else if (deadlineAtRisk) {
+            status = "DEADLINE_AT_RISK";
+        } else if (backlog > 0) {
+            status = "RECOVERY";
+        } else {
+            status = "ON_TRACK";
+        }
 
         return {
-            missedDays: countMissedDays(),
+            currentDayRecorded:
+                state.recorded,
+
+            currentDayCompleted:
+                state.completed,
+
+            currentDayMissed:
+                state.missed,
+
+            missedDays:
+                countMissedDays() +
+                (state.missed ? 1 : 0),
+
             backlog,
             remainingDays,
             remainingPages,
             requiredTarget,
             dailyTarget,
-            maximumDailyTarget: MAX_DAILY_TARGET,
+
+            maximumDailyTarget:
+                MAX_DAILY_TARGET,
+
             deadlineAtRisk,
-            status: deadlineAtRisk
-                ? "DEADLINE_AT_RISK"
-                : backlog > 0
-                    ? "RECOVERY"
-                    : "ON_TRACK"
+            status
         };
     }
 
@@ -564,47 +897,69 @@ window.SmartEngine = (function () {
     function getDailyMission() {
         if (!isDataReady()) {
             return {
-                system: "60 days (5 cycle × 3654 pages)",
+                system:
+                    "60 days (5 cycle × 3654 pages)",
+
                 cycle: 1,
                 day: 1,
                 globalDay: 1,
+
                 totalDays: TOTAL_DAYS,
                 totalCycles: TOTAL_CYCLES,
                 daysPerCycle: DAYS_PER_CYCLE,
+
                 totalPages: TOTAL_PAGES,
                 totalReadings: TOTAL_READINGS,
-                totalReadingPages: TOTAL_READING_PAGES,
-                dailyTarget: FIXED_DAILY_TARGET,
-                breakdown: createEmptySubjectObject(),
+                totalReadingPages:
+                    TOTAL_READING_PAGES,
+
+                dailyTarget:
+                    FIXED_DAILY_TARGET,
+
+                breakdown:
+                    createEmptySubjectObject(),
+
                 total: 0,
+
                 daysProgress: "1 / 300",
+
                 totalPagesProgress:
                     `0 / ${formatNumber(
                         TOTAL_READING_PAGES
                     )}`,
+
                 status: "NO_DATA",
+                missedDays: 0,
+                backlog: 0,
                 deadlineAtRisk: false
             };
         }
 
-        const globalDay = getCurrentDay();
-        const { cycle, dayInCycle } =
-            getCycleInfo(globalDay);
+        const globalDay =
+            getCurrentDay();
 
-        const dailyTarget =
-            getDailyTarget();
-
-        const breakdown =
-            createExactBreakdown(dailyTarget);
+        const {
+            cycle,
+            dayInCycle
+        } = getCycleInfo(globalDay);
 
         const recovery =
             getRecoveryStatus();
+
+        const dailyTarget =
+            recovery.dailyTarget;
+
+        const breakdown =
+            createExactBreakdown(
+                dailyTarget
+            );
 
         const cycleCompleted =
             getCycleCompletedPages(cycle);
 
         return {
-            system: "60 days (5 cycle × 3654 pages)",
+            system:
+                "60 days (5 cycle × 3654 pages)",
 
             cycle,
             day: dayInCycle,
@@ -616,14 +971,20 @@ window.SmartEngine = (function () {
 
             totalPages: TOTAL_PAGES,
             totalReadings: TOTAL_READINGS,
-            totalReadingPages: TOTAL_READING_PAGES,
+            totalReadingPages:
+                TOTAL_READING_PAGES,
 
             dailyTarget,
             breakdown,
-            total: sumSubjects(breakdown),
+            total: sumSubjects(
+                breakdown
+            ),
 
-            cycleBudget: PAGES_PER_CYCLE,
+            cycleBudget:
+                PAGES_PER_CYCLE,
+
             cycleCompleted,
+
             cycleRemaining:
                 Math.max(
                     0,
@@ -641,21 +1002,38 @@ window.SmartEngine = (function () {
                     TOTAL_READING_PAGES
                 )}`,
 
-            missedDays: recovery.missedDays,
-            backlog: recovery.backlog,
-            remainingDays: recovery.remainingDays,
-            requiredTarget: recovery.requiredTarget,
+            missedDays:
+                recovery.missedDays,
+
+            backlog:
+                recovery.backlog,
+
+            remainingDays:
+                recovery.remainingDays,
+
+            requiredTarget:
+                recovery.requiredTarget,
+
             maximumDailyTarget:
                 recovery.maximumDailyTarget,
 
-            status: recovery.status,
+            status:
+                recovery.status,
+
             deadlineAtRisk:
                 recovery.deadlineAtRisk,
 
-            prediction: predictCompletion(
-                getRemainingPages(),
-                dailyTarget
-            )
+            currentDayRecorded:
+                recovery.currentDayRecorded,
+
+            currentDayMissed:
+                recovery.currentDayMissed,
+
+            prediction:
+                predictCompletion(
+                    getRemainingPages(),
+                    dailyTarget
+                )
         };
     }
 
@@ -663,7 +1041,8 @@ window.SmartEngine = (function () {
     // 📊 PROGRESS
     // ======================================================
     function getProgress() {
-        const day = getCurrentDay();
+        const day =
+            getCurrentDay();
 
         if (!isDataReady()) {
             return {
@@ -677,6 +1056,7 @@ window.SmartEngine = (function () {
                 readingPagesPercent: 0,
 
                 day,
+                totalDays: TOTAL_DAYS,
                 dayPercent: Math.round(
                     (day / TOTAL_DAYS) * 100
                 ),
@@ -702,8 +1082,10 @@ window.SmartEngine = (function () {
                 ? Math.min(
                     100,
                     Math.round(
-                        (pagesDone /
-                            TOTAL_PAGES) * 100
+                        (
+                            pagesDone /
+                            TOTAL_PAGES
+                        ) * 100
                     )
                 )
                 : 0;
@@ -715,7 +1097,8 @@ window.SmartEngine = (function () {
             Math.min(
                 TOTAL_READING_PAGES,
                 (
-                    (cycle - 1) * TOTAL_PAGES
+                    (cycle - 1) *
+                    TOTAL_PAGES
                 ) +
                 Math.min(
                     pagesDone,
@@ -736,6 +1119,9 @@ window.SmartEngine = (function () {
                 )
                 : 0;
 
+        const recovery =
+            getRecoveryStatus();
+
         return {
             pagesDone,
             pagesTotal: TOTAL_PAGES,
@@ -747,6 +1133,8 @@ window.SmartEngine = (function () {
             readingPagesPercent,
 
             day,
+            totalDays: TOTAL_DAYS,
+
             dayPercent: Math.round(
                 (day / TOTAL_DAYS) * 100
             ),
@@ -761,9 +1149,17 @@ window.SmartEngine = (function () {
                     TOTAL_READING_PAGES
                 )}`,
 
-            missedDays: countMissedDays(),
-            backlog: getMissedBacklog(),
-            status: getRecoveryStatus().status
+            missedDays:
+                recovery.missedDays,
+
+            backlog:
+                recovery.backlog,
+
+            status:
+                recovery.status,
+
+            deadlineAtRisk:
+                recovery.deadlineAtRisk
         };
     }
 
@@ -783,14 +1179,20 @@ window.SmartEngine = (function () {
             };
         }
 
-        const day = getCurrentDay();
-        const week = Math.ceil(day / 7);
+        const day =
+            getCurrentDay();
 
-        const weekStart = (week - 1) * 7 + 1;
-        const weekEnd = Math.min(
-            week * 7,
-            TOTAL_DAYS
-        );
+        const week =
+            Math.ceil(day / 7);
+
+        const weekStart =
+            (week - 1) * 7 + 1;
+
+        const weekEnd =
+            Math.min(
+                week * 7,
+                TOTAL_DAYS
+            );
 
         const completed =
             getCompletedPages();
@@ -821,19 +1223,15 @@ window.SmartEngine = (function () {
             dayNumber <= weekEnd;
             dayNumber++
         ) {
-            const plannedMission =
+            const mission =
                 getMissionForDay(dayNumber);
 
             SUBJECTS.forEach(subject => {
                 subjects[subject].planned +=
-                    plannedMission.breakdown[
-                        subject
-                    ];
+                    mission.breakdown[subject];
 
                 plannedTotal +=
-                    plannedMission.breakdown[
-                        subject
-                    ];
+                    mission.breakdown[subject];
             });
         }
 
@@ -847,12 +1245,17 @@ window.SmartEngine = (function () {
 
         return {
             week,
-            range: `${weekStart}-${weekEnd}`,
+            range:
+                `${weekStart}-${weekEnd}`,
+
             planned: plannedTotal,
             actual: actualTotal,
-            efficiency: Math.round(
-                efficiency * 100
-            ),
+
+            efficiency:
+                Math.round(
+                    efficiency * 100
+                ),
+
             status:
                 efficiency >= 1
                     ? "ON_TRACK"
@@ -861,12 +1264,13 @@ window.SmartEngine = (function () {
                         : efficiency >= 0.70
                             ? "BEHIND"
                             : "CRITICAL",
+
             subjects
         };
     }
 
     // ======================================================
-    // 📌 MISSION FOR A SPECIFIC DAY
+    // 📌 MISSION FOR SPECIFIC DAY
     // ======================================================
     function getMissionForDay(dayNumber) {
         const safeDay = Math.min(
@@ -877,7 +1281,7 @@ window.SmartEngine = (function () {
             TOTAL_DAYS
         );
 
-        const cycleInfo =
+        const info =
             getCycleInfo(safeDay);
 
         const target =
@@ -889,11 +1293,13 @@ window.SmartEngine = (function () {
             createExactBreakdown(target);
 
         return {
-            cycle: cycleInfo.cycle,
-            day: cycleInfo.dayInCycle,
+            cycle: info.cycle,
+            day: info.dayInCycle,
             globalDay: safeDay,
             breakdown,
-            total: sumSubjects(breakdown)
+            total: sumSubjects(
+                breakdown
+            )
         };
     }
 
@@ -907,6 +1313,7 @@ window.SmartEngine = (function () {
         getDailyTarget,
         getRecoveryStatus,
         recordToday,
+        closePreviousUnrecordedDays,
         getMissedBacklog,
         getCycleCompletedPages,
         getCycleRemainingPages,
