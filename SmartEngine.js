@@ -9,10 +9,25 @@ window.SmartEngine = (function () {
     const DAYS_PER_CYCLE = 60;
     const TOTAL_DAYS = TOTAL_CYCLES * DAYS_PER_CYCLE;
 
+    // Pages in one complete curriculum reading
     const TOTAL_PAGES = 3654;
-    const PAGES_PER_CYCLE = TOTAL_PAGES / TOTAL_CYCLES;
 
-    const SUBJECTS = Object.freeze(["Math", "Physics", "Chemistry", "Biology"]);
+    // The curriculum must be completed five times
+    const TOTAL_READINGS = 5;
+    const TOTAL_READING_PAGES = TOTAL_PAGES * TOTAL_READINGS;
+
+    // One cycle represents one complete reading
+    const PAGES_PER_CYCLE = TOTAL_PAGES;
+
+    // 18,270 total reading-pages ÷ 300 total days = 60.9
+    const DAILY_TARGET = TOTAL_READING_PAGES / TOTAL_DAYS;
+
+    const SUBJECTS = Object.freeze([
+        "Math",
+        "Physics",
+        "Chemistry",
+        "Biology"
+    ]);
 
     const WEIGHTS = Object.freeze({
         Math: 0.35,
@@ -39,7 +54,30 @@ window.SmartEngine = (function () {
     }
 
     function sumSubjects(obj) {
-        return SUBJECTS.reduce((s, x) => s + safeNumber(obj?.[x]), 0);
+        return SUBJECTS.reduce((sum, subject) => {
+            return sum + safeNumber(obj?.[subject]);
+        }, 0);
+    }
+
+    function getCurriculumTotals() {
+        const totals = {
+            Math: 0,
+            Physics: 0,
+            Chemistry: 0,
+            Biology: 0
+        };
+
+        if (!isDataReady()) return totals;
+
+        for (let grade = 9; grade <= 12; grade++) {
+            SUBJECTS.forEach(subject => {
+                totals[subject] += safeNumber(
+                    window.maxPagesByGrade?.[grade]?.[subject]
+                );
+            });
+        }
+
+        return totals;
     }
 
     // ======================================================
@@ -48,12 +86,21 @@ window.SmartEngine = (function () {
     function getStartDate() {
         const data = getData();
         const fallback = new Date().toISOString().split("T")[0];
+
         return new Date(data.startDate || fallback);
     }
 
     function getCurrentDay() {
-        const diff = Math.floor((new Date() - getStartDate()) / 86400000) + 1;
-        return Math.min(Math.max(diff, 1), TOTAL_DAYS);
+        const millisecondsPerDay = 24 * 60 * 60 * 1000;
+
+        const diff = Math.floor(
+            (new Date() - getStartDate()) / millisecondsPerDay
+        ) + 1;
+
+        return Math.min(
+            Math.max(diff, 1),
+            TOTAL_DAYS
+        );
     }
 
     function getCycleInfo(day) {
@@ -64,84 +111,127 @@ window.SmartEngine = (function () {
     }
 
     // ======================================================
-    // 📦 REMAINING WORK (CYCLE-AWARE ONLY)
+    // 📦 COMPLETED WORK
     // ======================================================
-    function getRemainingPages() {
-        if (!isDataReady()) {
-            return { Math: 0, Physics: 0, Chemistry: 0, Biology: 0 };
-        }
-
+    function getCompletedPages() {
         const data = getData();
         const progress = data.studyProgress || {};
 
-        const totals = { Math: 0, Physics: 0, Chemistry: 0, Biology: 0 };
+        const completed = {
+            Math: 0,
+            Physics: 0,
+            Chemistry: 0,
+            Biology: 0
+        };
 
-        for (let g = 9; g <= 12; g++) {
-            const gData = progress[g] || {};
+        for (let grade = 9; grade <= 12; grade++) {
+            const gradeData = progress[grade] || {};
 
-            SUBJECTS.forEach(s => {
-                const max = safeNumber(window.maxPagesByGrade?.[g]?.[s]);
-                const done = safeNumber(gData?.[s]);
-                totals[s] += Math.max(0, max - done);
+            SUBJECTS.forEach(subject => {
+                completed[subject] += Math.max(
+                    0,
+                    safeNumber(gradeData?.[subject])
+                );
             });
         }
 
-        return totals;
+        return completed;
     }
 
     // ======================================================
-    // 📈 BACKLOG (STABLE CURVE)
+    // 📦 REMAINING WORK FOR CURRENT CYCLE
     // ======================================================
-    function getBacklogFactor(done, expected) {
-        if (expected <= 0) return 1;
+    function getRemainingPages() {
+        if (!isDataReady()) {
+            return {
+                Math: 0,
+                Physics: 0,
+                Chemistry: 0,
+                Biology: 0
+            };
+        }
 
-        const ratio = done / expected;
+        const curriculumTotals = getCurriculumTotals();
+        const completed = getCompletedPages();
+
+        return SUBJECTS.reduce((remaining, subject) => {
+            remaining[subject] = Math.max(
+                0,
+                curriculumTotals[subject] - completed[subject]
+            );
+
+            return remaining;
+        }, {});
+    }
+
+    // ======================================================
+    // 📈 BACKLOG CONTROL
+    // ======================================================
+    function getBacklogFactor(doneProgress, expectedProgress) {
+        if (expectedProgress <= 0) return 1;
+
+        const ratio = doneProgress / expectedProgress;
+
         if (ratio >= 1) return 1;
 
-        // smoother + capped growth (prevents spikes)
         const deficit = 1 - ratio;
+
         return 1 + Math.min(deficit * 0.6, 0.35);
     }
 
     // ======================================================
-    // 🧠 WEIGHTS (COMPUTED ONCE PER CALL)
+    // 🧠 SUBJECT WEIGHTS
     // ======================================================
     function getWeeklyWeights() {
         const data = getData();
         const progress = data.studyProgress || {};
 
-        const totals = { Math: 0, Physics: 0, Chemistry: 0, Biology: 0 };
+        const totals = {
+            Math: 0,
+            Physics: 0,
+            Chemistry: 0,
+            Biology: 0
+        };
+
         let overall = 0;
 
-        for (let g = 9; g <= 12; g++) {
-            const gData = progress[g] || {};
+        for (let grade = 9; grade <= 12; grade++) {
+            const gradeData = progress[grade] || {};
 
-            SUBJECTS.forEach(s => {
-                const v = safeNumber(gData?.[s]);
-                totals[s] += v;
-                overall += v;
+            SUBJECTS.forEach(subject => {
+                const value = safeNumber(gradeData?.[subject]);
+
+                totals[subject] += value;
+                overall += value;
             });
         }
 
-        return SUBJECTS.reduce((acc, s) => {
-            acc[s] = overall ? totals[s] / overall : WEIGHTS[s];
-            return acc;
+        return SUBJECTS.reduce((weights, subject) => {
+            weights[subject] = overall
+                ? totals[subject] / overall
+                : WEIGHTS[subject];
+
+            return weights;
         }, {});
     }
 
     // ======================================================
-    // 📉 BURNOUT CONTROL (STRICT CAP)
+    // 📉 BURNOUT CONTROL
     // ======================================================
-    function applyBurnoutCap(value, avg) {
-        const cap = avg * 1.3;
-        return Math.min(Math.max(value, 1), Math.ceil(cap));
+    function applyBurnoutCap(value, average) {
+        const cap = average * 1.3;
+
+        return Math.min(
+            Math.max(value, 1),
+            Math.ceil(cap)
+        );
     }
 
     // ======================================================
-    // 🔮 PREDICTION (GLOBAL ONLY)
+    // 🔮 PREDICTION
     // ======================================================
     function predictCompletion(remaining, dailyTarget) {
-        const total = sumSubjects(remaining);
+        const totalRemaining = sumSubjects(remaining);
 
         if (dailyTarget <= 0) {
             return {
@@ -151,76 +241,92 @@ window.SmartEngine = (function () {
             };
         }
 
-        const estimatedDays = total / dailyTarget;
+        const estimatedDays = totalRemaining / dailyTarget;
 
         return {
             estimatedDays: Math.ceil(estimatedDays),
             onTrack: estimatedDays <= TOTAL_DAYS,
             riskLevel:
-                estimatedDays > TOTAL_DAYS ? "HIGH" :
-                estimatedDays > TOTAL_DAYS * 0.9 ? "MEDIUM" : "LOW"
+                estimatedDays > TOTAL_DAYS
+                    ? "HIGH"
+                    : estimatedDays > TOTAL_DAYS * 0.9
+                        ? "MEDIUM"
+                        : "LOW"
         };
     }
 
     // ======================================================
-    // 📌 DAILY MISSION (CYCLE-LOCKED CORE)
+    // 📌 DAILY MISSION
     // ======================================================
     function getDailyMission() {
-
         if (!isDataReady()) {
             return {
                 cycle: 1,
                 day: 1,
                 globalDay: 1,
                 totalDays: TOTAL_DAYS,
+                totalCycles: TOTAL_CYCLES,
+                daysPerCycle: DAYS_PER_CYCLE,
+                totalPages: TOTAL_PAGES,
+                totalReadings: TOTAL_READINGS,
+                totalReadingPages: TOTAL_READING_PAGES,
+                dailyTarget: Math.ceil(DAILY_TARGET),
                 breakdown: {},
                 total: 0
             };
         }
 
-        const day = getCurrentDay();
-        const { cycle, dayInCycle } = getCycleInfo(day);
+        const globalDay = getCurrentDay();
+        const { cycle, dayInCycle } = getCycleInfo(globalDay);
 
         const remaining = getRemainingPages();
 
-        const cycleRemainingDays = DAYS_PER_CYCLE - dayInCycle + 1;
-        const cycleTotalRemaining = sumSubjects(remaining);
-
-        const baseTarget = PAGES_PER_CYCLE / cycleRemainingDays;
-
-        // IMPORTANT: cycle stability → weak global influence only
         const expectedProgress = dayInCycle / DAYS_PER_CYCLE;
-        const doneProgress = 1 - (cycleTotalRemaining / TOTAL_PAGES);
 
-        const adjustedTarget =
-            Math.ceil(baseTarget * getBacklogFactor(doneProgress, expectedProgress));
+        const completedTotal = sumSubjects(getCompletedPages());
+        const curriculumTotal = sumSubjects(getCurriculumTotals());
 
+        const doneProgress = curriculumTotal > 0
+            ? completedTotal / curriculumTotal
+            : 0;
+
+        const backlogFactor = getBacklogFactor(
+            doneProgress,
+            expectedProgress
+        );
+
+        // The correct base target for five complete readings
+        const adjustedTarget = Math.ceil(
+            DAILY_TARGET * backlogFactor
+        );
+
+        const remainingTotal = sumSubjects(remaining);
         const weights = getWeeklyWeights();
 
         const breakdown = {};
         let total = 0;
 
         SUBJECTS.forEach(subject => {
-
-            const ratio = cycleTotalRemaining > 0
-                ? remaining[subject] / cycleTotalRemaining
+            const ratio = remainingTotal > 0
+                ? remaining[subject] / remainingTotal
                 : weights[subject];
 
-            const avg = adjustedTarget / SUBJECTS.length;
+            const average = adjustedTarget / SUBJECTS.length;
 
             let value = Math.round(adjustedTarget * ratio);
-            value = applyBurnoutCap(value, avg);
+
+            value = applyBurnoutCap(value, average);
 
             breakdown[subject] = value;
             total += value;
         });
 
-        // safe normalization correction
+        // Correct rounding so the subject total equals the daily target
         const correction = adjustedTarget - total;
 
-        const maxSubject = SUBJECTS.reduce((a, b) =>
-            breakdown[a] > breakdown[b] ? a : b
-        );
+        const maxSubject = SUBJECTS.reduce((a, b) => {
+            return breakdown[a] > breakdown[b] ? a : b;
+        });
 
         breakdown[maxSubject] = Math.max(
             1,
@@ -230,17 +336,26 @@ window.SmartEngine = (function () {
         return {
             cycle,
             day: dayInCycle,
-            globalDay: day,
+            globalDay,
             totalDays: TOTAL_DAYS,
+            totalCycles: TOTAL_CYCLES,
+            daysPerCycle: DAYS_PER_CYCLE,
+            totalPages: TOTAL_PAGES,
+            totalReadings: TOTAL_READINGS,
+            totalReadingPages: TOTAL_READING_PAGES,
+            dailyTarget: Math.ceil(DAILY_TARGET),
             breakdown,
             total: sumSubjects(breakdown),
             cycleBudget: PAGES_PER_CYCLE,
-            prediction: predictCompletion(remaining, adjustedTarget)
+            prediction: predictCompletion(
+                remaining,
+                adjustedTarget
+            )
         };
     }
 
     // ======================================================
-    // 📊 PROGRESS (GLOBAL MONITOR ONLY)
+    // 📊 PROGRESS
     // ======================================================
     function getProgress() {
         const day = getCurrentDay();
@@ -248,42 +363,54 @@ window.SmartEngine = (function () {
         if (!isDataReady()) {
             return {
                 pagesDone: 0,
-                pagesTotal: 0,
+                pagesTotal: TOTAL_PAGES,
                 pagesPercent: 0,
+                readingPagesDone: 0,
+                readingPagesTotal: TOTAL_READING_PAGES,
+                readingPagesPercent: 0,
                 day,
-                dayPercent: 0
+                dayPercent: Math.round((day / TOTAL_DAYS) * 100)
             };
         }
 
-        const data = getData();
-        const progress = data.studyProgress || {};
+        const completed = getCompletedPages();
+        const pagesDone = sumSubjects(completed);
 
-        let done = 0;
-        let max = 0;
+        const pagesPercent = TOTAL_PAGES > 0
+            ? Math.round((pagesDone / TOTAL_PAGES) * 100)
+            : 0;
 
-        for (let g = 9; g <= 12; g++) {
-            const gData = progress[g] || {};
+        const cycleProgress = Math.min(
+            pagesDone,
+            TOTAL_PAGES
+        );
 
-            SUBJECTS.forEach(s => {
-                done += safeNumber(gData?.[s]);
-                max += safeNumber(window.maxPagesByGrade?.[g]?.[s]);
-            });
-        }
+        const readingPagesDone =
+            ((getCycleInfo(day).cycle - 1) * TOTAL_PAGES) +
+            cycleProgress;
+
+        const readingPagesPercent = TOTAL_READING_PAGES > 0
+            ? Math.round(
+                (readingPagesDone / TOTAL_READING_PAGES) * 100
+            )
+            : 0;
 
         return {
-            pagesDone: done,
-            pagesTotal: max,
-            pagesPercent: max ? Math.round((done / max) * 100) : 0,
+            pagesDone,
+            pagesTotal: TOTAL_PAGES,
+            pagesPercent,
+            readingPagesDone,
+            readingPagesTotal: TOTAL_READING_PAGES,
+            readingPagesPercent,
             day,
             dayPercent: Math.round((day / TOTAL_DAYS) * 100)
         };
     }
 
     // ======================================================
-    // 📅 WEEKLY PLANNER (NO DOUBLE SIMULATION)
+    // 📅 WEEKLY PLANNER
     // ======================================================
     function getWeeklyPlanner() {
-
         if (!isDataReady()) {
             return {
                 week: 1,
@@ -300,50 +427,36 @@ window.SmartEngine = (function () {
         const week = Math.ceil(day / 7);
 
         const weekStart = (week - 1) * 7 + 1;
-        const weekEnd = Math.min(week * 7, TOTAL_DAYS);
+        const weekEnd = Math.min(
+            week * 7,
+            TOTAL_DAYS
+        );
 
-        const data = getData();
-        const progress = data.studyProgress || {};
-
-        const weights = getWeeklyWeights();
-
-        let plannedTotal = 0;
-        let actualTotal = 0;
+        const progress = getCompletedPages();
 
         const subjects = {
-            Math: { planned: 0, actual: 0 },
-            Physics: { planned: 0, actual: 0 },
-            Chemistry: { planned: 0, actual: 0 },
-            Biology: { planned: 0, actual: 0 }
+            Math: { planned: 0, actual: progress.Math },
+            Physics: { planned: 0, actual: progress.Physics },
+            Chemistry: { planned: 0, actual: progress.Chemistry },
+            Biology: { planned: 0, actual: progress.Biology }
         };
 
-        // PLAN
-        for (let d = weekStart; d <= weekEnd; d++) {
+        let plannedTotal = 0;
 
-            const cycleDay = ((d - 1) % DAYS_PER_CYCLE) + 1;
-            const remainingDays = DAYS_PER_CYCLE - cycleDay + 1;
+        for (let dayNumber = weekStart; dayNumber <= weekEnd; dayNumber++) {
+            const dailyMission = getMissionForDay(dayNumber);
 
-            const base = PAGES_PER_CYCLE / remainingDays;
-
-            SUBJECTS.forEach(s => {
-                const val = Math.round(base * weights[s]);
-                subjects[s].planned += val;
-                plannedTotal += val;
+            SUBJECTS.forEach(subject => {
+                subjects[subject].planned += dailyMission.breakdown[subject];
+                plannedTotal += dailyMission.breakdown[subject];
             });
         }
 
-        // ACTUAL
-        for (let g = 9; g <= 12; g++) {
-            const gData = progress[g] || {};
+        const actualTotal = sumSubjects(progress);
 
-            SUBJECTS.forEach(s => {
-                const v = safeNumber(gData?.[s]);
-                subjects[s].actual += v;
-                actualTotal += v;
-            });
-        }
-
-        const efficiency = plannedTotal ? actualTotal / plannedTotal : 1;
+        const efficiency = plannedTotal > 0
+            ? actualTotal / plannedTotal
+            : 1;
 
         return {
             week,
@@ -352,10 +465,64 @@ window.SmartEngine = (function () {
             actual: actualTotal,
             efficiency: Math.round(efficiency * 100),
             status:
-                efficiency >= 1 ? "ON_TRACK" :
-                efficiency >= 0.85 ? "SLIGHT_DELAY" :
-                efficiency >= 0.70 ? "BEHIND" : "CRITICAL",
+                efficiency >= 1
+                    ? "ON_TRACK"
+                    : efficiency >= 0.85
+                        ? "SLIGHT_DELAY"
+                        : efficiency >= 0.70
+                            ? "BEHIND"
+                            : "CRITICAL",
             subjects
+        };
+    }
+
+    // ======================================================
+    // 📌 PLANNED MISSION FOR A SPECIFIC DAY
+    // ======================================================
+    function getMissionForDay(dayNumber) {
+        const safeDay = Math.min(
+            Math.max(safeNumber(dayNumber), 1),
+            TOTAL_DAYS
+        );
+
+        const { dayInCycle } = getCycleInfo(safeDay);
+
+        const target = Math.ceil(DAILY_TARGET);
+        const weights = WEIGHTS;
+
+        const breakdown = {};
+        let total = 0;
+
+        SUBJECTS.forEach(subject => {
+            const average = target / SUBJECTS.length;
+
+            let value = Math.round(
+                target * weights[subject]
+            );
+
+            value = applyBurnoutCap(value, average);
+
+            breakdown[subject] = value;
+            total += value;
+        });
+
+        const correction = target - total;
+
+        const maxSubject = SUBJECTS.reduce((a, b) => {
+            return breakdown[a] > breakdown[b] ? a : b;
+        });
+
+        breakdown[maxSubject] = Math.max(
+            1,
+            breakdown[maxSubject] + correction
+        );
+
+        return {
+            cycle: Math.ceil(safeDay / DAYS_PER_CYCLE),
+            day: dayInCycle,
+            globalDay: safeDay,
+            breakdown,
+            total: sumSubjects(breakdown)
         };
     }
 
