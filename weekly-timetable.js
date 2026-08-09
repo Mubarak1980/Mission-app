@@ -1,16 +1,23 @@
 "use strict";
 
-window.loadWeeklyTimetable = function() {
-    const container = document.getElementById("main-content");
+window.loadWeeklyTimetable = function () {
+    const container =
+        document.getElementById("main-content");
+
     if (!container) return;
 
-    // ===============================
-    // 1. FIXED CURRICULUM DATA
-    // ===============================
+    // ======================================================
+    // 1. SYSTEM CONSTANTS
+    // ======================================================
     const totalPages = 3654;
     const totalCycles = 5;
-    const totalDays = 60;
-    const totalSystemDays = totalCycles * totalDays;
+    const cycleDays = 60;
+    const totalSystemDays =
+        totalCycles * cycleDays;
+
+    const totalReadingPages =
+        totalPages * totalCycles;
+
     const dailyTarget = 61;
 
     const gradePages = [
@@ -32,72 +39,178 @@ window.loadWeeklyTimetable = function() {
         target: dailyTarget
     }));
 
-    const dayInCycle = (new Date().getDate() - 1) % 4;
-
-    const dailyBreakdown = [
-        { Math: 16, Physics: 15, Chemistry: 15, Biology: 15 },
-        { Math: 15, Physics: 16, Chemistry: 15, Biology: 15 },
-        { Math: 15, Physics: 15, Chemistry: 16, Biology: 15 },
-        { Math: 15, Physics: 15, Chemistry: 15, Biology: 16 }
-    ][dayInCycle];
-
-    let rowsHtml = planData.map(row => `
-        <tr style="border-bottom: 1px solid #30363d;">
-            <td style="font-weight:700;color:#00d4ff;padding:8px;">${row.grade}</td>
-            <td style="padding:8px;">${row.total.toLocaleString()}</td>
-            <td style="padding:8px;">${row.days}</td>
-            <td style="padding:8px;">${row.math}</td>
-            <td style="padding:8px;">${row.phys}</td>
-            <td style="padding:8px;">${row.chem}</td>
-            <td style="padding:8px;">${row.bio}</td>
-            <td style="padding:8px;color:#00d4ff;font-weight:bold;">${row.target}</td>
-        </tr>
-    `).join("");
-
-    // ===============================
-    // 2. SMART ENGINE
-    // ===============================
+    // ======================================================
+    // 2. SMART ENGINE DATA
+    // ======================================================
     let mission = null;
     let progress = null;
+    let recovery = null;
 
     try {
         if (window.SmartEngine) {
-            mission = window.SmartEngine.getDailyMission?.() || null;
-            progress = window.SmartEngine.getProgress?.() || null;
+            mission =
+                window.SmartEngine
+                    .getDailyMission?.() || null;
+
+            progress =
+                window.SmartEngine
+                    .getProgress?.() || null;
+
+            recovery =
+                window.SmartEngine
+                    .getRecoveryStatus?.() || null;
         }
-    } catch (e) {
-        console.error("SmartEngine error:", e);
+    } catch (error) {
+        console.error(
+            "SmartEngine error:",
+            error
+        );
     }
 
-    // ===============================
-    // 3. SAFE MISSION DATA
-    // ===============================
-    const safeBreakdown = mission?.breakdown &&
+    // ======================================================
+    // 3. SAFE DATA
+    // ======================================================
+    const fallbackBreakdown = {
+        Math: 16,
+        Physics: 15,
+        Chemistry: 15,
+        Biology: 15
+    };
+
+    const safeBreakdown =
+        mission?.breakdown &&
         Object.keys(mission.breakdown).length
-        ? mission.breakdown
-        : dailyBreakdown;
+            ? mission.breakdown
+            : fallbackBreakdown;
 
     const displayedMissionTotal =
-        Object.values(safeBreakdown)
-            .reduce((sum, value) => sum + Number(value || 0), 0);
+        Object.values(safeBreakdown).reduce(
+            (sum, value) => {
+                return sum + Number(value || 0);
+            },
+            0
+        );
 
     const displayedCycle =
-        mission?.cycle || 1;
+        Number(mission?.cycle) || 1;
 
-    const displayedDay =
-        mission?.day || 1;
+    const displayedCycleDay =
+        Number(mission?.day) || 1;
 
-    const displayedSystemDays =
-        mission?.totalDays || totalSystemDays;
+    const displayedGlobalDay =
+        Number(
+            mission?.globalDay ||
+            progress?.day
+        ) || 1;
+
+    const displayedTotalDays =
+        Number(
+            mission?.totalDays
+        ) || totalSystemDays;
 
     const displayedCycleDays =
-        mission?.totalDays
-            ? Math.min(totalDays, mission.totalDays)
-            : totalDays;
+        Number(
+            mission?.daysPerCycle
+        ) || cycleDays;
 
-    // ===============================
-    // 4. MISSION HTML
-    // ===============================
+    const displayedPagesDone =
+        Number(
+            progress?.readingPagesDone
+        ) || 0;
+
+    const displayedPagesTotal =
+        Number(
+            progress?.readingPagesTotal
+        ) || totalReadingPages;
+
+    const displayedStatus =
+        recovery?.status ||
+        mission?.status ||
+        "ON_TRACK";
+
+    const displayedBacklog =
+        Number(
+            recovery?.backlog ||
+            mission?.backlog
+        ) || 0;
+
+    const displayedMissedDays =
+        Number(
+            recovery?.missedDays ||
+            mission?.missedDays
+        ) || 0;
+
+    const displayedTarget =
+        Number(
+            mission?.dailyTarget
+        ) || dailyTarget;
+
+    // Keep progress-bar values numeric and valid.
+    const safeDayProgress = Math.min(
+        Math.max(displayedGlobalDay, 0),
+        displayedTotalDays
+    );
+
+    const safePagesProgress = Math.min(
+        Math.max(displayedPagesDone, 0),
+        displayedPagesTotal
+    );
+
+    const formatNumber = value => {
+        return Number(value || 0)
+            .toLocaleString("en-US");
+    };
+
+    // ======================================================
+    // 4. CURRICULUM TABLE
+    // ======================================================
+    const rowsHtml = planData.map(row => `
+        <tr style="border-bottom:1px solid #30363d;">
+            <td style="
+                font-weight:700;
+                color:#00d4ff;
+                padding:8px;
+            ">
+                ${row.grade}
+            </td>
+
+            <td style="padding:8px;">
+                ${formatNumber(row.total)}
+            </td>
+
+            <td style="padding:8px;">
+                ${row.days}
+            </td>
+
+            <td style="padding:8px;">
+                ${row.math}
+            </td>
+
+            <td style="padding:8px;">
+                ${row.phys}
+            </td>
+
+            <td style="padding:8px;">
+                ${row.chem}
+            </td>
+
+            <td style="padding:8px;">
+                ${row.bio}
+            </td>
+
+            <td style="
+                padding:8px;
+                color:#00d4ff;
+                font-weight:bold;
+            ">
+                ${row.target}
+            </td>
+        </tr>
+    `).join("");
+
+    // ======================================================
+    // 5. SMART MISSION HTML
+    // ======================================================
     const missionHtml = mission ? `
         <div style="
             margin-top:20px;
@@ -108,11 +221,27 @@ window.loadWeeklyTimetable = function() {
             color:white;
         ">
 
-            <h2 style="margin-top:0;color:#00d4ff;">
-                🧠 Smart Cycle Engine (60-Day System)
+            <h2 style="
+                margin-top:0;
+                color:#00d4ff;
+            ">
+                🧠 Smart Cycle Engine
             </h2>
 
-            <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+            <div style="
+                color:#8b949e;
+                margin-bottom:12px;
+            ">
+                System:
+                ${cycleDays} days
+                (${totalCycles} cycle × ${totalPages} pages)
+            </div>
+
+            <div style="
+                display:flex;
+                justify-content:space-between;
+                margin-bottom:8px;
+            ">
                 <div>
                     <strong>Cycle:</strong>
                     ${displayedCycle} / ${totalCycles}
@@ -120,17 +249,14 @@ window.loadWeeklyTimetable = function() {
 
                 <div>
                     <strong>Day:</strong>
-                    ${displayedDay} / ${displayedCycleDays}
+                    ${displayedCycleDay} /
+                    ${displayedCycleDays}
                 </div>
             </div>
 
-            <div style="color:#8b949e;margin-bottom:10px;">
-                Total System:
-                ${displayedSystemDays} Days
-                (${totalCycles} Cycles × ${totalDays} Days)
-            </div>
-
-            <h3 style="margin:10px 0;">🎯 Today's Mission</h3>
+            <h3 style="margin:10px 0;">
+                🎯 Today's Mission
+            </h3>
 
             <div style="
                 display:grid;
@@ -140,22 +266,30 @@ window.loadWeeklyTimetable = function() {
             ">
                 <div>
                     Math:
-                    <strong>${safeBreakdown.Math}</strong>
+                    <strong>
+                        ${safeBreakdown.Math}
+                    </strong>
                 </div>
 
                 <div>
                     Physics:
-                    <strong>${safeBreakdown.Physics}</strong>
+                    <strong>
+                        ${safeBreakdown.Physics}
+                    </strong>
                 </div>
 
                 <div>
                     Chemistry:
-                    <strong>${safeBreakdown.Chemistry}</strong>
+                    <strong>
+                        ${safeBreakdown.Chemistry}
+                    </strong>
                 </div>
 
                 <div>
                     Biology:
-                    <strong>${safeBreakdown.Biology}</strong>
+                    <strong>
+                        ${safeBreakdown.Biology}
+                    </strong>
                 </div>
             </div>
 
@@ -169,34 +303,67 @@ window.loadWeeklyTimetable = function() {
                 Total: ${displayedMissionTotal} pages
             </div>
 
-            <div style="margin-top:15px;">
+            <div style="
+                margin-top:15px;
+                color:#8b949e;
+            ">
+                Status:
+                <strong style="color:#00d4ff;">
+                    ${displayedStatus}
+                </strong>
+            </div>
 
+            <div style="
+                margin-top:6px;
+                color:#8b949e;
+            ">
+                Missed days:
+                <strong>${displayedMissedDays}</strong>
+                &nbsp; | &nbsp;
+                Backlog:
+                <strong>${formatNumber(displayedBacklog)}</strong>
+                pages
+            </div>
+
+            <div style="
+                margin-top:15px;
+            ">
                 <div style="margin-bottom:10px;">
                     📅 Days Progress:
                     <strong>
-                        ${progress?.day || 0} / ${displayedCycleDays}
+                        ${displayedGlobalDay} /
+                        ${displayedTotalDays}
                     </strong>
 
                     <progress
-                        value="${progress?.day || 0}"
-                        max="${displayedCycleDays}"
-                        style="width:100%;height:10px;">
+                        value="${safeDayProgress}"
+                        max="${displayedTotalDays}"
+                        style="
+                            width:100%;
+                            height:10px;
+                        "
+                    >
                     </progress>
                 </div>
 
                 <div>
                     📚 Total Pages Progress:
                     <strong>
-                        ${progress?.pagesDone || 0} / ${totalPages}
+                        ${formatNumber(displayedPagesDone)}
+                        /
+                        ${formatNumber(displayedPagesTotal)}
                     </strong>
 
                     <progress
-                        value="${progress?.pagesDone || 0}"
-                        max="${totalPages}"
-                        style="width:100%;height:10px;">
+                        value="${safePagesProgress}"
+                        max="${displayedPagesTotal}"
+                        style="
+                            width:100%;
+                            height:10px;
+                        "
+                    >
                     </progress>
                 </div>
-
             </div>
         </div>
     ` : `
@@ -212,18 +379,31 @@ window.loadWeeklyTimetable = function() {
         </div>
     `;
 
-    // ===============================
-    // 5. FINAL RENDER
-    // ===============================
+    // ======================================================
+    // 6. FINAL RENDER
+    // ======================================================
     container.innerHTML = `
-        <div style="background:#121821;padding:15px;border-radius:10px;color:white;">
+        <div style="
+            background:#121821;
+            padding:15px;
+            border-radius:10px;
+            color:white;
+        ">
 
             <h2>📅 Curriculum Reference</h2>
 
             <div style="overflow-x:auto;">
-                <table style="width:100%;border-collapse:collapse;text-align:center;color:white;">
+                <table style="
+                    width:100%;
+                    border-collapse:collapse;
+                    text-align:center;
+                    color:white;
+                ">
                     <thead>
-                        <tr style="color:#8b949e;border-bottom:2px solid #30363d;">
+                        <tr style="
+                            color:#8b949e;
+                            border-bottom:2px solid #30363d;
+                        ">
                             <th>Gr</th>
                             <th>Pgs</th>
                             <th>Dys</th>
@@ -238,19 +418,32 @@ window.loadWeeklyTimetable = function() {
                     <tbody>
                         ${rowsHtml}
 
-                        <tr style="border-top:2px solid #30363d;font-weight:bold;color:#00d4ff;">
+                        <tr style="
+                            border-top:2px solid #30363d;
+                            font-weight:bold;
+                            color:#00d4ff;
+                        ">
                             <td>Sum</td>
-                            <td>${totalPages.toLocaleString()}</td>
-                            <td>${totalDays}</td>
+
+                            <td>
+                                ${formatNumber(totalPages)}
+                            </td>
+
+                            <td>
+                                ${cycleDays}
+                            </td>
+
                             <td colspan="4">—</td>
-                            <td>≈${dailyTarget}/d</td>
+
+                            <td>
+                                ≈${dailyTarget}/d
+                            </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
 
             ${missionHtml}
-
         </div>
     `;
 };
