@@ -1228,7 +1228,8 @@ async()=>{
             if(
                 data &&
                 typeof data === "object" &&
-                data.studyProgress
+                data.studyProgress &&
+                Object.keys(data.studyProgress).length > 0
             ){
 
                 return;
@@ -1286,22 +1287,36 @@ async()=>{
                 if(cursor){
 
 
-                    window.DataService
-                    ._cachedData =
+                    const snapshot =
                         cursor.value;
 
 
 
-                    window.DataService
-                    .set(
-                        cursor.value
-                    );
+                    if(
+                        snapshot &&
+                        typeof snapshot === "object" &&
+                        snapshot.studyProgress &&
+                        Object.keys(snapshot.studyProgress).length > 0
+                    ){
+
+                        window.DataService
+                        ._cachedData =
+                            snapshot;
 
 
 
-                    console.log(
-                        "Recovered latest snapshot"
-                    );
+                        window.DataService
+                        .set(
+                            snapshot
+                        );
+
+
+
+                        console.log(
+                            "Recovered latest snapshot"
+                        );
+
+                    }
 
 
                 }
