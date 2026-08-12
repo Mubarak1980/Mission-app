@@ -10,30 +10,40 @@ window.maxPagesByGrade = {
 };
 
 function createSubjectHtml(name, max, saved) {
-    const percent = max > 0 ? Math.round((Math.min(saved, max) / max) * 100) : 0;
+    const safeSaved = Number(saved) || 0;
+    const safeMax = Number(max) || 0;
+    const percent = safeMax > 0 ? Math.round((Math.min(safeSaved, safeMax) / safeMax) * 100) : 0;
 
     return `
         <div class="subject">
             <h3>${name}</h3>
             <input class="subject-progress"
                 type="number"
-                value="${saved}"
+                value="${safeSaved}"
+                min="0"
+                max="${safeMax}"
                 data-subject="${name}"
-                data-maxpages="${max}" />
-            <progress value="${saved}" max="${max}"></progress>
+                data-maxpages="${safeMax}" />
+            <progress value="${safeSaved}" max="${safeMax}"></progress>
             <p class="subject-stats">
-                ${percent}% (${saved}/${max} pages)
+                ${percent}% (${safeSaved}/${safeMax} pages)
             </p>
         </div>
     `;
 }
 
 function getSafeStudyData() {
-    const data = (window.DataService && window.DataService.get && window.DataService.get()) || {};
+    const data = (window.DataService && typeof window.DataService.get === "function")
+        ? (window.DataService.get() || {})
+        : {};
+
     return {
         ...data,
         studyProgress: {
             ...(data.studyProgress || {})
+        },
+        ui: {
+            ...(data.ui || { section: "study", grade: 9 })
         }
     };
 }
@@ -45,15 +55,16 @@ function updateStudySummary(grade, gradeData) {
     let totalMax = 0;
     let totalSaved = 0;
 
-    SUBJECTS.forEach(s => {
-        const m = config[s] || 0;
-        const v = Math.min(Number(gradeData[s]) || 0, m);
-        totalMax += m;
-        totalSaved += v;
+    SUBJECTS.forEach(subject => {
+        const max = Number(config[subject]) || 0;
+        const saved = Math.min(Number(gradeData?.[subject]) || 0, max);
+        totalMax += max;
+        totalSaved += saved;
     });
 
-    const totalPercent = totalMax ? Math.round((totalSaved / totalMax) * 100) : 0;
+    const totalPercent = totalMax > 0 ? Math.round((totalSaved / totalMax) * 100) : 0;
     const card = document.querySelector(".overall-summary-card");
+
     if (card) {
         const percentNode = card.querySelector(".overall-percent");
         const progressNode = card.querySelector("progress");
@@ -67,7 +78,8 @@ function updateStudySummary(grade, gradeData) {
 
 window.loadStudySection = function (grade) {
     const mainContent = document.getElementById("main-content");
-    const gradeNum = parseInt(grade, 10);
+    const gradeNum = Number.parseInt(grade, 10);
+
     if (!mainContent || !Number.isFinite(gradeNum)) return;
 
     mainContent.style.opacity = "0";
@@ -77,22 +89,24 @@ window.loadStudySection = function (grade) {
         mainContent.innerHTML = "";
 
         const masterData = getSafeStudyData();
+        const config = window.maxPagesByGrade?.[gradeNum];
+        if (!config) return;
+
         const savedData = {
             ...(masterData.studyProgress?.[gradeNum] || {})
         };
 
-        const config = window.maxPagesByGrade?.[gradeNum];
-        if (!config) return;
-
         window.activeStudyGrade = gradeNum;
-        window.activeStudySavedData = savedData;
+        window.activeStudySavedData = {
+            ...savedData
+        };
 
         let totalMax = 0;
         let totalSaved = 0;
 
-        SUBJECTS.forEach(s => {
-            const max = config[s] || 0;
-            const saved = Math.min(Number(savedData[s]) || 0, max);
+        SUBJECTS.forEach(subject => {
+            const max = Number(config[subject]) || 0;
+            const saved = Math.min(Number(savedData[subject]) || 0, max);
             totalMax += max;
             totalSaved += saved;
         });
@@ -145,7 +159,6 @@ window.loadStudySection = function (grade) {
         `;
 
         mainContent.innerHTML = html;
-
         mainContent.style.opacity = "1";
         mainContent.style.transform = "translateY(0)";
     }, 150);
@@ -156,9 +169,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!mainContent) return;
 
     mainContent.addEventListener("input", async function (e) {
-        if (!e.target.classList.contains("subject-progress")) return;
-
         const input = e.target;
+        if (!input.classList.contains("subject-progress")) return;
+
         const grade = Number(window.activeStudyGrade);
         if (!Number.isFinite(grade)) return;
 
@@ -168,21 +181,30 @@ document.addEventListener("DOMContentLoaded", () => {
         const subject = input.dataset.subject;
         const max = Number(input.dataset.maxpages) || 0;
 
-        let val = Number(String(input.value).replace(/[^0-9]/g, ""));
+        const raw = String(input.value).replace(/[^0-9]/g, "");
+        let val = raw === "" ? 0 : Number(raw);
+
         if (!Number.isFinite(val) || val < 0) val = 0;
         if (val > max) val = max;
 
         input.value = val;
 
         const currentData = getSafeStudyData();
+        const currentStudyProgress = {
+            ...(currentData.studyProgress || {})
+        };
+
         const currentGradeData = {
-            ...(currentData.studyProgress?.[grade] || {})
+            ...(currentStudyProgress[grade] || {})
         };
 
         currentGradeData[subject] = val;
-        currentData.studyProgress[grade] = currentGradeData;
+        currentStudyProgress[grade] = currentGradeData;
+        currentData.studyProgress = currentStudyProgress;
 
-        window.activeStudySavedData = currentGradeData;
+        window.activeStudySavedData = {
+            ...currentGradeData
+        };
 
         if (window.DataService && typeof window.DataService.set === "function") {
             await window.DataService.set(currentData);
