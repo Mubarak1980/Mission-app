@@ -15,6 +15,27 @@ window.DataService = {
     _db: null,
 
 
+    defaultData() {
+
+        return {
+
+            startDate:
+                new Date()
+                    .toISOString()
+                    .split("T")[0],
+
+            studyProgress: {},
+
+            ui: {
+                section: "study",
+                grade: 9
+            }
+
+        };
+
+    },
+
+
     async _openDB() {
 
         if (this._db) return this._db;
@@ -113,9 +134,20 @@ window.DataService = {
                         "success",
                         () => {
 
-                            this._cachedData =
-                                request.result ||
-                                this.defaultData();
+                            const result = request.result;
+
+                            this._cachedData = {
+                                ...this.defaultData(),
+                                ...(result && typeof result === "object" ? result : {}),
+                                studyProgress: {
+                                    ...this.defaultData().studyProgress,
+                                    ...((result && result.studyProgress) || {})
+                                },
+                                ui: {
+                                    ...this.defaultData().ui,
+                                    ...((result && result.ui) || {})
+                                }
+                            };
 
                             resolve(this._cachedData);
 
@@ -175,10 +207,33 @@ window.DataService = {
 
     async set(data) {
 
-        this._cachedData = data;
-
-
         try {
+
+            const previous =
+                this._cachedData ||
+                this.defaultData();
+
+            const incoming =
+                data &&
+                typeof data === "object"
+                    ? data
+                    : {};
+
+            const merged = {
+                ...previous,
+                ...incoming,
+                studyProgress: {
+                    ...(previous.studyProgress || {}),
+                    ...(incoming.studyProgress || {})
+                },
+                ui: {
+                    ...(previous.ui || this.defaultData().ui),
+                    ...(incoming.ui || {})
+                }
+            };
+
+            this._cachedData = merged;
+
 
             const db = await this._openDB();
 
@@ -192,7 +247,7 @@ window.DataService = {
 
 
             tx.objectStore(this.STORE_NAME)
-                .put(data, this.KEY);
+                .put(merged, this.KEY);
 
 
         } catch (err) {
@@ -207,23 +262,24 @@ window.DataService = {
     },
 
 
-    defaultData() {
+    async forceSave() {
 
-        return {
+        try {
 
-            startDate:
-                new Date()
-                .toISOString()
-                .split("T")[0],
-
-            studyProgress:{},
-
-            ui:{
-                section:"study",
-                grade:9
+            if (!this._cachedData) {
+                this._cachedData = this.defaultData();
             }
 
-        };
+            await this.set(this._cachedData);
+
+        } catch (err) {
+
+            console.warn(
+                "Force save failed:",
+                err
+            );
+
+        }
 
     }
 
@@ -1010,7 +1066,7 @@ async()=>{
 
 
             const snapshot =
-                structuredClone ?
+                typeof structuredClone === "function" ?
 
                 structuredClone(raw) :
 
