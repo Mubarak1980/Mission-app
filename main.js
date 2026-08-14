@@ -2,7 +2,7 @@
 
 // ======================================================
 // 1. DATA SERVICE
-//    INDEXEDDB VERSION - PERSISTENT AND RACE-SAFE
+//    INDEXEDDB VERSION - OFFLINE SAFE
 // ======================================================
 
 window.DataService = {
@@ -14,8 +14,12 @@ window.DataService = {
     _cachedData: null,
     _initPromise: null,
     _db: null,
+
+    // Prevents overlapping writes.
     _saveQueue: Promise.resolve(),
-    _lastSavePromise: null,
+
+    // Allows other modules to wait for the latest save.
+    _lastSavePromise: Promise.resolve(),
 
     defaultData() {
         return {
@@ -26,10 +30,6 @@ window.DataService = {
 
             studyProgress: {},
 
-            /*
-                Daily engine records are stored separately
-                from overall curriculum progress.
-            */
             studyLog: {},
 
             ui: {
@@ -69,59 +69,54 @@ window.DataService = {
         }
     },
 
-    _mergeObjects(previous, incoming) {
+    _merge(previous, incoming) {
         const result = {
             ...(this._isObject(previous)
                 ? previous
                 : {})
         };
 
-        if (!this._isObject(incoming)) {
+        if (
+            !this._isObject(incoming)
+        ) {
             return result;
         }
 
         Object.keys(incoming).forEach(key => {
-            const incomingValue =
-                incoming[key];
-
-            const previousValue =
+            const oldValue =
                 result[key];
 
+            const newValue =
+                incoming[key];
+
             if (
-                this._isObject(
-                    incomingValue
-                ) &&
-                this._isObject(
-                    previousValue
-                )
+                this._isObject(oldValue) &&
+                this._isObject(newValue)
             ) {
                 result[key] =
-                    this._mergeObjects(
-                        previousValue,
-                        incomingValue
+                    this._merge(
+                        oldValue,
+                        newValue
                     );
             } else {
                 result[key] =
-                    incomingValue;
+                    newValue;
             }
         });
 
         return result;
     },
 
-    _normalizeData(data) {
+    _normalize(data) {
         const defaults =
             this.defaultData();
 
-        const source =
-            this._isObject(data)
-                ? data
-                : {};
-
         const normalized =
-            this._mergeObjects(
+            this._merge(
                 defaults,
-                source
+                this._isObject(data)
+                    ? data
+                    : {}
             );
 
         if (
@@ -166,20 +161,19 @@ window.DataService = {
         }
 
         return new Promise(resolve => {
-            let settled = false;
+            let finished = false;
 
             const finish = db => {
-                if (settled) return;
+                if (finished) return;
 
-                settled = true;
+                finished = true;
                 resolve(db);
             };
 
             try {
                 const request =
                     indexedDB.open(
-                        this.DB_NAME,
-                        1
+                        this.DB_NAME
                     );
 
                 request.addEventListener(
@@ -204,20 +198,18 @@ window.DataService = {
                 request.addEventListener(
                     "success",
                     () => {
-                        const db =
+                        this._db =
                             request.result;
 
-                        this._db = db;
-
-                        db.addEventListener(
+                        this._db.addEventListener(
                             "versionchange",
                             () => {
-                                db.close();
+                                this._db.close();
                                 this._db = null;
                             }
                         );
 
-                        finish(db);
+                        finish(this._db);
                     }
                 );
 
@@ -237,7 +229,7 @@ window.DataService = {
                     "blocked",
                     () => {
                         console.warn(
-                            "IndexedDB opening blocked."
+                            "IndexedDB request blocked."
                         );
                     }
                 );
@@ -252,22 +244,21 @@ window.DataService = {
         });
     },
 
-    async _readFromDB(db) {
-        return new Promise(resolve => {
-            if (!db) {
-                resolve(null);
-                return;
-            }
+    async _read(db) {
+        if (!db) {
+            return null;
+        }
 
+        return new Promise(resolve => {
             try {
-                const tx =
+                const transaction =
                     db.transaction(
                         this.STORE_NAME,
                         "readonly"
                     );
 
                 const store =
-                    tx.objectStore(
+                    transaction.objectStore(
                         this.STORE_NAME
                     );
 
@@ -297,7 +288,7 @@ window.DataService = {
                 );
             } catch (error) {
                 console.warn(
-                    "Data transaction failed:",
+                    "Data read error:",
                     error
                 );
 
@@ -306,54 +297,52 @@ window.DataService = {
         });
     },
 
-    async _writeToDB(db, data) {
-        return new Promise(resolve => {
-            if (!db) {
-                resolve(false);
-                return;
-            }
+    async _write(db, data) {
+        if (!db) {
+            return false;
+        }
 
+        return new Promise(resolve => {
             try {
-                const tx =
+                const transaction =
                     db.transaction(
                         this.STORE_NAME,
                         "readwrite"
                     );
 
-                const store =
-                    tx.objectStore(
+                transaction
+                    .objectStore(
                         this.STORE_NAME
+                    )
+                    .put(
+                        data,
+                        this.KEY
                     );
 
-                store.put(
-                    data,
-                    this.KEY
-                );
-
-                tx.addEventListener(
+                transaction.addEventListener(
                     "complete",
                     () => {
                         resolve(true);
                     }
                 );
 
-                tx.addEventListener(
+                transaction.addEventListener(
                     "error",
                     () => {
                         console.warn(
-                            "Data transaction error:",
-                            tx.error
+                            "Data write failed:",
+                            transaction.error
                         );
 
                         resolve(false);
                     }
                 );
 
-                tx.addEventListener(
+                transaction.addEventListener(
                     "abort",
                     () => {
                         console.warn(
-                            "Data transaction aborted."
+                            "Data write aborted."
                         );
 
                         resolve(false);
@@ -361,7 +350,7 @@ window.DataService = {
                 );
             } catch (error) {
                 console.warn(
-                    "Data write failed:",
+                    "Data write error:",
                     error
                 );
 
@@ -387,28 +376,30 @@ window.DataService = {
                     await this._openDB();
 
                 if (!db) {
+                    /*
+                        The app can still open offline.
+                        Data remains in memory for this
+                        session if IndexedDB is unavailable.
+                    */
                     this._cachedData =
                         this.defaultData();
 
                     return this._cachedData;
                 }
 
-                const result =
-                    await this._readFromDB(
-                        db
-                    );
+                const stored =
+                    await this._read(db);
 
                 this._cachedData =
-                    this._normalizeData(
-                        result
+                    this._normalize(
+                        stored
                     );
 
                 /*
-                    Persist normalized data only after
-                    reading existing data. This does not
-                    reset studyProgress.
+                    This only normalizes existing data.
+                    It does not clear studyProgress.
                 */
-                await this._writeToDB(
+                await this._write(
                     db,
                     this._cachedData
                 );
@@ -440,12 +431,7 @@ window.DataService = {
     },
 
     async set(data) {
-        /*
-            Every save waits behind the previous save.
-            This prevents two rapid input events from
-            overwriting each other.
-        */
-        const saveOperation =
+        const operation =
             this._saveQueue.then(
                 async () => {
                     try {
@@ -457,7 +443,7 @@ window.DataService = {
                         }
 
                         const previous =
-                            this._normalizeData(
+                            this._normalize(
                                 this._cachedData
                             );
 
@@ -467,8 +453,8 @@ window.DataService = {
                                 : {};
 
                         const merged =
-                            this._normalizeData(
-                                this._mergeObjects(
+                            this._normalize(
+                                this._merge(
                                     previous,
                                     incoming
                                 )
@@ -482,37 +468,36 @@ window.DataService = {
 
                         if (!db) {
                             console.warn(
-                                "Data was kept in memory only."
+                                "IndexedDB unavailable; " +
+                                "data remains in memory."
                             );
 
                             return false;
                         }
 
                         const saved =
-                            await this._writeToDB(
+                            await this._write(
                                 db,
                                 merged
                             );
 
-                        if (!saved) {
-                            return false;
+                        if (saved) {
+                            window.dispatchEvent(
+                                new CustomEvent(
+                                    "data-service-updated",
+                                    {
+                                        detail: {
+                                            data:
+                                                this._clone(
+                                                    merged
+                                                )
+                                        }
+                                    }
+                                )
+                            );
                         }
 
-                        window.dispatchEvent(
-                            new CustomEvent(
-                                "data-service-updated",
-                                {
-                                    detail: {
-                                        data:
-                                            this._clone(
-                                                merged
-                                            )
-                                    }
-                                }
-                            )
-                        );
-
-                        return true;
+                        return saved;
                     } catch (error) {
                         console.warn(
                             "Data save failed:",
@@ -525,12 +510,12 @@ window.DataService = {
             );
 
         this._saveQueue =
-            saveOperation.catch(() => {});
+            operation.catch(() => {});
 
         this._lastSavePromise =
-            saveOperation;
+            operation;
 
-        return saveOperation;
+        return operation;
     },
 
     async update(updater) {
@@ -541,12 +526,7 @@ window.DataService = {
             return false;
         }
 
-        /*
-            The update itself is placed inside the
-            save queue, so it always reads the newest
-            version and cannot lose another update.
-        */
-        const updateOperation =
+        const operation =
             this._saveQueue.then(
                 async () => {
                     try {
@@ -558,7 +538,7 @@ window.DataService = {
                         }
 
                         const current =
-                            this._normalizeData(
+                            this._normalize(
                                 this._cachedData
                             );
 
@@ -583,19 +563,20 @@ window.DataService = {
                             )
                         ) {
                             console.warn(
-                                "Updater must return an object."
+                                "Updater must return " +
+                                "an object."
                             );
 
                             return false;
                         }
 
-                        const merged =
-                            this._normalizeData(
+                        const normalized =
+                            this._normalize(
                                 updated
                             );
 
                         this._cachedData =
-                            merged;
+                            normalized;
 
                         const db =
                             await this._openDB();
@@ -605,30 +586,28 @@ window.DataService = {
                         }
 
                         const saved =
-                            await this._writeToDB(
+                            await this._write(
                                 db,
-                                merged
+                                normalized
                             );
 
-                        if (!saved) {
-                            return false;
+                        if (saved) {
+                            window.dispatchEvent(
+                                new CustomEvent(
+                                    "data-service-updated",
+                                    {
+                                        detail: {
+                                            data:
+                                                this._clone(
+                                                    normalized
+                                                )
+                                        }
+                                    }
+                                )
+                            );
                         }
 
-                        window.dispatchEvent(
-                            new CustomEvent(
-                                "data-service-updated",
-                                {
-                                    detail: {
-                                        data:
-                                            this._clone(
-                                                merged
-                                            )
-                                    }
-                                }
-                            )
-                        );
-
-                        return true;
+                        return saved;
                     } catch (error) {
                         console.warn(
                             "Data update failed:",
@@ -641,14 +620,12 @@ window.DataService = {
             );
 
         this._saveQueue =
-            updateOperation.catch(
-                () => {}
-            );
+            operation.catch(() => {});
 
         this._lastSavePromise =
-            updateOperation;
+            operation;
 
-        return updateOperation;
+        return operation;
     },
 
     async forceSave() {
@@ -674,20 +651,14 @@ window.DataService = {
     },
 
     async waitForSave() {
-        if (
-            this._lastSavePromise
-        ) {
-            return this._lastSavePromise;
-        }
-
-        return true;
+        return this._lastSavePromise;
     }
 };
 
 
 // ======================================================
 // 2. UI CONTROLLER
-//    INDEXEDDB VERSION - RACE-SAFE
+//    INDEXEDDB VERSION - OFFLINE SAFE
 // ======================================================
 
 window.UI = {
@@ -714,20 +685,19 @@ window.UI = {
         }
 
         return new Promise(resolve => {
-            let settled = false;
+            let finished = false;
 
             const finish = db => {
-                if (settled) return;
+                if (finished) return;
 
-                settled = true;
+                finished = true;
                 resolve(db);
             };
 
             try {
                 const request =
                     indexedDB.open(
-                        this.DB_NAME,
-                        1
+                        this.DB_NAME
                     );
 
                 request.addEventListener(
@@ -752,20 +722,18 @@ window.UI = {
                 request.addEventListener(
                     "success",
                     () => {
-                        const db =
+                        this._db =
                             request.result;
 
-                        this._db = db;
-
-                        db.addEventListener(
+                        this._db.addEventListener(
                             "versionchange",
                             () => {
-                                db.close();
+                                this._db.close();
                                 this._db = null;
                             }
                         );
 
-                        finish(db);
+                        finish(this._db);
                     }
                 );
 
@@ -790,24 +758,25 @@ window.UI = {
         });
     },
 
-    async _readFromDB(db) {
-        return new Promise(resolve => {
-            if (!db) {
-                resolve(null);
-                return;
-            }
+    async _read(db) {
+        if (!db) {
+            return null;
+        }
 
+        return new Promise(resolve => {
             try {
-                const tx =
+                const transaction =
                     db.transaction(
                         this.STORE_NAME,
                         "readonly"
                     );
 
                 const request =
-                    tx.objectStore(
-                        this.STORE_NAME
-                    ).get(this.KEY);
+                    transaction
+                        .objectStore(
+                            this.STORE_NAME
+                        )
+                        .get(this.KEY);
 
                 request.addEventListener(
                     "success",
@@ -821,9 +790,7 @@ window.UI = {
 
                 request.addEventListener(
                     "error",
-                    () => {
-                        resolve(null);
-                    }
+                    () => resolve(null)
                 );
             } catch {
                 resolve(null);
@@ -831,38 +798,39 @@ window.UI = {
         });
     },
 
-    async _writeToDB(db, data) {
-        return new Promise(resolve => {
-            if (!db) {
-                resolve(false);
-                return;
-            }
+    async _write(db, data) {
+        if (!db) {
+            return false;
+        }
 
+        return new Promise(resolve => {
             try {
-                const tx =
+                const transaction =
                     db.transaction(
                         this.STORE_NAME,
                         "readwrite"
                     );
 
-                tx.objectStore(
-                    this.STORE_NAME
-                ).put(
-                    data,
-                    this.KEY
-                );
+                transaction
+                    .objectStore(
+                        this.STORE_NAME
+                    )
+                    .put(
+                        data,
+                        this.KEY
+                    );
 
-                tx.addEventListener(
+                transaction.addEventListener(
                     "complete",
                     () => resolve(true)
                 );
 
-                tx.addEventListener(
+                transaction.addEventListener(
                     "error",
                     () => resolve(false)
                 );
 
-                tx.addEventListener(
+                transaction.addEventListener(
                     "abort",
                     () => resolve(false)
                 );
@@ -896,9 +864,7 @@ window.UI = {
                 }
 
                 const stored =
-                    await this._readFromDB(
-                        db
-                    );
+                    await this._read(db);
 
                 this._cachedUI = {
                     ...this.defaultUI(),
@@ -909,7 +875,7 @@ window.UI = {
                         : {})
                 };
 
-                await this._writeToDB(
+                await this._write(
                     db,
                     this._cachedUI
                 );
@@ -933,7 +899,7 @@ window.UI = {
                 Number(grade) || 9
         };
 
-        const saveOperation =
+        const operation =
             this._saveQueue.then(
                 async () => {
                     this._cachedUI =
@@ -946,7 +912,7 @@ window.UI = {
                         return false;
                     }
 
-                    return this._writeToDB(
+                    return this._write(
                         db,
                         uiData
                     );
@@ -954,11 +920,9 @@ window.UI = {
             );
 
         this._saveQueue =
-            saveOperation.catch(
-                () => {}
-            );
+            operation.catch(() => {});
 
-        return saveOperation;
+        return operation;
     },
 
     load() {
@@ -985,6 +949,7 @@ window.SectionMap = {
     topstudent: "loadTopStudentMode",
 
     sunnah: "loadSunnahTracker"
+
 };
 
 
@@ -1063,11 +1028,6 @@ window.loadSection = function (
     }
 
     try {
-        /*
-            UI.save is asynchronous.
-            Start it without blocking rendering,
-            but report a failed UI save.
-        */
         Promise.resolve(
             window.UI.save(
                 type,
@@ -1075,18 +1035,37 @@ window.loadSection = function (
             )
         ).catch(error => {
             console.warn(
-                "UI state save failed:",
+                "UI save failed:",
                 error
             );
         });
 
         requestAnimationFrame(() => {
-            if (
-                type === "study"
-            ) {
-                window[fnName](grade);
-            } else {
-                window[fnName]();
+            try {
+                if (
+                    type === "study"
+                ) {
+                    window[fnName](grade);
+                } else {
+                    window[fnName]();
+                }
+            } catch (error) {
+                console.error(
+                    "Module render error:",
+                    error
+                );
+
+                main.innerHTML = `
+                    <div style="
+                        padding:20px;
+                        color:#ff4757;
+                    ">
+                        ${
+                            error.message ||
+                            "Module failed."
+                        }
+                    </div>
+                `;
             }
         });
     } catch (error) {
@@ -1102,7 +1081,7 @@ window.loadSection = function (
             ">
                 ${
                     error.message ||
-                    "Module failed to load."
+                    "Module failed."
                 }
             </div>
         `;
@@ -1196,7 +1175,6 @@ window.requestPersistentStorage =
 
 // ======================================================
 // 7. START APP
-//    INITIALIZATION IS COMPLETED BEFORE UI LOAD
 // ======================================================
 
 document.addEventListener(
@@ -1209,24 +1187,19 @@ document.addEventListener(
             await window.UI
                 ._initUI();
 
-            await requestPersistentStorage();
-
             waitForSystemReady(() => {
                 const lastUI =
                     window.UI.load();
 
-                const section =
-                    lastUI.section ||
-                    "study";
-
-                const grade =
-                    Number(lastUI.grade) ||
-                    9;
-
                 window.loadSection(
-                    section,
-                    grade
+                    lastUI.section ||
+                    "study",
+
+                    lastUI.grade ||
+                    9
                 );
+
+                requestPersistentStorage();
             });
         } catch (error) {
             console.error(
@@ -1257,7 +1230,7 @@ document.addEventListener(
 
 // ======================================================
 // 8. RELIABILITY SYSTEM
-//    SNAPSHOT ENGINE
+//    OFFLINE SNAPSHOT ENGINE
 // ======================================================
 
 (function () {
@@ -1281,20 +1254,19 @@ document.addEventListener(
 
         snapshotDBPromise =
             new Promise(resolve => {
-                let settled = false;
+                let finished = false;
 
                 const finish = db => {
-                    if (settled) return;
+                    if (finished) return;
 
-                    settled = true;
+                    finished = true;
                     resolve(db);
                 };
 
                 try {
                     const request =
                         indexedDB.open(
-                            SNAPSHOT_DB_NAME,
-                            1
+                            SNAPSHOT_DB_NAME
                         );
 
                     request.addEventListener(
@@ -1340,8 +1312,7 @@ document.addEventListener(
                         "error",
                         () => {
                             console.warn(
-                                "Snapshot DB error:",
-                                request.error
+                                "Snapshot DB unavailable."
                             );
 
                             finish(null);
@@ -1349,7 +1320,7 @@ document.addEventListener(
                     );
                 } catch (error) {
                     console.warn(
-                        "Snapshot DB failed:",
+                        "Snapshot DB open failed:",
                         error
                     );
 
@@ -1365,37 +1336,38 @@ document.addEventListener(
         key,
         snapshot
     ) {
-        return new Promise(resolve => {
-            if (!db) {
-                resolve(false);
-                return;
-            }
+        if (!db) {
+            return false;
+        }
 
+        return new Promise(resolve => {
             try {
-                const tx =
+                const transaction =
                     db.transaction(
                         SNAPSHOT_STORE_NAME,
                         "readwrite"
                     );
 
-                tx.objectStore(
-                    SNAPSHOT_STORE_NAME
-                ).put(
-                    snapshot,
-                    key
-                );
+                transaction
+                    .objectStore(
+                        SNAPSHOT_STORE_NAME
+                    )
+                    .put(
+                        snapshot,
+                        key
+                    );
 
-                tx.addEventListener(
+                transaction.addEventListener(
                     "complete",
                     () => resolve(true)
                 );
 
-                tx.addEventListener(
+                transaction.addEventListener(
                     "error",
                     () => resolve(false)
                 );
 
-                tx.addEventListener(
+                transaction.addEventListener(
                     "abort",
                     () => resolve(false)
                 );
@@ -1407,10 +1379,6 @@ document.addEventListener(
 
     async function createSnapshot() {
         try {
-            /*
-                Wait for pending study save before
-                taking a snapshot.
-            */
             await window.DataService
                 .waitForSave();
 
@@ -1470,69 +1438,87 @@ document.addEventListener(
     }
 
     async function cleanupSnapshots(db) {
-        return new Promise(resolve => {
-            if (!db) {
-                resolve(false);
-                return;
-            }
+        if (!db) {
+            return false;
+        }
 
+        return new Promise(resolve => {
             try {
-                const tx =
+                const readTransaction =
                     db.transaction(
                         SNAPSHOT_STORE_NAME,
                         "readonly"
                     );
 
                 const request =
-                    tx.objectStore(
-                        SNAPSHOT_STORE_NAME
-                    ).getAllKeys();
+                    readTransaction
+                        .objectStore(
+                            SNAPSHOT_STORE_NAME
+                        )
+                        .getAllKeys();
 
                 request.addEventListener(
                     "success",
-                    async () => {
+                    () => {
                         const keys =
                             request.result
                                 .sort();
 
-                        const excess =
+                        const removeCount =
                             keys.length -
                             MAX_SNAPSHOTS;
 
-                        if (excess <= 0) {
+                        if (
+                            removeCount <= 0
+                        ) {
                             resolve(true);
                             return;
                         }
 
-                        const deleteTx =
-                            db.transaction(
-                                SNAPSHOT_STORE_NAME,
-                                "readwrite"
-                            );
+                        try {
+                            const deleteTransaction =
+                                db.transaction(
+                                    SNAPSHOT_STORE_NAME,
+                                    "readwrite"
+                                );
 
-                        const store =
-                            deleteTx.objectStore(
-                                SNAPSHOT_STORE_NAME
-                            );
+                            const store =
+                                deleteTransaction
+                                    .objectStore(
+                                        SNAPSHOT_STORE_NAME
+                                    );
 
-                        keys
-                            .slice(
-                                0,
-                                excess
-                            )
-                            .forEach(key => {
-                                store.delete(key);
-                            });
+                            keys
+                                .slice(
+                                    0,
+                                    removeCount
+                                )
+                                .forEach(
+                                    key => {
+                                        store.delete(
+                                            key
+                                        );
+                                    }
+                                );
 
-                        deleteTx.addEventListener(
-                            "complete",
-                            () => resolve(true)
-                        );
+                            deleteTransaction
+                                .addEventListener(
+                                    "complete",
+                                    () => resolve(
+                                        true
+                                    )
+                                );
 
-                        deleteTx.addEventListener(
-                            "error",
-                            () => resolve(false)
-                        );
+                            deleteTransaction
+                                .addEventListener(
+                                    "error",
+                                    () => resolve(
+                                        false
+                                    )
+                                );
+                        } catch {
+                            resolve(false);
+                        }
                     }
                 );
 
@@ -1547,55 +1533,53 @@ document.addEventListener(
     }
 
     async function _getLatestSnapshot() {
+        const db =
+            await _openSnapshotDB();
+
+        if (!db) {
+            return null;
+        }
+
         return new Promise(resolve => {
-            _openSnapshotDB()
-                .then(db => {
-                    if (!db) {
-                        resolve(null);
-                        return;
-                    }
+            try {
+                const transaction =
+                    db.transaction(
+                        SNAPSHOT_STORE_NAME,
+                        "readonly"
+                    );
 
-                    try {
-                        const tx =
-                            db.transaction(
-                                SNAPSHOT_STORE_NAME,
-                                "readonly"
-                            );
-
-                        const request =
-                            tx.objectStore(
-                                SNAPSHOT_STORE_NAME
-                            ).openCursor(
-                                null,
-                                "prev"
-                            );
-
-                        request.addEventListener(
-                            "success",
-                            event => {
-                                const cursor =
-                                    event.target
-                                        .result;
-
-                                resolve(
-                                    cursor
-                                        ? cursor.value
-                                        : null
-                                );
-                            }
+                const request =
+                    transaction
+                        .objectStore(
+                            SNAPSHOT_STORE_NAME
+                        )
+                        .openCursor(
+                            null,
+                            "prev"
                         );
 
-                        request.addEventListener(
-                            "error",
-                            () => resolve(null)
+                request.addEventListener(
+                    "success",
+                    event => {
+                        const cursor =
+                            event.target
+                                .result;
+
+                        resolve(
+                            cursor
+                                ? cursor.value
+                                : null
                         );
-                    } catch {
-                        resolve(null);
                     }
-                })
-                .catch(() => {
-                    resolve(null);
-                });
+                );
+
+                request.addEventListener(
+                    "error",
+                    () => resolve(null)
+                );
+            } catch {
+                resolve(null);
+            }
         });
     }
 
@@ -1615,10 +1599,6 @@ document.addEventListener(
                     current.studyProgress
                 ).length > 0;
 
-            /*
-                Never restore an old snapshot over
-                current non-empty data.
-            */
             if (hasCurrentProgress) {
                 return false;
             }
@@ -1637,22 +1617,18 @@ document.addEventListener(
                 return false;
             }
 
-            /*
-                Re-check current data immediately
-                before recovery to prevent a race.
-            */
             const latest =
                 window.DataService
                     ._cachedData;
 
-            const currentStillEmpty =
+            const stillEmpty =
                 !latest ||
                 !latest.studyProgress ||
                 Object.keys(
                     latest.studyProgress
                 ).length === 0;
 
-            if (!currentStillEmpty) {
+            if (!stillEmpty) {
                 return false;
             }
 
@@ -1660,7 +1636,7 @@ document.addEventListener(
                 .set(snapshot);
 
             console.log(
-                "✅ Recovered latest study snapshot"
+                "✅ Latest study snapshot recovered"
             );
 
             return true;
@@ -1702,10 +1678,6 @@ document.addEventListener(
         () => {
             updateConnectionStatus();
 
-            /*
-                Let the normal app boot and initial
-                IndexedDB load finish first.
-            */
             setTimeout(() => {
                 recover();
             }, 500);
